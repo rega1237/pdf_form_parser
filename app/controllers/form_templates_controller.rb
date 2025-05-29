@@ -1,7 +1,7 @@
 require_dependency Rails.root.join('app/services/pdf_forms_parser_service.rb').to_s
 
 class FormTemplatesController < ApplicationController
-  before_action :set_form_template, only: [:show, :destroy, :fill, :submit_filled_form]
+  before_action :set_form_template, only: %i[show destroy fill submit_filled_form form_builder]
 
   # GET /form_templates
   def index
@@ -34,12 +34,12 @@ class FormTemplatesController < ApplicationController
       if determined_file_type == 'application/pdf'
         parser = PdfFormsParserService.new(saved_file_on_disk_path.to_s)
         form_structure = parser.parse
-      elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+      elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
              'application/msword'].include?(determined_file_type)
-        Rails.logger.info "DOCX/DOC parsing not yet implemented."
-      elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+        Rails.logger.info 'DOCX/DOC parsing not yet implemented.'
+      elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
              'application/vnd.ms-excel'].include?(determined_file_type)
-        Rails.logger.info "XLS/XLSX parsing not yet implemented."
+        Rails.logger.info 'XLS/XLSX parsing not yet implemented.'
       else
         Rails.logger.warn "Unsupported file type: #{determined_file_type}"
       end
@@ -53,7 +53,7 @@ class FormTemplatesController < ApplicationController
       )
     else
       @form_template = FormTemplate.new(form_template_params.except(:original_file))
-      flash[:alert] = "File upload is required."
+      flash[:alert] = 'File upload is required.'
       render :new, status: :unprocessable_entity
       return
     end
@@ -82,7 +82,7 @@ class FormTemplatesController < ApplicationController
     rescue JSON::ParserError => e
       Rails.logger.error "Failed to parse form_structure for FormTemplate ID #{@form_template.id}: #{e.message}"
       redirect_to @form_template, alert: 'There was an error parsing the form structure.'
-      return
+      nil
     end
     # The view fill.html.erb will use @form_template and @form_fields
   end
@@ -98,23 +98,31 @@ class FormTemplatesController < ApplicationController
     redirect_to @form_template, notice: 'Form submitted (PDF filling not yet implemented).'
   end
 
+  # GET /form_templates/:id/form_builder
+  def form_builder
+    # @form_template is already set by before_action
+    # Logic for form builder will go here
+    # For now, it will just render the form_builder.html.erb view
+  end
+
   # DELETE /form_templates/1
   def destroy
     # @form_template is set by before_action
     # Optionally, delete the physical file when the record is destroyed
     File.delete(@form_template.file_path) if File.exist?(@form_template.file_path)
     @form_template.destroy
-    redirect_to form_templates_path, notice: "Form template deleted successfully.", status: :see_other
+    redirect_to form_templates_path, notice: 'Form template deleted successfully.', status: :see_other
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_form_template
-      @form_template = FormTemplate.find(params[:id])
-    end
 
-    # Only allow a list of trusted parameters through.
-    def form_template_params
-      params.require(:form_template).permit(:name, :description, :original_file)
-    end
+  # Use callbacks to share common setup or constraints between actions.
+  def set_form_template
+    @form_template = FormTemplate.find(params[:id])
+  end
+
+  # Only allow a list of trusted parameters through.
+  def form_template_params
+    params.require(:form_template).permit(:name, :description, :original_file)
+  end
 end
