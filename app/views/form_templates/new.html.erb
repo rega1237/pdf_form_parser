@@ -1,0 +1,30 @@
+<h1>Upload New Form Template</h1>
+
+<%= form_with(model: @form_template, url: form_templates_path, local: true, html: { multipart: true }) do |form| %>
+  <% if @form_template.errors.any? %>
+    <div style="color: red">
+      <h2><%= pluralize(@form_template.errors.count, "error") %> prohibited this form_template from being saved:</h2>
+      <ul>
+        <% @form_template.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-4">
+    <%= form.label :name, class: "block text-gray-700 text-sm font-bold mb-2" %>
+    <%= form.text_field :name, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+  </div>
+
+  <div class="mb-4">
+    <%= form.label :original_file, "Form File (.pdf, .docx, .xls)", class: "block text-gray-700 text-sm font-bold mb-2" %>
+    <%= form.file_field :original_file, class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" %>
+  </div>
+
+  <div class="flex items-center justify-between">
+    <%= form.submit "Upload Template", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" %>
+  </div>
+<% end %>
+
+<%= link_to "Back to templates", form_templates_path, class: "text-blue-500 hover:text-blue-800 mt-4 inline-block" %>

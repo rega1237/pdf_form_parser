@@ -1,0 +1,36 @@
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold mb-6"><%= @form_template.name %></h1>
+
+  <div class="bg-white shadow-md rounded-lg p-6">
+    <p class="mb-4">
+      <strong class="font-semibold text-gray-700">Original Filename:</strong>
+      <%= @form_template.original_filename %>
+    </p>
+    <p class="mb-4">
+      <strong class="font-semibold text-gray-700">File Path:</strong>
+      <%= @form_template.file_path %>
+    </p>
+    <p class="mb-4">
+      <strong class="font-semibold text-gray-700">File Type:</strong>
+      <%= @form_template.file_type %>
+    </p>
+    <p class="mb-4">
+      <strong class="font-semibold text-gray-700">Form Structure (Raw):</strong>
+      <pre class="bg-gray-100 p-3 rounded-md overflow-x-auto"><%= @form_template.form_structure %></pre>
+      <%# This will be empty or nil for now %>
+    </p>
+    <p class="mb-4">
+      <strong class="font-semibold text-gray-700">Uploaded At:</strong>
+      <%= @form_template.created_at.strftime("%B %d, %Y %H:%M") %>
+    </p>
+  </div>
+
+  <div class="mt-8">
+    <%= link_to 'Fill This Form', fill_form_template_path(@form_template), class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" %>
+    <%= link_to 'Edit Details (Not Implemented Yet)', "#", class: "bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded mr-2 opacity-50 cursor-not-allowed" %>
+    <%= link_to 'Back to Templates', form_templates_path, class: "bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" %>
+  </div>
+
+  <%# Later, we will add a section here to display the rendered web form %>
+  <%# And a list of submissions for this template %>
+</div>
