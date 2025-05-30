@@ -1,1 +1,80 @@
-<h1>Form builder<h1>
+<div class="container mx-auto px-4 py-8" data-controller="drag" data-drag-form-template-id-value="<%= @form_template.id %>">
+  <h1 class="text-3xl font-bold mb-6 text-gray-800">Form Builder: <%= @form_template.name %></h1>
+
+  <%= form_with model: @form_template, url: form_template_path(@form_template), method: :patch, local: true, html: { class: "space-y-6" } do |form| %>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Form Fields (Drag to Reorder)</h2>
+      <div data-drag-target="list" class="space-y-3 min-h-[300px] p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+        <% fields = @form_template.form_structure.is_a?(String) ? JSON.parse(@form_template.form_structure) : @form_template.form_structure %>
+        <% fields.each_with_index do |field, index| %>
+          <div class="p-3 bg-gray-100 rounded border border-gray-300 flex items-center justify-between shadow-sm" data-drag-target="item" data-id="<%= field['name'] %>">
+            <div class="flex items-center">
+              <span class="handle cursor-grab mr-3 text-gray-500 hover:text-gray-700">☰</span>
+              <span class="font-medium text-gray-700"><%= field['name'] %></span>
+              <span class="text-sm text-gray-500 ml-2">(<%= field['type'] %>)</span>
+            </div>
+            <%# Bottom part: New input fields %>
+            <div class="mt-3 pt-3 border-t border-gray-200 space-y-2">
+              <div>
+                <label for="field_label_name_<%= index %>_<%= field['name'].parameterize %>" class="block text-xs font-medium text-gray-500">Custom Label</label>
+                <input type="text" id="field_label_name_<%= index %>_<%= field['name'].parameterize %>" data-field-attribute="label_name" value="<%= field['label_name'] %>" class="mt-1 p-1.5 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm w-full" placeholder="Enter custom label">
+              </div>
+              <div>
+                <label for="field_section_name_<%= index %>_<%= field['name'].parameterize %>" class="block text-xs font-medium text-gray-500">Section Name</label>
+                <input type="text" id="field_section_name_<%= index %>_<%= field['name'].parameterize %>" data-field-attribute="section_name" value="<%= field['section_name'] %>" class="mt-1 p-1.5 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm w-full" placeholder="Enter section name">
+              </div>
+              <div>
+                <label for="field_page_number_<%= index %>_<%= field['name'].parameterize %>" class="block text-xs font-medium text-gray-500">Page Number</label>
+                <input type="number" id="field_page_number_<%= index %>_<%= field['name'].parameterize %>" data-field-attribute="page_number" value="<%= field['page_number'] %>" class="mt-1 p-1.5 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm w-24" placeholder="Page">
+              </div>
+            </div>
+          </div>
+        <% end %>
+        <% if fields.empty? %>
+          <p class="text-gray-400 text-center">No fields defined in the form structure.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <%= form.hidden_field :form_structure_order, data: { drag_target: "input" } %>
+
+    <div class="mt-8 flex items-center justify-between">
+      <%= link_to 'Back to Template', form_template_path(@form_template), class: "text-blue-600 hover:text-blue-800" %>
+      <%= form.submit "Save Form Structure", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition duration-150" %>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  .handle {
+    cursor: grab;
+  }
+  .gu-mirror {
+    position: fixed !important;
+    margin: 0 !important;
+    z-index: 9999 !important;
+    opacity: 0.9;
+    background-color: #ffffff; /* White background for mirror */
+    border: 1px solid #d1d5db; /* Tailwind's gray-300 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Tailwind shadow-md */
+    border-radius: 0.375rem; /* Tailwind rounded-md */
+    padding: 0.75rem; /* p-3 */
+  }
+  .gu-hide {
+    display: none !important;
+  }
+  .gu-unselectable {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+  }
+  .gu-transit {
+    opacity: 0.6;
+    background-color: #f3f4f6; /* Tailwind's gray-100 */
+  }
+  /* Style for the list while dragging over */
+  [data-drag-target="list"].sortable-ghost {
+    background-color: #eff6ff; /* Tailwind's blue-50 */
+  }
+</style>
