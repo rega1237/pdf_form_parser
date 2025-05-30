@@ -124,6 +124,8 @@ class FormTemplatesController < ApplicationController
           field['label_name'] = order_item['label_name'] if order_item.key?('label_name')
           field['section_name'] = order_item['section_name'] if order_item.key?('section_name')
           field['page_number'] = order_item['page_number'] if order_item.key?('page_number')
+          field['column_width'] = order_item['column_width'] if order_item.key?('column_width')
+          field['required'] = order_item['required'] if order_item.key?('required')
         end
         field # Return the (potentially updated) field
       end.compact
@@ -168,6 +170,6 @@ class FormTemplatesController < ApplicationController
   # Only allow a list of trusted parameters through.
   def form_template_params
     params.require(:form_template).permit(:id, :name, :description, :original_file, :form_structure,
-                                          :form_structure_order, :label_name, :section_name, :page_number)
+                                          :form_structure_order, :label_name, :section_name, :page_number, :column_width, :required)
   end
 end

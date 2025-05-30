@@ -24,6 +24,12 @@ export default class extends Controller {
       const pageNumberInput = itemEl.querySelector(
         '[data-field-attribute="page_number"]'
       );
+      const columnWidthInput = itemEl.querySelector(
+        '[data-field-attribute="column_width"]'
+      );
+      const requiredInput = itemEl.querySelector(
+        '[data-field-attribute="required"]'
+      );
 
       return {
         id: fieldName, // 'id' here refers to the field's original name/identifier
@@ -31,6 +37,8 @@ export default class extends Controller {
         label_name: labelNameInput ? labelNameInput.value : "",
         section_name: sectionNameInput ? sectionNameInput.value : "",
         page_number: pageNumberInput ? pageNumberInput.value : "",
+        column_width: columnWidthInput ? columnWidthInput.value : "1",
+        required: requiredInput ? requiredInput.checked : false,
       };
     });
 
