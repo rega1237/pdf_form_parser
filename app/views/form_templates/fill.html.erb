@@ -5,36 +5,42 @@
     <% if @form_fields.blank? %>
       <p class="text-red-500">No hay campos en este formulario o el PDF no pudo ser procesado correctamente.</p>
     <% else %>
-      <% @form_fields.each_with_index do |field, index| %>
-        <% next unless field.is_a?(Hash) && field.key?('name') %>
-        <% next if field['name'].blank? # Saltar campos sin nombre %>
+      <%# Group fields by section_name, treating nil or blank section_name as a default group %>
+      <% @form_fields.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
+        <div class="mb-6 p-6 border border-gray-300 rounded-lg bg-white shadow">
+          <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2"><%= section_name.humanize %></h2>
+          <% fields_in_section.each_with_index do |field, index| %>
+            <% next unless field.is_a?(Hash) && field.key?('name') %>
+            <% next if field['name'].blank? # Saltar campos sin nombre %>
 
-        <div class="mb-4 p-4 border border-gray-200 rounded-md bg-gray-50">
-          <%# For checkboxes, the label should wrap the input or be associated with `for` attribute pointing to input's id %>
-          <% if field['type'] == "Button" %>
-            <div class="flex items-center">
-              <%= form.check_box field['name'], { id: "form_data_#{field['name'].parameterize.underscore}_#{index}", class: "h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" }, field['value'], nil %>
-              <label for="form_data_<%= field['name'].parameterize.underscore %>_<%= index %>" class="ml-2 block text-sm font-medium text-gray-700">
-                <%= (field['label_name'].presence || field['name']).humanize %> (<%= field['type'] %>)
-              </label>
+            <div class="mb-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+              <%# For checkboxes, the label should wrap the input or be associated with `for` attribute pointing to input's id %>
+              <% if field['type'] == "Button" %>
+                <div class="flex items-center">
+                  <%= form.check_box field['name'], { id: "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}", class: "h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" }, field['value'], nil %>
+                  <label for="form_data_<%= field['name'].parameterize.underscore %>_<%= section_name.parameterize.underscore %>_<%= index %>" class="ml-2 block text-sm font-medium text-gray-700">
+                    <%= (field['label_name'].presence || field['name']).humanize %> (<%= field['type'] %>)
+                  </label>
+                </div>
+              <% else %>
+                <label for="form_data_<%= field['name'].parameterize.underscore %>_<%= section_name.parameterize.underscore %>_<%= index %>" class="block text-sm font-medium text-gray-700 mb-1">
+                  <%= (field['label_name'].presence || field['name']).humanize %> (<%= field['type'] %>)
+                </label>
+                <% if field['type'] == "Text" %>
+                  <%= form.text_field field['name'], id: "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}", class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", value: field['value'] %>
+                <% elsif field['type'] == "Choice" && field['options'].is_a?(Array) %>
+                  <%= form.select field['name'], options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']), { include_blank: 'Select an option' }, id: "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}", class: "mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                <% else %>
+                  <p class="mt-1 text-sm text-gray-600 bg-gray-100 p-2 rounded">
+                    <strong>Nombre del Campo:</strong> <%= field['name'] %><br>
+                    <strong>Tipo:</strong> <%= field['type'] %><br>
+                    <strong>Valor por defecto:</strong> <%= field['value'].is_a?(Array) ? field['value'].join(', ') : field['value'] || "N/A" %><br>
+                    <strong>Opciones:</strong> <%= field['options'].is_a?(Array) ? field['options'].join(', ') : field['options'] || "N/A" %>
+                    <span class="text-xs text-orange-500 block mt-1">(Este tipo de campo aún no es interactivo en el formulario web o no tiene opciones válidas)</span>
+                  </p>
+                <% end %>
+              <% end %>
             </div>
-          <% else %>
-            <label for="form_data_<%= field['name'].parameterize.underscore %>_<%= index %>" class="block text-sm font-medium text-gray-700 mb-1">
-              <%= (field['label_name'].presence || field['name']).humanize %> (<%= field['type'] %>)
-            </label>
-            <% if field['type'] == "Text" %>
-              <%= form.text_field field['name'], id: "form_data_#{field['name'].parameterize.underscore}_#{index}", class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", value: field['value'] %>
-            <% elsif field['type'] == "Choice" && field['options'].is_a?(Array) %>
-              <%= form.select field['name'], options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']), { include_blank: 'Select an option' }, id: "form_data_#{field['name'].parameterize.underscore}_#{index}", class: "mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
-            <% else %>
-              <p class="mt-1 text-sm text-gray-600 bg-gray-100 p-2 rounded">
-                <strong>Nombre del Campo:</strong> <%= field['name'] %><br>
-                <strong>Tipo:</strong> <%= field['type'] %><br>
-                <strong>Valor por defecto:</strong> <%= field['value'].is_a?(Array) ? field['value'].join(', ') : field['value'] || "N/A" %><br>
-                <strong>Opciones:</strong> <%= field['options'].is_a?(Array) ? field['options'].join(', ') : field['options'] || "N/A" %>
-                <span class="text-xs text-orange-500 block mt-1">(Este tipo de campo aún no es interactivo en el formulario web o no tiene opciones válidas)</span>
-              </p>
-            <% end %>
           <% end %>
         </div>
       <% end %>
