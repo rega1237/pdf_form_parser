@@ -9,13 +9,37 @@
       <% @form_fields.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
         <div class="mb-6 p-6 border border-gray-300 rounded-lg bg-white shadow">
           <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2"><%= section_name.humanize %></h2>
-          <% fields_in_section.each_with_index do |field, index| %>
-            <% next unless field.is_a?(Hash) && field.key?('name') %>
-            <% next if field['name'].blank? # Saltar campos sin nombre %>
+          <div class="grid grid-cols-9 gap-4">
+            <% fields_in_section.each_with_index do |field, index| %>
+              <% next unless field.is_a?(Hash) && field.key?('name') %>
+              <% next if field['name'].blank? # Saltar campos sin nombre %>
 
-            <div class="mb-4 p-4 border border-gray-200 rounded-md bg-gray-50">
-              <%# For checkboxes, the label should wrap the input or be associated with `for` attribute pointing to input's id %>
-              <% if field['type'] == "Button" %>
+              <% column_width_int = field['column_width'].to_i %>
+              <% column_span = case column_width_int
+                               when 1
+                                 'col-span-1'
+                               when 2
+                                 'col-span-2'
+                               when 3
+                                 'col-span-3'
+                               when 4
+                                 'col-span-4'
+                               when 5
+                                 'col-span-5'
+                               when 6
+                                 'col-span-6'
+                               when 7
+                                 'col-span-7'
+                               when 8
+                                 'col-span-8'
+                               when 9
+                                 'col-span-9'
+                               else
+                                 'col-span-3'
+                               end %>
+              <div class="<%= column_span %> mb-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+                <%# For checkboxes, the label should wrap the input or be associated with `for` attribute pointing to input's id %>
+                <% if field['type'] == "Button" %>
                 <div class="flex items-center">
                   <%= form.check_box field['name'], { id: "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}", class: "h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" }, field['value'], nil %>
                   <label for="form_data_<%= field['name'].parameterize.underscore %>_<%= section_name.parameterize.underscore %>_<%= index %>" class="ml-2 block text-sm font-medium text-gray-700">
@@ -40,8 +64,9 @@
                   </p>
                 <% end %>
               <% end %>
-            </div>
-          <% end %>
+              </div>
+            <% end %>
+          </div>
         </div>
       <% end %>
     <% end %>
