@@ -2,7 +2,8 @@
   <h1 class="text-3xl font-bold mb-6 text-gray-800">Llenar Formulario: <%= @form_fill.name %></h1>
 
   <%# The form_with URL will need to be updated to a relevant path for submitting FormFill data %>
-  <%= form_with scope: :form_data, url: "#", method: :post, data: { controller: "pagination", turbo: false }, local: true, class: "space-y-6 bg-white p-8 rounded-lg shadow-md" do |form| %>
+  <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json }, local: true, class: "space-y-6 bg-white p-8 rounded-lg shadow-md" do |form| %>
+  <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
     <% if @form_fields.blank? %>
       <p class="text-red-500">No hay campos en este formulario o la estructura del formulario no pudo ser procesada.</p>
     <% else %>
@@ -86,11 +87,11 @@
         </button>
       </div>
       <div>
-        <button type="button" id="saveDraftBtn" class="mr-2 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <button type="button" id="saveDraftBtn" data-action="click->form-fill#saveDraft" class="mr-2 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
           Guardar Borrador
         </button>
         <%= form.submit "Enviar Formulario", id: "submitFormBtn", data: { pagination_target: "submitFormBtn" }, class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer hidden" %>
-        <button type="button" id="nextPageBtn" data-action="click->pagination#nextPage" data-pagination-target="nextPageBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <button type="button" id="nextPageBtn" data-action="click->pagination#nextPage click->form-fill#saveDraft" data-pagination-target="nextPageBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
           Siguiente
         </button>
       </div>
@@ -102,3 +103,7 @@
     <%= link_to 'Volver a Plantillas de Formulario', form_templates_path, class: "text-indigo-600 hover:text-indigo-800 transition duration-150 ease-in-out" %>
   </div>
 </div>
+
+<%# The Stimulus controller `form_fill_controller.js` will handle form pre-filling and saving logic. %>
+<%# Ensure `app/javascript/controllers/form_fill_controller.js` is correctly implemented. %>
+<%# Ensure `app/javascript/controllers/pagination_controller.js` handles pagination. %>
