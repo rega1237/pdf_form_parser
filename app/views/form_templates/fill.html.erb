@@ -1,16 +1,21 @@
 <div class="container mx-auto px-4 py-8">
   <h1 class="text-3xl font-bold mb-6 text-gray-800">Llenar Formulario: <%= @form_template.name %></h1>
 
-  <%= form_with scope: :form_data, url: submit_filled_form_form_template_path(@form_template), method: :post, data: { turbo: false }, local: true, class: "space-y-6 bg-white p-8 rounded-lg shadow-md" do |form| %>
+  <%= form_with scope: :form_data, url: submit_filled_form_form_template_path(@form_template), method: :post, data: { controller: "pagination", turbo: false }, local: true, class: "space-y-6 bg-white p-8 rounded-lg shadow-md" do |form| %>
     <% if @form_fields.blank? %>
       <p class="text-red-500">No hay campos en este formulario o el PDF no pudo ser procesado correctamente.</p>
     <% else %>
-      <%# Group fields by section_name, treating nil or blank section_name as a default group %>
-      <% @form_fields.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
-        <div class="mb-6 p-6 border border-gray-300 rounded-lg bg-white shadow">
-          <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2"><%= section_name.humanize %></h2>
-          <div class="grid grid-cols-9 gap-4">
-            <% fields_in_section.each_with_index do |field, index| %>
+      <%# Group fields by page_number (excluding page 0), then by section_name %>
+      <% valid_fields = @form_fields.reject { |f| f['page_number'].to_i == 0 } %>
+      <% pages = valid_fields.group_by { |f| f['page_number'].to_i }.sort_by { |page_num, _| page_num } %>
+      <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
+        <div class="page-content <%= page_index == 0 ? '' : 'hidden' %>" data-page-number="<%= page_num %>" data-pagination-target="pageContent">
+          <h2 class="text-2xl font-bold mb-4 text-gray-700">Página <%= page_num %></h2>
+          <% fields_on_page.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
+            <div class="mb-6 p-6 border border-gray-300 rounded-lg bg-white shadow">
+              <h3 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2"><%= section_name.humanize %></h3>
+              <div class="grid grid-cols-9 gap-4">
+                <% fields_in_section.each_with_index do |field, index| %>
               <% next unless field.is_a?(Hash) && field.key?('name') %>
               <% next if field['name'].blank? # Saltar campos sin nombre %>
 
@@ -67,12 +72,27 @@
               </div>
             <% end %>
           </div>
-        </div>
-      <% end %>
+            </div> <%# Closes div.mb-6 p-6 ... %>
+          <% end %> <%# Closes fields_on_page.group_by ... %>
+        </div> <%# Closes div.page-content ... %>
+      <% end %> <%# Closes pages.each_with_index ... %>
     <% end %>
 
-    <div class="flex justify-end pt-4">
-      <%= form.submit "Enviar Formulario", class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer" %>
+    <div class="flex justify-between items-center pt-6 mt-6 border-t border-gray-200">
+      <div>
+        <button type="button" id="backPageBtn" data-action="click->pagination#backPage" data-pagination-target="backPageBtn" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50" disabled>
+          Atrás
+        </button>
+      </div>
+      <div>
+        <button type="button" id="saveDraftBtn" class="mr-2 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          Guardar Borrador
+        </button>
+        <%= form.submit "Enviar Formulario", id: "submitFormBtn", data: { pagination_target: "submitFormBtn" }, class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer hidden" %>
+        <button type="button" id="nextPageBtn" data-action="click->pagination#nextPage" data-pagination-target="nextPageBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Siguiente
+        </button>
+      </div>
     </div>
   <% end %>
 
