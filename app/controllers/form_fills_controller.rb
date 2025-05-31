@@ -15,11 +15,25 @@ class FormFillsController < ApplicationController
     # For now, let's assume it redirects to the show page of the form template.
     # Or perhaps a list of form fills, or the form fill's own show page if we create one.
     if @form_fill.save
-      # Placeholder redirect, adjust as needed
-      redirect_to form_template_path(@form_fill.form_template), notice: 'Form fill was successfully created.'
+      redirect_to form_fill_path(@form_fill), notice: 'Form fill was successfully created.'
     else
       @form_templates = FormTemplate.all # Reload for the form
       render :new, status: :unprocessable_entity
+    end
+  end
+
+  def show
+    @form_fill = FormFill.find(params[:id])
+    if @form_fill.form_structure.present?
+      begin
+        @form_fields = JSON.parse(@form_fill.form_structure)
+      rescue JSON::ParserError => e
+        # Handle JSON parsing error, e.g., log it or set @form_fields to an empty array
+        Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
+        @form_fields = [] # Or provide a flash message to the user
+      end
+    else
+      @form_fields = []
     end
   end
 
