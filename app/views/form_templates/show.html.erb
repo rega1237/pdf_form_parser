@@ -26,7 +26,7 @@
   </div>
 
   <div class="mt-8">
-    <%= link_to 'Fill This Form', fill_form_template_path(@form_template), class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" %>
+    <%= link_to 'Fill This Form', new_form_fill_path(form_template_id: @form_template.id), class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" %>
     <%= link_to 'Form builder', form_builder_form_template_path(@form_template), class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2" %>
     <%= link_to 'Back to Templates', form_templates_path, class: "bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" %>
   </div>

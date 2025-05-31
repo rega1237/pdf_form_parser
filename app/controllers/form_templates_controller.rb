@@ -46,6 +46,7 @@ class FormTemplatesController < ApplicationController
 
       @form_template = FormTemplate.new(
         id: form_template_params[:id],
+        name: form_template_params[:name],
         form_structure: form_structure.to_json,
         original_filename: disk_file_name, # from your migration
         file_path: saved_file_on_disk_path.to_s.sub(Rails.root.to_s, ''), # Use existing file_path

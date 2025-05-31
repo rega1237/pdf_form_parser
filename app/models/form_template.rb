@@ -1,4 +1,5 @@
 class FormTemplate < ApplicationRecord
+  has_many :form_fills, dependent: :destroy
   has_many :form_submissions, dependent: :destroy
 
   # We can add validations here later, e.g.:
