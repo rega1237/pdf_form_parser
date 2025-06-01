@@ -24,13 +24,22 @@ class FormFillsController < ApplicationController
 
   def show
     @form_fill = FormFill.find(params[:id])
+    @form_template = @form_fill.form_template
+
+    if @form_template&.google_drive_file_id.present?
+      google_drive_service = GoogleDriveService.new
+      @pdf_file_path = google_drive_service.download_file(@form_template.google_drive_file_id)
+    else
+      Rails.logger.warn "No Google Drive file ID found for FormTemplate ##{@form_template&.id}"
+      @pdf_file_path = nil
+    end
+
     if @form_fill.form_structure.present?
       begin
         @form_fields = JSON.parse(@form_fill.form_structure)
       rescue JSON::ParserError => e
-        # Handle JSON parsing error, e.g., log it or set @form_fields to an empty array
         Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
-        @form_fields = [] # Or provide a flash message to the user
+        @form_fields = []
       end
     else
       @form_fields = []

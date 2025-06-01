@@ -1,2 +1,5 @@
 log/*.log*
 app/assets/forms
+/config/master.key
+/config/google_drive_credentials.json
+/config/token.yaml
