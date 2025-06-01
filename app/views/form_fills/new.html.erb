@@ -1,0 +1,42 @@
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold mb-6 text-gray-800">New Form Fill</h1>
+
+  <%= form_with model: @form_fill, url: form_fills_path, local: true, class: "space-y-6 bg-white p-8 rounded-lg shadow-md" do |form| %>
+    <% if @form_fill.errors.any? %>
+      <div id="error_explanation" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Holy smokes!</strong>
+        <span class="block sm:inline"><%= pluralize(@form_fill.errors.count, "error") %> prohibited this form_fill from being saved:</span>
+        <ul class="mt-3 list-disc list-inside text-sm">
+          <% @form_fill.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="field">
+      <%= form.label :name, class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_field :name, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+    </div>
+
+    <div class="field">
+      <%= form.label :form_template_id, class: "block text-sm font-medium text-gray-700" %>
+      <%= form.collection_select :form_template_id, @form_templates, :id, :name, 
+                                { selected: @form_fill.form_template_id, prompt: 'Select a Form Template' }, 
+                                { class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" } %>
+    </div>
+
+    <div class="field hidden">
+      <%= form.label :form_structure, class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_area :form_structure, rows: 10, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+    </div>
+
+    <%# We can add more fields here later if FormFill model gets more attributes %>
+
+    <div class="actions">
+      <%= form.submit 'Create Form Fill', class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-pointer" %>
+    </div>
+  <% end %>
+
+  <%= link_to 'Back to Form Templates', form_templates_path, class: "mt-4 inline-block text-blue-600 hover:text-blue-800" %>
+</div>

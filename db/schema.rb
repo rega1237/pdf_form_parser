@@ -10,9 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_27_101816) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_31_134432) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "form_fills", force: :cascade do |t|
+    t.string "name"
+    t.bigint "form_template_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "form_structure"
+    t.index ["form_template_id"], name: "index_form_fills_on_form_template_id"
+  end
 
   create_table "form_submissions", force: :cascade do |t|
     t.bigint "form_template_id", null: false
@@ -33,5 +42,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_27_101816) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "form_fills", "form_templates"
   add_foreign_key "form_submissions", "form_templates"
 end
