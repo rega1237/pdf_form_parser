@@ -25,6 +25,10 @@ class GoogleDriveService
     @service.get_file(file_id, download_dest: download_path)
   end
 
+  def delete_file(file_id)
+    @service.delete_file(file_id)
+  end
+
   private
 
   def authorize
