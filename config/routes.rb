@@ -1,9 +1,4 @@
 Rails.application.routes.draw do
-  # get "form_templates/index"
-  # get "form_templates/new"
-  # get "form_templates/create"
-  # get "form_templates/show"
-  # get "form_templates/destroy"
   resources :form_templates do
     member do
       get 'form_builder' # Route to display the form builder
@@ -21,6 +16,5 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  root 'home#index'
 end
