@@ -3,3 +3,20 @@ app/assets/forms
 /config/master.key
 /config/google_drive_credentials.json
 /config/token.yaml
+
+# Archivos de registro
+/log/*.log
+!/log/.keep
+
+# Archivos de caché de Ruby/Rails
+/tmp/*
+/vendor/bundle/
+.bundle/
+
+# Específicos de tu entorno
+.byebug_history
+.console_history
+
+# Archivos de caché de compilación (si no están ya cubiertos por /tmp/)
+/compile-cache-iseq/
+/load-path-cache
