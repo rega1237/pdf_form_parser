@@ -1,16 +1,7 @@
 <div class="container mx-auto p-8 bg-gray-100 min-h-screen">
   <h1 class="text-3xl font-bold mb-6 text-gray-800">Llenar Formulario: <%= @form_fill.name %></h1>
 
-  <% if @pdf_file_path.present? %>
-    <div class="mb-6 bg-white p-4 rounded-lg shadow-md">
-      <h2 class="text-2xl font-bold mb-4 text-gray-700">Documento PDF</h2>
-      <iframe src="<%= @pdf_file_path %>" width="100%" height="600px" class="border rounded-md"></iframe>
-    </div>
-  <% else %>
-    <div class="mb-6 bg-white p-4 rounded-lg shadow-md">
-      <p class="text-red-500">No se pudo cargar el documento PDF desde Google Drive.</p>
-    </div>
-  <% end %>
+
 
   <%# The form_with URL will need to be updated to a relevant path for submitting FormFill data %>
   <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json }, local: true, class: "space-y-6 bg-white p-8 rounded-lg shadow-md" do |form| %>

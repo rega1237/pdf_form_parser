@@ -16,8 +16,9 @@ class GoogleDriveService
     @service.authorization = authorize
   end
 
-  def upload_file(file_path, file_name, mime_type)
+  def upload_file(file_path, file_name, mime_type, parent_id = nil)
     file_metadata = Google::Apis::DriveV3::File.new(name: file_name)
+    file_metadata.parents = [parent_id] if parent_id.present?
     @service.create_file(file_metadata, upload_source: file_path, content_type: mime_type, fields: 'id')
   end
 
@@ -27,6 +28,21 @@ class GoogleDriveService
 
   def delete_file(file_id)
     @service.delete_file(file_id)
+  end
+
+  def find_or_create_folder(folder_name, parent_id = nil)
+    query = "name = '#{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+    query += " and '#{parent_id}' in parents" if parent_id.present?
+    response = @service.list_files(q: query, fields: 'files(id, name)')
+    folder = response.files.first
+
+    unless folder
+      file_metadata = Google::Apis::DriveV3::File.new(name: folder_name,
+                                                      mime_type: 'application/vnd.google-apps.folder')
+      file_metadata.parents = [parent_id] if parent_id.present?
+      folder = @service.create_file(file_metadata, fields: 'id, name')
+    end
+    folder.id
   end
 
   private

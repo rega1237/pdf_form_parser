@@ -20,8 +20,10 @@ class FormTemplatesController < ApplicationController
     if uploaded_file
       # Upload to Google Drive
       google_drive_service = GoogleDriveService.new
+      forms_folder_id = google_drive_service.find_or_create_folder('forms')
+      uploaded_folder_id = google_drive_service.find_or_create_folder('uploaded', forms_folder_id)
       file_metadata = google_drive_service.upload_file(uploaded_file.tempfile.path, uploaded_file.original_filename,
-                                                       uploaded_file.content_type)
+                                                       uploaded_file.content_type, uploaded_folder_id)
       google_drive_file_id = file_metadata.id if file_metadata
 
       if google_drive_file_id

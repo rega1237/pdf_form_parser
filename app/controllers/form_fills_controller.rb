@@ -11,13 +11,10 @@ class FormFillsController < ApplicationController
 
   def create
     @form_fill = FormFill.new(form_fill_params)
-    # We'll need to decide where to redirect after successful creation.
-    # For now, let's assume it redirects to the show page of the form template.
-    # Or perhaps a list of form fills, or the form fill's own show page if we create one.
     if @form_fill.save
       redirect_to form_fill_path(@form_fill), notice: 'Form fill was successfully created.'
     else
-      @form_templates = FormTemplate.all # Reload for the form
+      @form_templates = FormTemplate.all
       render :new, status: :unprocessable_entity
     end
   end
@@ -25,15 +22,6 @@ class FormFillsController < ApplicationController
   def show
     @form_fill = FormFill.find(params[:id])
     @form_template = @form_fill.form_template
-
-    if @form_template&.google_drive_file_id.present?
-      google_drive_service = GoogleDriveService.new
-      @pdf_file_path = google_drive_service.download_file(@form_template.google_drive_file_id)
-    else
-      Rails.logger.warn "No Google Drive file ID found for FormTemplate ##{@form_template&.id}"
-      @pdf_file_path = nil
-    end
-
     if @form_fill.form_structure.present?
       begin
         @form_fields = JSON.parse(@form_fill.form_structure)
@@ -67,8 +55,6 @@ class FormFillsController < ApplicationController
   private
 
   def form_fill_params
-    # Ensure you permit all the attributes you want to save for FormFill
-    # For now, just :name and :form_template_id
     params.require(:form_fill).permit(:name, :form_template_id, :form_structure)
   end
 end
