@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_02_194157) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_02_204527) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -65,15 +65,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_02_194157) do
     t.index ["form_template_id"], name: "index_form_fills_on_form_template_id"
   end
 
-  create_table "form_submissions", force: :cascade do |t|
-    t.bigint "form_template_id", null: false
-    t.text "submitted_data"
-    t.datetime "submitted_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["form_template_id"], name: "index_form_submissions_on_form_template_id"
-  end
-
   create_table "form_templates", force: :cascade do |t|
     t.string "name"
     t.string "original_filename"
@@ -88,5 +79,4 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_02_194157) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "form_fills", "form_templates"
-  add_foreign_key "form_submissions", "form_templates"
 end
