@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  resources :customers, only: %i[index show new create edit update]
+  resources :properties
   resources :form_templates do
     member do
       get 'form_builder' # Route to display the form builder

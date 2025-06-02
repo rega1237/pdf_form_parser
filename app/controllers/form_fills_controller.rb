@@ -106,7 +106,7 @@ class FormFillsController < ApplicationController
       )
 
       # Guardar el ID del archivo en Google Drive
-      @form_fill.update(google_drive_file_id: file.id)
+      @form_fill.update(google_drive_file_id: file)
 
       # Limpiar archivos temporales
       FileUtils.rm_f(template_pdf_path)

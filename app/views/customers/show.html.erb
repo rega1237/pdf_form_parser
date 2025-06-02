@@ -1,0 +1,25 @@
+<div>
+  <h1 class="text-2xl font-bold mb-4">Detalles del Cliente</h1>
+
+<div class="bg-white p-6 rounded-lg shadow-md">
+  <% if @customer.thumbnail.attached? %>
+    <%= image_tag @customer.thumbnail, class: "w-32 h-32 object-cover rounded-full mx-auto mb-4" %>
+  <% else %>
+    <p class="text-center text-gray-500 mb-4">No hay miniatura disponible</p>
+  <% end %>
+
+  <p class="mb-2"><strong class="font-bold">Tipo de Cliente:</strong> <%= @customer.customer_type %></p>
+  <p class="mb-2"><strong class="font-bold">Nombre:</strong> <%= @customer.name %></p>
+  <p class="mb-2"><strong class="font-bold">Dirección:</strong> <%= @customer.address %></p>
+  <p class="mb-2"><strong class="font-bold">Ciudad, Estado, Código Postal:</strong> <%= @customer.city_state_zip %></p>
+  <p class="mb-2"><strong class="font-bold">Email:</strong> <%= @customer.email %></p>
+  <p class="mb-2"><strong class="font-bold">Teléfono 1:</strong> <%= @customer.phone_1 %></p>
+  <p class="mb-2"><strong class="font-bold">Teléfono 2:</strong> <%= @customer.phone_2 %></p>
+  <p class="mb-2"><strong class="font-bold">Nota:</strong> <%= @customer.note %></p>
+
+  <div class="mt-4">
+    <%= link_to "Editar", edit_customer_path(@customer), class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2" %>
+    <%= link_to "Volver a Clientes", customers_path, class: "bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" %>
+  </div>
+</div>
+</div>

@@ -1,8 +1,11 @@
 <div class="container mx-auto p-8 bg-gray-100 min-h-screen flex flex-col items-center justify-center">
-  <h1 class="text-4xl font-bold mb-8 text-gray-800">Welcome</h1>
+<h1 class="text-3xl font-bold underline">
+  Welcome to Inspections app
+</h1>
 
   <div class="flex space-x-4">
     <%= link_to "Ver Plantillas", form_templates_path, class: "bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105" %>
     <%= link_to "Llenar Formularios", form_fills_path, class: "bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105" %>
+    <%= link_to "Ver Clientes", customers_path, class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105" %>
   </div>
 </div>
