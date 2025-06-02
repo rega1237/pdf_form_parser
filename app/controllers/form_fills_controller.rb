@@ -51,7 +51,7 @@ class FormFillsController < ApplicationController
       # For now, let's redirect back to the show page or respond with JSON
       respond_to do |format|
         format.html { redirect_to form_fill_path(@form_fill), notice: 'Form fill was successfully updated.' }
-        format.json { render :show, status: :ok, location: @form_fill }
+        format.json { render json: { status: 'ok', message: 'Form fill saved successfully.' }, status: :ok }
       end
     else
       # Respond with error, perhaps a JSON response or render the show page with errors
