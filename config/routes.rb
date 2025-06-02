@@ -5,7 +5,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :form_fills, only: %i[index new create show update destroy]
+  resources :form_fills, only: %i[index new create show update destroy] do
+    member do
+      post 'submit_form' # Ruta para procesar y enviar el formulario PDF
+    end
+  end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
