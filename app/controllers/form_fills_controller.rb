@@ -1,4 +1,8 @@
 class FormFillsController < ApplicationController
+  def index
+    @form_fills = FormFill.all
+  end
+
   def new
     @form_fill = FormFill.new
     @form_templates = FormTemplate.all
@@ -32,6 +36,12 @@ class FormFillsController < ApplicationController
     else
       @form_fields = []
     end
+  end
+
+  def destroy
+    @form_fill = FormFill.find(params[:id])
+    @form_fill.destroy
+    redirect_to form_fills_url, notice: 'Form fill was successfully destroyed.'
   end
 
   def update
