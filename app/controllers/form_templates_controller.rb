@@ -15,43 +15,55 @@ class FormTemplatesController < ApplicationController
   def create
     uploaded_file = form_template_params[:original_file]
     form_structure = {}
+    google_drive_file_id = nil
 
     if uploaded_file
-      save_path_dir = Rails.root.join('app', 'assets', 'forms')
-      FileUtils.mkdir_p(save_path_dir) unless Dir.exist?(save_path_dir)
-      # Use original_fileid from the uploaded file for the actual disk fileid
-      disk_file_name = uploaded_file.original_filename
-      saved_file_on_disk_path = save_path_dir.join(disk_file_name)
+      # Upload to Google Drive
+      google_drive_service = GoogleDriveService.new
+      forms_folder_id = google_drive_service.find_or_create_folder('forms')
+      uploaded_folder_id = google_drive_service.find_or_create_folder('uploaded', forms_folder_id)
+      file_metadata = google_drive_service.upload_file(uploaded_file.tempfile.path, uploaded_file.original_filename,
+                                                       uploaded_file.content_type, uploaded_folder_id)
+      google_drive_file_id = file_metadata.id if file_metadata
 
-      File.open(saved_file_on_disk_path, 'wb') do |file|
-        file.write(uploaded_file.read)
-      end
+      if google_drive_file_id
+        # Download the file temporarily for parsing
+        temp_file = Tempfile.new([uploaded_file.original_filename.parameterize.truncate(50, omission: ''), '.pdf'],
+                                 Rails.root.join('tmp'))
+        temp_file_path = temp_file.path
+        google_drive_service.download_file(google_drive_file_id, temp_file_path)
 
-      # Determine file type for parsing (you already have t.string :file_type in migration)
-      # You might want to store uploaded_file.content_type in the file_type column
-      determined_file_type = uploaded_file.content_type
+        determined_file_type = uploaded_file.content_type
 
-      if determined_file_type == 'application/pdf'
-        parser = PdfFormsParserService.new(saved_file_on_disk_path.to_s)
-        form_structure = parser.parse
-      elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-             'application/msword'].include?(determined_file_type)
-        Rails.logger.info 'DOCX/DOC parsing not yet implemented.'
-      elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-             'application/vnd.ms-excel'].include?(determined_file_type)
-        Rails.logger.info 'XLS/XLSX parsing not yet implemented.'
+        if determined_file_type == 'application/pdf'
+          parser = PdfFormsParserService.new(temp_file_path)
+          form_structure = parser.parse
+        elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+               'application/msword'].include?(determined_file_type)
+          Rails.logger.info 'DOCX/DOC parsing not yet implemented.'
+        elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+               'application/vnd.ms-excel'].include?(determined_file_type)
+          Rails.logger.info 'XLS/XLSX parsing not yet implemented.'
+        else
+          Rails.logger.warn "Unsupported file type: #{determined_file_type}"
+        end
+
+        # Clean up the temporary file
+        temp_file.close
+        temp_file.unlink
+
+        @form_template = FormTemplate.new(
+          id: form_template_params[:id],
+          name: form_template_params[:name],
+          form_structure: form_structure.to_json,
+          file_type: determined_file_type,
+          google_drive_file_id: google_drive_file_id
+        )
       else
-        Rails.logger.warn "Unsupported file type: #{determined_file_type}"
+        flash[:alert] = 'Failed to upload file to Google Drive.'
+        render :new, status: :unprocessable_entity
+        return
       end
-
-      @form_template = FormTemplate.new(
-        id: form_template_params[:id],
-        name: form_template_params[:name],
-        form_structure: form_structure.to_json,
-        original_filename: disk_file_name, # from your migration
-        file_path: saved_file_on_disk_path.to_s.sub(Rails.root.to_s, ''), # Use existing file_path
-        file_type: determined_file_type # from your migration
-      )
     else
       @form_template = FormTemplate.new(form_template_params.except(:original_file))
       flash[:alert] = 'File upload is required.'
@@ -62,7 +74,8 @@ class FormTemplatesController < ApplicationController
     if @form_template.save
       redirect_to @form_template, notice: 'Form template was successfully created.'
     else
-      File.delete(saved_file_on_disk_path) if uploaded_file && File.exist?(saved_file_on_disk_path)
+      # If save fails, attempt to delete the uploaded file from Google Drive
+      google_drive_service.delete_file(google_drive_file_id) if google_drive_file_id
       render :new, status: :unprocessable_entity
     end
   end
@@ -126,9 +139,7 @@ class FormTemplatesController < ApplicationController
 
   # DELETE /form_templates/1
   def destroy
-    # @form_template is set by before_action
-    # Optionally, delete the physical file when the record is destroyed
-    File.delete(@form_template.file_path) if File.exist?(@form_template.file_path)
+    # The before_destroy callback in the FormTemplate model handles Google Drive file deletion.
     @form_template.destroy
     redirect_to form_templates_path, notice: 'Form template deleted successfully.', status: :see_other
   end
@@ -143,6 +154,6 @@ class FormTemplatesController < ApplicationController
   # Only allow a list of trusted parameters through.
   def form_template_params
     params.require(:form_template).permit(:id, :name, :description, :original_file, :form_structure,
-                                          :form_structure_order, :label_name, :section_name, :page_number, :column_width, :required)
+                                          :form_structure_order, :label_name, :section_name, :page_number, :column_width, :required, :google_drive_file_id)
   end
 end

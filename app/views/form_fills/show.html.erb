@@ -1,5 +1,7 @@
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto p-8 bg-gray-100 min-h-screen">
   <h1 class="text-3xl font-bold mb-6 text-gray-800">Llenar Formulario: <%= @form_fill.name %></h1>
+
+
 
   <%# The form_with URL will need to be updated to a relevant path for submitting FormFill data %>
   <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json }, local: true, class: "space-y-6 bg-white p-8 rounded-lg shadow-md" do |form| %>
@@ -97,6 +99,16 @@
       </div>
     </div>
   <% end %>
+  
+  <div class="mt-6 bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">Acciones del Formulario</h2>
+    <div class="flex space-x-4">
+      <%= button_to 'Llenar y Enviar PDF', submit_form_form_fill_path(@form_fill), method: :post, class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500", data: { confirm: "¿Estás seguro de que deseas llenar y enviar el formulario PDF?" } %>
+      <% if @form_fill.google_drive_file_id.present? %>
+        <%= link_to 'Ver PDF Generado', "https://drive.google.com/file/d/#{@form_fill.google_drive_file_id}/view", target: "_blank", class: "inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+      <% end %>
+    </div>
+  </div>
 
   <div class="mt-8">
     <%# Consider changing this link to a more relevant one for FormFills, e.g., back to an index of FormFills if it exists %>

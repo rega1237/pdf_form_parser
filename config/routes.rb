@@ -1,16 +1,15 @@
 Rails.application.routes.draw do
-  # get "form_templates/index"
-  # get "form_templates/new"
-  # get "form_templates/create"
-  # get "form_templates/show"
-  # get "form_templates/destroy"
   resources :form_templates do
     member do
       get 'form_builder' # Route to display the form builder
     end
   end
 
-  resources :form_fills, only: %i[new create show update]
+  resources :form_fills, only: %i[index new create show update destroy] do
+    member do
+      post 'submit_form' # Ruta para procesar y enviar el formulario PDF
+    end
+  end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -21,6 +20,5 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  root 'home#index'
 end
