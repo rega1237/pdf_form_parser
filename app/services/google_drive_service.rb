@@ -60,6 +60,10 @@ class GoogleDriveService
     folder.id
   end
 
+  def get_file_url(file_id)
+    "https://drive.google.com/file/d/#{file_id}/view"
+  end
+
   private
 
   def authorize
