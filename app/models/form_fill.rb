@@ -1,4 +1,5 @@
 class FormFill < ApplicationRecord
   belongs_to :form_template
-  has_many :inspections, dependent: :destroy
+  belongs_to :inspection, optional: true
+  # validates :inspection_id, presence: true, if: :inspection_id_present?
 end

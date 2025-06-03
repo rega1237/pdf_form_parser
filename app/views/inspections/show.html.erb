@@ -70,8 +70,18 @@
           <div class="border-t border-gray-200 pt-6">
             <dt class="text-sm font-medium text-gray-500 mb-3">Formulario</dt>
             <dd class="text-sm text-gray-900">
-              <div class="font-medium text-base"><%= @form_fill.name %></div>
-              <div class="text-gray-600 mt-1">Basado en: <%= @form_template.name %></div>
+              <div class="font-medium text-base"><%= @form_template.name %></div>
+              <% if @form_fill.present? %>
+                <div class="text-gray-600 mt-1">Formulario llenado: <%= @form_fill.name %></div>
+                <div class="mt-3">
+                  <%= link_to 'Continuar Llenando Formulario', form_fill_path(@form_fill), class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500' %>
+                </div>
+              <% else %>
+                <div class="text-gray-600 mt-1">No hay formulario llenado para esta inspección</div>
+                <div class="mt-3">
+                  <%= link_to 'Crear Formulario', new_form_fill_path(form_template_id: @form_template.id, inspection_id: @inspection.id), class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500' %>
+                </div>
+              <% end %>
             </dd>
           </div>
           

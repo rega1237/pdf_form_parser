@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_03_131842) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_03_213822) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -62,7 +62,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_03_131842) do
     t.datetime "updated_at", null: false
     t.string "form_structure"
     t.string "google_drive_file_id"
+    t.bigint "inspection_id"
     t.index ["form_template_id"], name: "index_form_fills_on_form_template_id"
+    t.index ["inspection_id"], name: "index_form_fills_on_inspection_id"
   end
 
   create_table "form_templates", force: :cascade do |t|
@@ -79,13 +81,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_03_131842) do
   create_table "inspections", force: :cascade do |t|
     t.date "date", null: false
     t.bigint "property_id", null: false
-    t.bigint "form_fill_id", null: false
+    t.bigint "form_fill_id"
     t.text "notes"
     t.string "status", default: "pending"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "form_template_id", null: false
     t.index ["date"], name: "index_inspections_on_date"
     t.index ["form_fill_id"], name: "index_inspections_on_form_fill_id"
+    t.index ["form_template_id"], name: "index_inspections_on_form_template_id"
     t.index ["property_id", "date"], name: "index_inspections_on_property_id_and_date"
     t.index ["property_id"], name: "index_inspections_on_property_id"
     t.index ["status"], name: "index_inspections_on_status"
@@ -108,7 +112,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_03_131842) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "form_fills", "form_templates"
+  add_foreign_key "form_fills", "inspections"
   add_foreign_key "inspections", "form_fills"
+  add_foreign_key "inspections", "form_templates"
   add_foreign_key "inspections", "properties"
   add_foreign_key "properties", "customers"
 end
