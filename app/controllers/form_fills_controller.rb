@@ -15,6 +15,7 @@ class FormFillsController < ApplicationController
 
   def create
     @form_fill = FormFill.new(form_fill_params)
+    @form_fill.form_structure = @form_fill.form_template['form_structure']
     if @form_fill.save
       redirect_to form_fill_path(@form_fill), notice: 'Form fill was successfully created.'
     else

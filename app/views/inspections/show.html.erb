@@ -1,0 +1,155 @@
+<div class="max-w-7xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Inspección #<%= @inspection.id %></h1>
+      <p class="mt-2 text-sm text-gray-600">Detalles completos de la inspección programada</p>
+    </div>
+    <div class="flex space-x-3">
+      <%= link_to 'Editar', edit_inspection_path(@inspection), 
+          class: 'bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200' %>
+      <%= link_to 'Volver', inspections_path, 
+          class: 'bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition duration-200' %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Detalles de la Inspección</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Fecha</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @inspection.date.strftime('%d de %B de %Y') %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Estado</dt>
+              <dd class="mt-1">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <%= status_tailwind_class(@inspection.status) %>">
+                  <%= @inspection.status.humanize %>
+                </span>
+              </dd>
+            </div>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-6">
+            <dt class="text-sm font-medium text-gray-500 mb-3">Cliente</dt>
+            <dd class="text-sm text-gray-900">
+              <div class="font-medium text-base"><%= @customer.name %></div>
+              <div class="text-gray-600 mt-1"><%= @customer.address %></div>
+              <div class="text-gray-600 mt-1">
+                <% if @customer.email.present? %>
+                  <%= mail_to @customer.email, @customer.email, class: 'text-blue-600 hover:text-blue-800' %>
+                <% end %>
+                <% if @customer.phone_1.present? %>
+                  <span class="mx-2">|</span>
+                  <%= link_to @customer.phone_1, "tel:#{@customer.phone_1}", class: 'text-blue-600 hover:text-blue-800' %>
+                <% end %>
+              </div>
+            </dd>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-6">
+            <dt class="text-sm font-medium text-gray-500 mb-3">Propiedad</dt>
+            <dd class="text-sm text-gray-900">
+              <div class="font-medium text-base"><%= @property.property_name %></div>
+              <div class="text-gray-600 mt-1"><%= @property.address %>, <%= @property.city %> <%= @property.zip_code %></div>
+              <div class="text-gray-600 mt-1">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 mr-2">
+                  <%= @property.property_type %>
+                </span>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                  <%= @property.construction_type %>
+                </span>
+              </div>
+            </dd>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-6">
+            <dt class="text-sm font-medium text-gray-500 mb-3">Formulario</dt>
+            <dd class="text-sm text-gray-900">
+              <div class="font-medium text-base"><%= @form_fill.name %></div>
+              <div class="text-gray-600 mt-1">Basado en: <%= @form_template.name %></div>
+            </dd>
+          </div>
+          
+          <% if @inspection.notes.present? %>
+            <div class="border-t border-gray-200 pt-6">
+              <dt class="text-sm font-medium text-gray-500 mb-3">Notas</dt>
+              <dd class="text-sm text-gray-900 whitespace-pre-wrap"><%= @inspection.notes %></dd>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="space-y-6">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Acciones Rápidas</h3>
+        </div>
+        <div class="p-6 space-y-3">
+          <button onclick="updateStatus('completed')" 
+                  class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+            Marcar como Completada
+          </button>
+          <button onclick="updateStatus('in_progress')" 
+                  class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+            En Progreso
+          </button>
+          <button onclick="updateStatus('pending')" 
+                  class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+            Marcar como Pendiente
+          </button>
+          <button onclick="updateStatus('cancelled')" 
+                  class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+            Cancelar Inspección
+          </button>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Información Adicional</h3>
+        </div>
+        <div class="p-6">
+          <dl class="space-y-3">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Creada</dt>
+              <dd class="text-sm text-gray-900"><%= @inspection.created_at.strftime('%d/%m/%Y %H:%M') %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Última actualización</dt>
+              <dd class="text-sm text-gray-900"><%= @inspection.updated_at.strftime('%d/%m/%Y %H:%M') %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateStatus(status) {
+  if (confirm('¿Estás seguro de cambiar el estado de esta inspección?')) {
+    fetch(`/inspections/<%= @inspection.id %>/update_status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + data.errors.join(', '));
+      }
+    });
+  }
+}
+</script>
