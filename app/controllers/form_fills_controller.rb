@@ -6,17 +6,39 @@ class FormFillsController < ApplicationController
   def new
     @form_fill = FormFill.new
     @form_templates = FormTemplate.all
-    return unless params[:form_template_id]
 
-    @form_fill.form_template_id = params[:form_template_id]
-    selected_template = FormTemplate.find_by(id: params[:form_template_id])
-    @form_fill.form_structure = selected_template.form_structure if selected_template
+    # Asignar inspection_id si viene en los parámetros
+    @form_fill.inspection_id = params[:inspection_id] if params[:inspection_id].present?
+
+    # Asignar form_template_id si viene en los parámetros
+    if params[:form_template_id].present?
+      @form_fill.form_template_id = params[:form_template_id]
+      selected_template = FormTemplate.find_by(id: params[:form_template_id])
+      @form_fill.form_structure = selected_template.form_structure if selected_template
+    end
+
+    # Si tenemos inspection_id, pre-cargar el nombre del form_fill
+    return unless @form_fill.inspection_id.present?
+
+    inspection = Inspection.find_by(id: @form_fill.inspection_id)
+    return unless inspection && inspection.property
+
+    @form_fill.name = "Inspección ##{inspection.id} - #{inspection.property.property_name}"
   end
 
   def create
     @form_fill = FormFill.new(form_fill_params)
+    @form_fill.form_structure = @form_fill.form_template['form_structure']
+
     if @form_fill.save
-      redirect_to form_fill_path(@form_fill), notice: 'Form fill was successfully created.'
+      # Si el form_fill está asociado a una inspección, actualizar la inspección
+      if @form_fill.inspection_id.present?
+        inspection = Inspection.find(@form_fill.inspection_id)
+        inspection.update(form_fill_id: @form_fill.id)
+        redirect_to inspection_path(inspection), notice: 'Formulario creado exitosamente para la inspección.'
+      else
+        redirect_to form_fill_path(@form_fill), notice: 'Formulario creado exitosamente.'
+      end
     else
       @form_templates = FormTemplate.all
       render :new, status: :unprocessable_entity
@@ -125,6 +147,6 @@ class FormFillsController < ApplicationController
   private
 
   def form_fill_params
-    params.require(:form_fill).permit(:name, :form_template_id, :form_structure, :google_drive_file_id)
+    params.require(:form_fill).permit(:name, :form_template_id, :form_structure, :google_drive_file_id, :inspection_id)
   end
 end

@@ -55,8 +55,10 @@ class FormTemplatesController < ApplicationController
         @form_template = FormTemplate.new(
           id: form_template_params[:id],
           name: form_template_params[:name],
-          form_structure: form_structure.to_json,
+          original_filename: uploaded_file.original_filename,
+          file_path: google_drive_service.get_file_url(google_drive_file_id),
           file_type: determined_file_type,
+          form_structure: form_structure.to_json,
           google_drive_file_id: google_drive_file_id
         )
       else

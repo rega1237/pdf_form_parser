@@ -1,18 +1,18 @@
 <div>
-  <h1 class="text-2xl font-bold mb-4">Clientes</h1>
+  <h1 class="text-2xl font-bold mb-4">Customers</h1>
 
-<%= link_to "Nuevo Cliente", new_customer_path, class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block" %>
+<%= link_to "New Customer", new_customer_path, class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block" %>
 
 <div class="overflow-x-auto">
   <table class="min-w-full bg-white border border-gray-200">
     <thead>
       <tr>
         <th class="py-2 px-4 border-b">Thumbnail</th>
-        <th class="py-2 px-4 border-b">Tipo de Cliente</th>
-        <th class="py-2 px-4 border-b">Nombre</th>
+        <th class="py-2 px-4 border-b">Customer Type</th>
+        <th class="py-2 px-4 border-b">Name</th>
         <th class="py-2 px-4 border-b">Email</th>
-        <th class="py-2 px-4 border-b">Teléfono 1</th>
-        <th class="py-2 px-4 border-b">Acciones</th>
+        <th class="py-2 px-4 border-b">Phone 1</th>
+        <th class="py-2 px-4 border-b">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -30,7 +30,7 @@
           <td class="py-2 px-4 border-b"><%= customer.email %></td>
           <td class="py-2 px-4 border-b"><%= customer.phone_1 %></td>
           <td class="py-2 px-4 border-b">
-            <%= link_to "Ver", customer, class: "text-blue-500 hover:underline" %>
+            <%= link_to "View", customer, class: "text-blue-500 hover:underline" %>
           </td>
         </tr>
       <% end %>

@@ -30,6 +30,10 @@
       <%= form.label :form_structure, class: "block text-sm font-medium text-gray-700" %>
       <%= form.text_area :form_structure, rows: 10, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
     </div>
+    
+    <% if params[:inspection_id].present? %>
+      <%= form.hidden_field :inspection_id, value: params[:inspection_id] %>
+    <% end %>
 
     <%# We can add more fields here later if FormFill model gets more attributes %>
 

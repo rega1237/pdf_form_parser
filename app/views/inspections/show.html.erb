@@ -1,0 +1,165 @@
+<div class="max-w-7xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Inspection #<%= @inspection.id %></h1>
+      <p class="mt-2 text-sm text-gray-600">Full details of the scheduled inspection</p>
+    </div>
+    <div class="flex space-x-3">
+      <%= link_to 'Edit', edit_inspection_path(@inspection),
+          class: 'bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200' %>
+      <%= link_to 'Back', inspections_path,
+          class: 'bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition duration-200' %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Inspection Details</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Date</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @inspection.date.strftime('%d de %B de %Y') %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Status</dt>
+              <dd class="mt-1">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <%= status_tailwind_class(@inspection.status) %>">
+                  <%= @inspection.status.humanize %>
+                </span>
+              </dd>
+            </div>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-6">
+            <dt class="text-sm font-medium text-gray-500 mb-3">Customer</dt>
+            <dd class="text-sm text-gray-900">
+              <div class="font-medium text-base"><%= @customer.name %></div>
+              <div class="text-gray-600 mt-1"><%= @customer.address %></div>
+              <div class="text-gray-600 mt-1">
+                <% if @customer.email.present? %>
+                  <%= mail_to @customer.email, @customer.email, class: 'text-blue-600 hover:text-blue-800' %>
+                <% end %>
+                <% if @customer.phone_1.present? %>
+                  <span class="mx-2">|</span>
+                  <%= link_to @customer.phone_1, "tel:#{@customer.phone_1}", class: 'text-blue-600 hover:text-blue-800' %>
+                <% end %>
+              </div>
+            </dd>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-6">
+            <dt class="text-sm font-medium text-gray-500 mb-3">Property</dt>
+            <dd class="text-sm text-gray-900">
+              <div class="font-medium text-base"><%= @property.property_name %></div>
+              <div class="text-gray-600 mt-1"><%= @property.address %>, <%= @property.city %> <%= @property.zip_code %></div>
+              <div class="text-gray-600 mt-1">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 mr-2">
+                  <%= @property.property_type %>
+                </span>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                  <%= @property.construction_type %>
+                </span>
+              </div>
+            </dd>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-6">
+            <dt class="text-sm font-medium text-gray-500 mb-3">Form</dt>
+            <dd class="text-sm text-gray-900">
+              <div class="font-medium text-base"><%= @form_template.name %></div>
+              <% if @form_fill.present? %>
+                <div class="text-gray-600 mt-1">Filled form: <%= @form_fill.name %></div>
+                <div class="mt-3">
+                  <%= link_to 'Continue Filling Form', form_fill_path(@form_fill), class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500' %>
+                </div>
+              <% else %>
+                <div class="text-gray-600 mt-1">No form filled for this inspection</div>
+                <div class="mt-3">
+                  <%= link_to 'Create Form', new_form_fill_path(form_template_id: @form_template.id, inspection_id: @inspection.id), class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500' %>
+                </div>
+              <% end %>
+            </dd>
+          </div>
+          
+          <% if @inspection.notes.present? %>
+            <div class="border-t border-gray-200 pt-6">
+              <dt class="text-sm font-medium text-gray-500 mb-3">Notes</dt>
+              <dd class="text-sm text-gray-900 whitespace-pre-wrap"><%= @inspection.notes %></dd>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="space-y-6">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Quick Actions</h3>
+        </div>
+        <div class="p-6 space-y-3">
+          <button onclick="updateStatus('completed')" 
+                  class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+            Mark as Completed
+          </button>
+          <button onclick="updateStatus('in_progress')" 
+                  class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+            In Progress
+          </button>
+          <button onclick="updateStatus('pending')" 
+                  class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+            Mark as Pending
+          </button>
+          <button onclick="updateStatus('cancelled')" 
+                  class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+            Cancel Inspection
+          </button>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Additional Information</h3>
+        </div>
+        <div class="p-6">
+          <dl class="space-y-3">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Created</dt>
+              <dd class="text-sm text-gray-900"><%= @inspection.created_at.strftime('%d/%m/%Y %H:%M') %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Last updated</dt>
+              <dd class="text-sm text-gray-900"><%= @inspection.updated_at.strftime('%d/%m/%Y %H:%M') %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateStatus(status) {
+  if (confirm('Are you sure you want to change the status of this inspection?')) {
+    fetch(`/inspections/<%= @inspection.id %>/update_status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + data.errors.join(', '));
+      }
+    });
+  }
+}
+</script>
