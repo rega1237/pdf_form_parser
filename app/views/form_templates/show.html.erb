@@ -1,36 +1,147 @@
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-3xl font-bold mb-6"><%= @form_template.name %></h1>
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  </style>
+<% end %>
 
-  <div class="bg-white shadow-md rounded-lg p-6">
-    <p class="mb-4">
-      <strong class="font-semibold text-gray-700">Original Filename:</strong>
-      <%= @form_template.original_filename %>
-    </p>
-    <p class="mb-4">
-      <strong class="font-semibold text-gray-700">File Path:</strong>
-      <%= @form_template.file_path %>
-    </p>
-    <p class="mb-4">
-      <strong class="font-semibold text-gray-700">File Type:</strong>
-      <%= @form_template.file_type %>
-    </p>
-    <p class="mb-4">
-      <strong class="font-semibold text-gray-700">Form Structure (Raw):</strong>
-      <pre class="bg-gray-100 p-3 rounded-md overflow-x-auto"><%= @form_template.form_structure %></pre>
-      <%# This will be empty or nil for now %>
-    </p>
-    <p class="mb-4">
-      <strong class="font-semibold text-gray-700">Uploaded At:</strong>
-      <%= @form_template.created_at.strftime("%B %d, %Y %H:%M") %>
-    </p>
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    <!-- Header con navegación -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div class="mb-4 sm:mb-0">
+        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">
+          <%= @form_template.name %>
+        </h1>
+        <p class="text-slate-300 text-sm lg:text-base">
+          Form Template Details
+        </p>
+      </div>
+      
+      <!-- Botón de navegación -->
+      <%= link_to form_templates_path, class: "inline-flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors duration-200 text-sm font-medium" do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Back to Templates
+      <% end %>
+    </div>
+
+          <!-- Botones de Acción -->
+      <div class="max-w-4xl mx-auto mb-4 space-y-6">
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        <h2 class="text-white font-semibold text-lg lg:text-xl mb-6">Actions</h2>
+        
+        <div class="flex flex-col sm:flex-row gap-4">
+          <!-- Form Builder Button -->
+          <%= link_to form_builder_form_template_path(@form_template), 
+              class: "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center" do %>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            Form Builder
+          <% end %>
+        </div>
+      </div>
+      </div>
+
+    <!-- Contenido principal -->
+    <div class="max-w-4xl mx-auto space-y-6">
+      <!-- Información del Template -->
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        <div class="flex items-center mb-6">
+          <div class="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center mr-3">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <h2 class="text-white font-semibold text-lg lg:text-xl">Template Information</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Original Filename -->
+          <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <label class="block text-white font-semibold text-sm mb-2">Original Filename</label>
+            <p class="text-slate-300 text-sm lg:text-base break-all">
+              <%= @form_template.original_filename %>
+            </p>
+          </div>
+
+          <!-- File Type -->
+          <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <label class="block text-white font-semibold text-sm mb-2">File Type</label>
+            <div class="flex items-center">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                <%= @form_template.file_type&.upcase || 'Unknown' %>
+              </span>
+            </div>
+          </div>
+
+          <!-- File Path -->
+          <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 md:col-span-2">
+            <label class="block text-white font-semibold text-sm mb-2">File Path</label>
+            <p class="text-slate-300 text-sm lg:text-base font-mono break-all">
+              <%= @form_template.file_path %>
+            </p>
+          </div>
+
+          <!-- Upload Date -->
+          <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 md:col-span-2">
+            <label class="block text-white font-semibold text-sm mb-2">Uploaded At</label>
+            <div class="flex items-center">
+              <svg class="w-5 h-5 text-slate-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <p class="text-slate-300 text-sm lg:text-base">
+                <%= @form_template.created_at.strftime("%B %d, %Y at %H:%M") %>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Structure -->
+      <% if @form_template.form_structure.present? %>
+        <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+          <div class="flex items-center mb-6">
+            <div class="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center mr-3">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+              </svg>
+            </div>
+            <h2 class="text-white font-semibold text-lg lg:text-xl">Form Structure</h2>
+          </div>
+          
+          <div class="bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 border border-white/10 overflow-x-auto">
+            <pre class="text-slate-300 text-sm font-mono whitespace-pre-wrap"><%= @form_template.form_structure %></pre>
+          </div>
+        </div>
+      <% else %>
+        <!-- Sección informativa cuando no hay estructura -->
+        <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in">
+          <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center mt-1">
+              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-2">Form Structure Not Available</h3>
+              <p class="text-slate-300 text-sm">
+                The form structure hasn't been processed yet. Use the Form Builder to create and configure your form structure.
+              </p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
   </div>
-
-  <div class="mt-8">
-    <%= link_to 'Fill This Form', new_form_fill_path(form_template_id: @form_template.id), class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" %>
-    <%= link_to 'Form builder', form_builder_form_template_path(@form_template), class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2" %>
-    <%= link_to 'Back to Templates', form_templates_path, class: "bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" %>
-  </div>
-
-  <%# Later, we will add a section here to display the rendered web form %>
-  <%# And a list of submissions for this template %>
 </div>
