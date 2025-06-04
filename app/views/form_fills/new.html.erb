@@ -1,46 +1,139 @@
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-3xl font-bold mb-6 text-gray-800">New Form Fill</h1>
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  </style>
+<% end %>
 
-  <%= form_with model: @form_fill, url: form_fills_path, local: true, class: "space-y-6 bg-white p-8 rounded-lg shadow-md" do |form| %>
-    <% if @form_fill.errors.any? %>
-      <div id="error_explanation" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-        <strong class="font-bold">Holy smokes!</strong>
-        <span class="block sm:inline"><%= pluralize(@form_fill.errors.count, "error") %> prohibited this form_fill from being saved:</span>
-        <ul class="mt-3 list-disc list-inside text-sm">
-          <% @form_fill.errors.full_messages.each do |message| %>
-            <li><%= message %></li>
-          <% end %>
-        </ul>
-      </div>
-    <% end %>
-
-    <div class="field">
-      <%= form.label :name, class: "block text-sm font-medium text-gray-700" %>
-      <%= form.text_field :name, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
-    </div>
-
-    <div class="field">
-      <%= form.label :form_template_id, class: "block text-sm font-medium text-gray-700" %>
-      <%= form.collection_select :form_template_id, @form_templates, :id, :name, 
-                                { selected: @form_fill.form_template_id, prompt: 'Select a Form Template' }, 
-                                { class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" } %>
-    </div>
-
-    <div class="field hidden">
-      <%= form.label :form_structure, class: "block text-sm font-medium text-gray-700" %>
-      <%= form.text_area :form_structure, rows: 10, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
-    </div>
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
     
-    <% if params[:inspection_id].present? %>
-      <%= form.hidden_field :inspection_id, value: params[:inspection_id] %>
-    <% end %>
-
-    <%# We can add more fields here later if FormFill model gets more attributes %>
-
-    <div class="actions">
-      <%= form.submit 'Create Form Fill', class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-pointer" %>
+    <!-- Header con navegación -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div class="mb-4 sm:mb-0">
+        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">New Form Fill</h1>
+        <p class="text-slate-300 text-sm lg:text-base">Create a new form fill for your inspection</p>
+      </div>
+      <%= link_to form_fills_path, class: "inline-flex items-center text-slate-300 hover:text-white transition-colors duration-200" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back to Form Fills
+      <% end %>
     </div>
-  <% end %>
 
-  <%= link_to 'Back to Form Templates', form_templates_path, class: "mt-4 inline-block text-blue-600 hover:text-blue-800" %>
+    <!-- Contenido principal -->
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        
+        <!-- Manejo de errores -->
+        <% if @form_fill.errors.any? %>
+          <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-6 animate-slide-up">
+            <div class="flex items-center mb-3">
+              <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              <h3 class="text-red-400 font-semibold">Validation Errors</h3>
+            </div>
+            <ul class="text-red-300 text-sm space-y-1">
+              <% @form_fill.errors.full_messages.each do |message| %>
+                <li class="flex items-start">
+                  <span class="mr-2">•</span>
+                  <%= message %>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <%= form_with model: @form_fill, url: form_fills_path, local: true, class: "space-y-6" do |form| %>
+          
+          <!-- Campo Name -->
+          <div class="space-y-2">
+            <%= form.label :name, "Form Fill Name", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+              </svg>
+              <%= form.text_field :name,
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "Enter form fill name" %>
+            </div>
+          </div>
+
+          <!-- Campo Form Template -->
+          <div class="space-y-2">
+            <%= form.label :form_template_id, "Form Template", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <%= form.collection_select :form_template_id, @form_templates, :id, :name, 
+                                        { selected: @form_fill.form_template_id, prompt: 'Select a Form Template' }, 
+                                        { class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" } %>
+              <svg class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Campo Inspection -->
+          <div class="space-y-2">
+            <%= form.label :inspection_id, "Inspection", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+              </svg>
+              <%= form.select :inspection_id, options_for_select(@inspections, @form_fill.inspection_id), 
+                                            { prompt: 'Select an Inspection' }, 
+                                            { class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" } %>
+              <svg class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Hidden field para inspection_id si viene por parámetro -->
+          <% if params[:inspection_id].present? %>
+            <%= form.hidden_field :inspection_id, value: params[:inspection_id] %>
+          <% end %>
+
+          <!-- Sección informativa -->
+          <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in">
+            <div class="flex items-start space-x-3">
+              <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mt-1">
+                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-white font-semibold mb-2">About Form Fills</h3>
+                <p class="text-slate-300 text-sm">Form fills are instances of form templates that can be completed during inspections. Select a template and associate it with an inspection to get started.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <%= form.submit 'Create Form Fill', 
+                class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center" %>
+            
+            <%= link_to form_fills_path, 
+                class: "bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 px-6 rounded-xl transition-colors duration-200 text-center" do %>
+              Cancel
+            <% end %>
+          </div>
+
+        <% end %>
+      </div>
+    </div>
+  </div>
 </div>
