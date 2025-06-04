@@ -1,28 +1,28 @@
 <div class="m-auto">
 <div class="flex justify-between items-center mb-6">
-  <h1 class="text-3xl font-bold text-gray-900">Inspecciones</h1>
-  <%= link_to 'Nueva Inspección', new_inspection_path, 
+  <h1 class="text-3xl font-bold text-gray-900">Inspections</h1>
+  <%= link_to 'New Inspection', new_inspection_path,
       class: 'bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200' %>
 </div>
 
-<!-- Filtros -->
+<!-- Filters -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
   <div class="p-6">
     <%= form_with url: inspections_path, method: :get, local: true, class: 'grid grid-cols-1 md:grid-cols-5 gap-4' do |form| %>
       <div>
-        <%= form.label :customer_id, 'Cliente', class: 'block text-sm font-medium text-gray-700 mb-1' %>
-        <%= form.select :customer_id, options_from_collection_for_select(@customers, :id, :name, params[:customer_id]), 
-                       { prompt: 'Todos los clientes' }, 
+        <%= form.label :customer_id, 'Customer', class: 'block text-sm font-medium text-gray-700 mb-1' %>
+        <%= form.select :customer_id, options_from_collection_for_select(@customers, :id, :name, params[:customer_id]),
+                       { prompt: 'All Customers' },
                        { class: 'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500' } %>
       </div>
       <div>
-        <%= form.label :status, 'Estado', class: 'block text-sm font-medium text-gray-700 mb-1' %>
-        <%= form.select :status, options_for_select(@statuses.map {|s| [s.humanize, s]}, params[:status]), 
-                       { prompt: 'Todos los estados' }, 
+        <%= form.label :status, 'Status', class: 'block text-sm font-medium text-gray-700 mb-1' %>
+        <%= form.select :status, options_for_select(@statuses.map {|s| [s.humanize, s]}, params[:status]),
+                       { prompt: 'All Statuses' },
                        { class: 'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500' } %>
       </div>
       <div>
-        <%= form.label :from_date, 'Desde', class: 'block text-sm font-medium text-gray-700 mb-1' %>
+        <%= form.label :from_date, 'From', class: 'block text-sm font-medium text-gray-700 mb-1' %>
         <%= form.date_field :from_date, value: params[:from_date], 
             class: 'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500' %>
       </div>
@@ -32,25 +32,25 @@
             class: 'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500' %>
       </div>
       <div class="flex items-end space-x-2">
-        <%= form.submit 'Filtrar', class: 'bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200' %>
-        <%= link_to 'Limpiar', inspections_path, class: 'bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md transition duration-200' %>
+        <%= form.submit 'Filter', class: 'bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200' %>
+        <%= link_to 'Clear', inspections_path, class: 'bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md transition duration-200' %>
       </div>
     <% end %>
   </div>
 </div>
 
-<!-- Tabla de inspecciones -->
+<!-- Inspections Table -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Propiedad</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Formulario</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
@@ -75,10 +75,10 @@
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-              <%= link_to 'Ver', inspection, class: 'text-blue-600 hover:text-blue-900' %>
-              <%= link_to 'Editar', edit_inspection_path(inspection), class: 'text-green-600 hover:text-green-900' %>
-              <%= link_to 'Eliminar', inspection, method: :delete, 
-                         confirm: '¿Estás seguro?', class: 'text-red-600 hover:text-red-900' %>
+              <%= link_to 'View', inspection, class: 'text-blue-600 hover:text-blue-900' %>
+              <%= link_to 'Edit', edit_inspection_path(inspection), class: 'text-green-600 hover:text-green-900' %>
+              <%= link_to 'Delete', inspection, method: :delete,
+                         confirm: 'Are you sure?', class: 'text-red-600 hover:text-red-900' %>
             </td>
           </tr>
         <% end %>
@@ -89,8 +89,8 @@
 
 <% if @inspections.empty? %>
   <div class="text-center py-12">
-    <div class="text-gray-500 text-lg">No se encontraron inspecciones</div>
-    <%= link_to 'Crear primera inspección', new_inspection_path, 
+    <div class="text-gray-500 text-lg">No inspections found</div>
+    <%= link_to 'Create first inspection', new_inspection_path,
         class: 'mt-4 inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg' %>
   </div>
 <% end %>

@@ -1,16 +1,16 @@
 <div class="container mx-auto p-8 bg-gray-100 min-h-screen">
-  <h1 class="text-3xl font-bold mb-6 text-gray-800">Formularios Llenados</h1>
+  <h1 class="text-3xl font-bold mb-6 text-gray-800">Form Fills</h1>
 
   <% if @form_fills.empty? %>
-    <p class="text-gray-600">No hay formularios llenados disponibles.</p>
+    <p class="text-gray-600">No form fills available.</p>
   <% else %>
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plantilla</th>
-            <th scope="col" class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
+            <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
@@ -19,8 +19,8 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= form_fill.name %></td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= form_fill.form_template.name %></td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <%= link_to 'Ver', form_fill_path(form_fill), class: "text-indigo-600 hover:text-indigo-900 mr-4" %>
-                <%= link_to 'Eliminar', form_fill_path(form_fill), data: { turbo_method: :delete, turbo_confirm: '¿Estás seguro de que quieres eliminar este formulario llenado?' }, class: "text-red-600 hover:text-red-900" %>
+                <%= link_to 'View', form_fill_path(form_fill), class: "text-indigo-600 hover:text-indigo-900 mr-4" %>
+                <%= link_to 'Delete', form_fill_path(form_fill), data: { turbo_method: :delete, turbo_confirm: 'Are you sure you want to delete this form fill?' }, class: "text-red-600 hover:text-red-900" %>
               </td>
             </tr>
           <% end %>
@@ -30,6 +30,6 @@
   <% end %>
 
   <div class="mt-8">
-    <%= link_to 'Crear Nuevo Formulario Llenado', new_form_fill_path, class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+    <%= link_to 'Create New Form Fill', new_form_fill_path, class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
   </div>
 </div>
