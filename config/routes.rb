@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  devise_for :users
   resources :customers, only: %i[index show new create edit update]
   resources :properties
   resources :form_templates do
