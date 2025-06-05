@@ -13,6 +13,7 @@ export default class extends Controller {
     this.totalPages = this.pageContentTargets.length;
     this.updateButtonStates();
     this.showCurrentPage();
+    this.updateProgress();
   }
 
   nextPage() {
@@ -20,6 +21,7 @@ export default class extends Controller {
       this.currentPage++;
       this.showCurrentPage();
       this.updateButtonStates();
+      this.updateProgress();
     }
   }
 
@@ -28,6 +30,7 @@ export default class extends Controller {
       this.currentPage--;
       this.showCurrentPage();
       this.updateButtonStates();
+      this.updateProgress();
     }
   }
 
@@ -54,6 +57,20 @@ export default class extends Controller {
       this.nextPageBtnTarget.classList.add("hidden");
       this.submitFormBtnTarget.classList.remove("hidden");
       this.backPageBtnTarget.disabled = true; // Also disable back if only one page
+    }
+  }
+
+  // Update progress bar
+  updateProgress() {
+    const progressBar = document.getElementById("progress-bar");
+    const pageIndicator = document.getElementById("page-indicator");
+
+    if (progressBar && pageIndicator) {
+      const progressPercentage =
+        ((this.currentPage + 1) / this.totalPages) * 100;
+      progressBar.style.width = progressPercentage + "%";
+      pageIndicator.textContent =
+        "Página " + (this.currentPage + 1) + " de " + this.totalPages;
     }
   }
 }

@@ -1,12 +1,112 @@
-<div class="container mx-auto p-8 bg-gray-100 min-h-screen flex flex-col items-center justify-center">
-<h1 class="text-3xl font-bold underline">
-  Welcome to Inspections app
-</h1>
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  </style>
+<% end %>
 
-  <div class="flex space-x-4">
-    <%= link_to "View Templates", form_templates_path, class: "bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105" %>
-    <%= link_to "Fill Forms", form_fills_path, class: "bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105" %>
-    <%= link_to "View Customers", customers_path, class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105" %>
-    <%= link_to "View Inspections", inspections_path, class: "bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105" %>
+<div class="container mx-auto px-4 py-8 lg:py-16">
+  <!-- Mensaje de bienvenida -->
+  <div class="text-center mb-12 animate-fade-in">
+    <h2 class="text-xl lg:text-2xl text-slate-300 mb-4 font-light">
+      Welcome to your Control Panel
+    </h2>
+    <p class="text-slate-400 text-sm lg:text-base max-w-2xl mx-auto leading-relaxed">
+      Manage your inspections efficiently. Quickly access templates, forms, clients and inspection history.
+    </p>
+  </div>
+
+  <!-- Grid de botones principales -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-6xl mx-auto">
+    <!-- Ver Plantillas -->
+    <div class="group animate-slide-up" style="animation-delay: 0.1s;">
+      <%= link_to form_templates_path, class: "block bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-indigo-400/20 transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/25" do %>
+        <div class="text-center">
+          <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
+            <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-bold text-lg lg:text-xl mb-2">Library</h3>
+          <p class="text-indigo-100 text-sm lg:text-base opacity-90 leading-relaxed">
+            Create and manage inspection templates
+          </p>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Llenar Formularios -->
+    <div class="group animate-slide-up" style="animation-delay: 0.2s;">
+      <%= link_to form_fills_path, class: "block bg-gradient-to-br from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-emerald-400/20 transition-all duration-300 hover:scale-105 hover:shadow-emerald-500/25" do %>
+        <div class="text-center">
+          <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
+            <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-bold text-lg lg:text-xl mb-2">Inspections forms</h3>
+          <p class="text-emerald-100 text-sm lg:text-base opacity-90 leading-relaxed">
+            Complete inspection forms
+          </p>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Ver Clientes -->
+    <div class="group animate-slide-up" style="animation-delay: 0.3s;">
+      <%= link_to customers_path, class: "block bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-blue-400/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/25" do %>
+        <div class="text-center">
+          <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
+            <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-bold text-lg lg:text-xl mb-2">Customers</h3>
+          <p class="text-blue-100 text-sm lg:text-base opacity-90 leading-relaxed">
+            Manage customer information
+          </p>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Ver Inspecciones -->
+    <div class="group animate-slide-up" style="animation-delay: 0.4s;">
+      <%= link_to inspections_path, class: "block bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-2xl p-6 lg:p-8 shadow-2xl border border-amber-400/20 transition-all duration-300 hover:scale-105 hover:shadow-orange-500/25" do %>
+        <div class="text-center">
+          <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
+            <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-bold text-lg lg:text-xl mb-2">Inspections</h3>
+          <p class="text-orange-100 text-sm lg:text-base opacity-90 leading-relaxed">
+            Check inspections and history
+          </p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Información adicional para móviles -->
+  <div class="mt-12 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in lg:hidden">
+    <div class="flex items-center space-x-3 mb-3">
+      <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <h3 class="text-white font-semibold">Optimized for mobile</h3>
+    </div>
+    <p class="text-slate-300 text-sm leading-relaxed">
+      This application is designed to work seamlessly on your mobile device or tablet during field inspections.
+    </p>
   </div>
 </div>

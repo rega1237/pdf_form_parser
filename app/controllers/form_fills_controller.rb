@@ -6,24 +6,25 @@ class FormFillsController < ApplicationController
   def new
     @form_fill = FormFill.new
     @form_templates = FormTemplate.all
-
-    # Asignar inspection_id si viene en los parámetros
-    @form_fill.inspection_id = params[:inspection_id] if params[:inspection_id].present?
-
-    # Asignar form_template_id si viene en los parámetros
-    if params[:form_template_id].present?
-      @form_fill.form_template_id = params[:form_template_id]
-      selected_template = FormTemplate.find_by(id: params[:form_template_id])
-      @form_fill.form_structure = selected_template.form_structure if selected_template
+    @inspections = Inspection.includes(property: :customer).where(form_fill_id: nil).map do |inspection|
+      ["#{inspection.property.customer.name} - #{inspection.property.property_name}", inspection.id]
     end
 
-    # Si tenemos inspection_id, pre-cargar el nombre del form_fill
-    return unless @form_fill.inspection_id.present?
+    # Asignar inspection_id si viene en los parámetros
+    if params[:inspection_id].present?
+      @form_fill.inspection_id = params[:inspection_id]
+      inspection = Inspection.find_by(id: @form_fill.inspection_id)
+      if inspection && inspection.property
+        @form_fill.name = "Inspección ##{inspection.id} - #{inspection.property.property_name}"
+      end
+    end
 
-    inspection = Inspection.find_by(id: @form_fill.inspection_id)
-    return unless inspection && inspection.property
+    # Asignar form_template_id si viene en los parámetros
+    return unless params[:form_template_id].present?
 
-    @form_fill.name = "Inspección ##{inspection.id} - #{inspection.property.property_name}"
+    @form_fill.form_template_id = params[:form_template_id]
+    selected_template = FormTemplate.find_by(id: params[:form_template_id])
+    @form_fill.form_structure = selected_template.form_structure if selected_template
   end
 
   def create
@@ -146,6 +147,12 @@ class FormFillsController < ApplicationController
 
   private
 
+  # Use callbacks to share common setup or constraints between actions.
+  def set_form_fill
+    @form_fill = FormFill.find(params[:id])
+  end
+
+  # Only allow a list of trusted parameters through.
   def form_fill_params
     params.require(:form_fill).permit(:name, :form_template_id, :form_structure, :google_drive_file_id, :inspection_id)
   end

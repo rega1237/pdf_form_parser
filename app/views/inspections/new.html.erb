@@ -1,10 +1,58 @@
-<div class="max-w-4xl mx-auto">
-  <div class="mb-6">
-    <h1 class="text-3xl font-bold text-gray-900">New Inspection</h1>
-    <p class="mt-2 text-sm text-gray-600">Complete the information to schedule a new inspection.</p>
-  </div>
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  </style>
+<% end %>
 
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <%= render 'form', inspection: @inspection %>
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    <!-- Header con navegación -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div>
+        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">Nueva Inspección</h1>
+        <p class="text-slate-300 text-sm lg:text-base">Completa la información para programar una nueva inspección de campo.</p>
+      </div>
+      <div class="mt-4 sm:mt-0">
+        <%= link_to inspections_path, class: "inline-flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors duration-200 text-sm font-medium" do %>
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Volver a Inspecciones
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        
+        <!-- Sección informativa -->
+        <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in mb-8">
+          <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mt-1">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-2">Información de la Inspección</h3>
+              <p class="text-slate-300 text-sm">Asegúrate de completar todos los campos requeridos. Selecciona primero el cliente para cargar sus propiedades disponibles.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario -->
+        <%= render 'form', inspection: @inspection %>
+      </div>
+    </div>
   </div>
 </div>
