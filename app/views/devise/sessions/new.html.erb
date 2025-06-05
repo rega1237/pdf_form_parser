@@ -1,26 +1,122 @@
-<h2>Log in</h2>
-
-<%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
-  <div class="field">
-    <%= f.label :email %><br />
-    <%= f.email_field :email, autofocus: true, autocomplete: "email" %>
-  </div>
-
-  <div class="field">
-    <%= f.label :password %><br />
-    <%= f.password_field :password, autocomplete: "current-password" %>
-  </div>
-
-  <% if devise_mapping.rememberable? %>
-    <div class="field">
-      <%= f.check_box :remember_me %>
-      <%= f.label :remember_me %>
-    </div>
-  <% end %>
-
-  <div class="actions">
-    <%= f.submit "Log in" %>
-  </div>
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  </style>
 <% end %>
 
-<%= render "devise/shared/links" %>
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    <!-- Header -->
+    <div class="text-center mb-8 animate-fade-in">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-2xl mb-6 shadow-2xl">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <h1 class="text-3xl lg:text-4xl font-bold text-white mb-2">Inspections Pro</h1>
+      <p class="text-slate-300 text-sm lg:text-base">Log in to continue</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-md mx-auto">
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        
+        <!-- Sign In Form -->
+        <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "space-y-6" }) do |f| %>
+          
+          <!-- Email Field -->
+          <div class="space-y-2">
+            <%= f.label :email, "Email", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+                </svg>
+              </div>
+              <%= f.email_field :email, 
+                  autofocus: true, 
+                  autocomplete: "email",
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "you@email.com" %>
+            </div>
+          </div>
+
+          <!-- Password Field -->
+          <div class="space-y-2">
+            <%= f.label :password, "Password", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+              </div>
+              <%= f.password_field :password, 
+                  autocomplete: "current-password",
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "••••••••" %>
+            </div>
+          </div>
+
+          <!-- Remember Me Checkbox -->
+          <% if devise_mapping.rememberable? %>
+            <div class="flex items-center space-x-3">
+              <%= f.check_box :remember_me, 
+                  class: "w-4 h-4 text-indigo-600 bg-white/5 border-white/20 rounded focus:ring-indigo-500 focus:ring-2" %>
+              <%= f.label :remember_me, "Recordarme", class: "text-slate-300 text-sm lg:text-base select-none cursor-pointer" %>
+            </div>
+          <% end %>
+
+          <!-- Submit Button -->
+          <div class="pt-2">
+            <%= f.submit "Log In", 
+                class: "w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-transparent" %>
+          </div>
+
+        <% end %>
+
+        <!-- Divider -->
+        <div class="my-8">
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-white/20"></div>
+            </div>
+            <div class="relative flex justify-center">
+              <span class="px-4 bg-slate-800 text-slate-400 text-sm">o</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Links Section -->
+        <div class="text-center space-y-3">
+          <%= render "devise/shared/links" %>
+        </div>
+
+      </div>
+
+      <!-- Info Section -->
+      <div class="mt-8 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in">
+        <div class="flex items-start space-x-3">
+          <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mt-1">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-white font-semibold mb-2">Secure Access</h3>
+            <p class="text-slate-300 text-sm">Your information is protected with enterprise-level encryption. Access all your inspections from any device.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
