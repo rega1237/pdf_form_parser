@@ -1,0 +1,164 @@
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  </style>
+<% end %>
+
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div>
+        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">Create Account</h1>
+        <p class="text-slate-300 text-sm lg:text-base">Join Inspections Pro to start managing your field inspections</p>
+      </div>
+      <div class="mt-4 sm:mt-0">
+        <%= link_to new_session_path(resource_name), class: "inline-flex items-center bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02]" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+          Back to Sign In
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-md mx-auto">
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        
+        <!-- Welcome Section -->
+        <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 mb-6 animate-fade-in">
+          <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center mt-1">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-2">Professional Inspections</h3>
+              <p class="text-slate-300 text-sm">Get started with our comprehensive field inspection management system</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Messages -->
+        <% if resource.errors.any? %>
+          <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-6 animate-slide-up">
+            <div class="flex items-center mb-3">
+              <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <h3 class="text-red-400 font-semibold">Please correct the following errors:</h3>
+            </div>
+            <ul class="text-red-300 text-sm space-y-1">
+              <% resource.errors.full_messages.each do |message| %>
+                <li class="flex items-start">
+                  <span class="text-red-400 mr-2">•</span>
+                  <%= message %>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <!-- Sign Up Form -->
+        <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { class: "space-y-6" }) do |f| %>
+          
+          <!-- Email Field -->
+          <div class="space-y-2">
+            <%= f.label :email, "Email Address", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+                </svg>
+              </div>
+              <%= f.email_field :email, 
+                  autofocus: true, 
+                  autocomplete: "email",
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "Enter your email address" %>
+            </div>
+          </div>
+
+          <!-- Password Field -->
+          <div class="space-y-2">
+            <%= f.label :password, "Password", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <% if @minimum_password_length %>
+              <p class="text-slate-400 text-xs mb-2">
+                Minimum <%= @minimum_password_length %> characters required
+              </p>
+            <% end %>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+              </div>
+              <%= f.password_field :password, 
+                  autocomplete: "new-password",
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "Create a secure password" %>
+            </div>
+          </div>
+
+          <!-- Password Confirmation Field -->
+          <div class="space-y-2">
+            <%= f.label :password_confirmation, "Confirm Password", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <%= f.password_field :password_confirmation, 
+                  autocomplete: "new-password",
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "Confirm your password" %>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-4">
+            <%= f.submit "Create Account", 
+                class: "w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900" %>
+          </div>
+
+        <% end %>
+
+        <!-- Additional Links -->
+        <div class="mt-8 pt-6 border-t border-white/10">
+          <div class="text-center space-y-3">
+            <%= render "devise/shared/links" %>
+          </div>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="mt-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4">
+          <div class="flex items-start space-x-3">
+            <div class="w-6 h-6 bg-emerald-500/20 rounded-lg flex items-center justify-center mt-0.5">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-emerald-300 text-xs">
+                Your data is encrypted and secure. We follow industry-standard security practices to protect your information.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

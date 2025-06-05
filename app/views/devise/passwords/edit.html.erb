@@ -1,0 +1,134 @@
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  </style>
+<% end %>
+
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div>
+        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">Change Your Password</h1>
+        <p class="text-slate-300 text-sm lg:text-base">Set a new secure password for your account</p>
+      </div>
+      <div class="mt-4 sm:mt-0">
+        <%= link_to "Back to Profile", edit_user_registration_path, 
+            class: "inline-flex items-center text-slate-300 hover:text-white transition-colors duration-200" %>
+        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-md mx-auto">
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        
+        <!-- Security Info Section -->
+        <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in mb-6">
+          <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center mt-1">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-2">Password Security</h3>
+              <p class="text-slate-300 text-sm">Use a strong password with at least 8 characters, including numbers and special characters.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Messages -->
+        <% if resource.errors.any? %>
+          <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 animate-slide-up mb-6">
+            <div class="flex items-center mb-3">
+              <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <h3 class="text-red-400 font-semibold">Please fix the following errors:</h3>
+            </div>
+            <ul class="text-red-300 text-sm space-y-1">
+              <% resource.errors.full_messages.each do |message| %>
+                <li class="flex items-start">
+                  <span class="text-red-400 mr-2">•</span>
+                  <%= message %>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <!-- Password Change Form -->
+        <%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :put }, local: true) do |f| %>
+          <%= f.hidden_field :reset_password_token %>
+          
+          <div class="space-y-6">
+            <!-- New Password Field -->
+            <div class="space-y-2">
+              <%= f.label :password, "New Password", class: "block text-white font-semibold text-sm lg:text-base" %>
+              <% if @minimum_password_length %>
+                <p class="text-slate-400 text-xs mb-2">
+                  <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Minimum <%= @minimum_password_length %> characters required
+                </p>
+              <% end %>
+              <div class="relative">
+                <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <%= f.password_field :password, 
+                    autofocus: true, 
+                    autocomplete: "new-password",
+                    class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                    placeholder: "Enter your new password" %>
+              </div>
+            </div>
+
+            <!-- Confirm Password Field -->
+            <div class="space-y-2">
+              <%= f.label :password_confirmation, "Confirm New Password", class: "block text-white font-semibold text-sm lg:text-base" %>
+              <div class="relative">
+                <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <%= f.password_field :password_confirmation, 
+                    autocomplete: "new-password",
+                    class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                    placeholder: "Confirm your new password" %>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-4">
+              <%= f.submit "Change My Password", 
+                  class: "w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center" %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Additional Links -->
+        <div class="mt-8 pt-6 border-t border-white/10">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <%= link_to "Sign In", new_session_path(resource_name), 
+                class: "text-slate-300 hover:text-white transition-colors duration-200 text-sm" %>
+            <%= link_to "Resend confirmation instructions", new_confirmation_path(resource_name), 
+                class: "text-slate-300 hover:text-white transition-colors duration-200 text-sm" if devise_mapping.confirmable? && controller_name != 'confirmations' %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
