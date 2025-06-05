@@ -24,7 +24,7 @@
   </style>
 <% end %>
 
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" data-controller="file-upload">
   <div class="container mx-auto px-4 py-6 lg:py-12">
     <!-- Header con navegación -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
@@ -88,7 +88,9 @@
               Supported formats: PDF
             </p>
             
-            <div class="file-upload-area bg-white/5 border-2 border-dashed border-white/20 rounded-2xl p-6 lg:p-8 text-center hover:border-indigo-400/50 transition-all duration-300">
+            <div class="file-upload-area bg-white/5 border-2 border-dashed border-white/20 rounded-2xl p-6 lg:p-8 text-center hover:border-indigo-400/50 transition-all duration-300"
+                 data-file-upload-target="uploadArea"
+                 data-action="dragover->file-upload#dragOver dragleave->file-upload#dragLeave drop->file-upload#drop">
               <div class="space-y-4">
                 <div class="w-16 h-16 lg:w-20 lg:h-20 bg-indigo-500/20 rounded-2xl flex items-center justify-center mx-auto">
                   <svg class="w-8 h-8 lg:w-10 lg:h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,9 +107,13 @@
                   <%= form.file_field :original_file, 
                       class: "w-full opacity-0 absolute inset-0 cursor-pointer",
                       accept: ".pdf,.docx,.doc,.xls,.xlsx",
-                      id: "file-input" %>
+                      data: { 
+                        file_upload_target: "fileInput",
+                        action: "change->file-upload#fileChanged"
+                      } %>
                   
-                  <div class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors duration-200 cursor-pointer" onclick="document.getElementById('file-input').click()">
+                  <div class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors duration-200 cursor-pointer"
+                       data-action="click->file-upload#triggerFileInput">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
@@ -116,21 +122,23 @@
                 </div>
 
                 <!-- Información del archivo seleccionado -->
-                <div id="file-info" class="hidden bg-white/5 rounded-xl p-4 text-left">
+                <div data-file-upload-target="fileInfo" class="hidden bg-white/5 rounded-xl p-4 text-left">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center">
                       <svg class="w-5 h-5 text-emerald-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                       </svg>
-                      <span id="file-name" class="text-white font-medium text-sm"></span>
+                      <span data-file-upload-target="fileName" class="text-white font-medium text-sm"></span>
                     </div>
-                    <button type="button" onclick="clearFile()" class="text-slate-400 hover:text-white">
+                    <button type="button" 
+                            data-action="click->file-upload#clearFile"
+                            class="text-slate-400 hover:text-white">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>
                     </button>
                   </div>
-                  <p id="file-size" class="text-slate-400 text-xs mt-1"></p>
+                  <p data-file-upload-target="fileSize" class="text-slate-400 text-xs mt-1"></p>
                 </div>
               </div>
             </div>
@@ -167,67 +175,3 @@
     </div>
   </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const fileInput = document.getElementById('file-input');
-  const fileInfo = document.getElementById('file-info');
-  const fileName = document.getElementById('file-name');
-  const fileSize = document.getElementById('file-size');
-  const uploadArea = document.querySelector('.file-upload-area');
-
-  // Función para actualizar la información del archivo
-  function updateFileInfo(file) {
-    if (file) {
-      fileName.textContent = file.name;
-      fileSize.textContent = formatFileSize(file.size);
-      fileInfo.classList.remove('hidden');
-    }
-  }
-
-  fileInput.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    updateFileInfo(file);
-  });
-
-  // Drag and drop functionality
-  uploadArea.addEventListener('dragover', function(e) {
-    e.preventDefault();
-    uploadArea.classList.add('drag-over');
-  });
-
-  uploadArea.addEventListener('dragleave', function(e) {
-    e.preventDefault();
-    uploadArea.classList.remove('drag-over');
-  });
-
-  uploadArea.addEventListener('drop', function(e) {
-    e.preventDefault();
-    uploadArea.classList.remove('drag-over');
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      // Crear un nuevo FileList para el input
-      const dt = new DataTransfer();
-      dt.items.add(files[0]);
-      fileInput.files = dt.files;
-      
-      // Actualizar la información directamente
-      updateFileInfo(files[0]);
-    }
-  });
-
-  function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  window.clearFile = function() {
-    fileInput.value = '';
-    fileInfo.classList.add('hidden');
-  };
-});
-</script>
