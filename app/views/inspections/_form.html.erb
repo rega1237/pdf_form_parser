@@ -1,4 +1,4 @@
-<%= form_with(model: inspection, local: true, class: 'space-y-6') do |form| %>
+<%= form_with(model: inspection, local: true, class: 'space-y-6', data: { controller: "customer-properties" }) do |form| %>
   
   <!-- Manejo de errores -->
   <% if inspection.errors.any? %>
@@ -79,7 +79,10 @@
             options_from_collection_for_select(@customers, :id, :name, @selected_customer&.id),
             prompt: 'Seleccionar cliente',
             class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none",
-            id: 'customer_select' %>
+            data: { 
+              customer_properties_target: "customerSelect",
+              action: "change->customer-properties#loadProperties"
+            } %>
         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
           <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -101,7 +104,7 @@
             options_from_collection_for_select(@properties, :id, ->(p) { "#{p.property_name} - #{p.address}" }, inspection.property_id),
             { prompt: 'Seleccionar propiedad' },
             class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none",
-            id: 'property_select' %>
+            data: { customer_properties_target: "propertySelect" } %>
         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
           <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -148,44 +151,3 @@
     <%= form.submit class: "w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg" %>
   </div>
 <% end %>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Cargar propiedades cuando se selecciona un cliente
-  const customerSelect = document.getElementById('customer_select');
-  const propertySelect = document.getElementById('property_select');
-  
-  if (customerSelect && propertySelect) {
-    customerSelect.addEventListener('change', function() {
-      const customerId = this.value;
-      
-      if (customerId) {
-        // Mostrar indicador de carga
-        propertySelect.innerHTML = '<option value="">Cargando propiedades...</option>';
-        propertySelect.style.opacity = '0.6';
-        
-        fetch(`/inspections/properties_by_customer?customer_id=${customerId}`)
-          .then(response => response.json())
-          .then(properties => {
-            propertySelect.innerHTML = '<option value="">Seleccionar propiedad</option>';
-            properties.forEach(property => {
-              const option = document.createElement('option');
-              option.value = property.id;
-              option.textContent = property.name;
-              propertySelect.appendChild(option);
-            });
-            propertySelect.style.opacity = '1';
-          })
-          .catch(error => {
-            console.error('Error loading properties:', error);
-            propertySelect.innerHTML = '<option value="">Error cargando propiedades</option>';
-            propertySelect.style.opacity = '1';
-          });
-      } else {
-        propertySelect.innerHTML = '<option value="">Seleccionar propiedad</option>';
-        propertySelect.style.opacity = '1';
-      }
-    });
-  }
-});
-</script>
