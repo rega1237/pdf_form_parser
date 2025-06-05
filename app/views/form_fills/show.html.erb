@@ -1,5 +1,9 @@
 <% content_for :head do %>
   <style>
+    #submitFormBtn {
+      display: none;
+    }
+
     @keyframes fadeIn {
       0% { opacity: 0; transform: translateY(20px); }
       100% { opacity: 1; transform: translateY(0); }
@@ -31,9 +35,9 @@
         </p>
       </div>
       
-      <%= link_to form_templates_path, class: "inline-flex items-center text-slate-300 hover:text-white transition-colors duration-200 group" do %>
-        <svg class="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      <%= link_to form_fills_path, class: "inline-flex items-center bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02]" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
         </svg>
         <span class="text-sm lg:text-base">Volver a Plantillas</span>
       <% end %>
@@ -250,7 +254,7 @@
                 <%= form.submit "Enviar Formulario", 
                     id: "submitFormBtn", 
                     data: { pagination_target: "submitFormBtn" }, 
-                    class: "items-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer hidden" %>
+                    class: "hideen items-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer" %>
 
                 <!-- Siguiente Página -->
                 <button type="button" 
