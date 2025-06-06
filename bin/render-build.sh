@@ -1,15 +1,25 @@
+#!/usr/bin/env bash
+
 # Exit on error
 set -o errexit
 
-# Check if we have permission to install packages
-if [ "$EUID" -eq 0 ]; then
-    echo "Installing system dependencies..."
-    apt-get update
-    apt-get install -y pdftk
+echo "🚀 Starting Render build process..."
+echo "📁 Current directory: $(pwd)"
+echo "📋 Ruby version: $(ruby -v)"
+echo "💎 Bundler version: $(bundle -v)"
+
+# Make sure the script is executable
+chmod +x bin/render-build.sh
+
+# Install system dependencies
+echo "🔧 Attempting to install system dependencies..."
+
+# Try to install pdftk (may not work in some environments)
+if apt-get update >/dev/null 2>&1 && apt-get install -y pdftk >/dev/null 2>&1; then
+    echo "✅ pdftk installed successfully"
 else
-    echo "Trying to install pdftk with sudo..."
-    sudo apt-get update
-    sudo apt-get install -y pdftk
+    echo "⚠️  Warning: Cannot install pdftk in this environment"
+    echo "💡 Consider using Docker or switching to HexaPDF gem"
 fi
 
 # Verify pdftk installation and show location
@@ -38,8 +48,6 @@ bundle install
 bin/rails assets:precompile
 bin/rails assets:clean
 
-# Database migration
-# If you have a paid instance type, we recommend moving
-# database migrations like this one from the build command
-# to the pre-deploy command:
-bin/rails db:migrate
+# Database setup and migration
+echo "🗄️  Setting up database..."
+bin/rails db:create db:migrate
