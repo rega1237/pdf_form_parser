@@ -6,8 +6,12 @@ require 'googleauth/stores/file_token_store'
 class GoogleDriveService
   OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'.freeze
   APPLICATION_NAME = 'PDF Form Parser'.freeze
-  CREDENTIALS_PATH = Rails.root.join('config', 'google_drive_credentials.json').to_s.freeze
-  TOKEN_PATH = Rails.root.join('config', 'token.yaml').to_s.freeze
+  CREDENTIALS_PATH = ENV[GOOGLE_DRIVE_CREDENTIALS_BASE_64].to_s.freeze
+  raise 'GOOGLE_DRIVE_CREDENTIALS_BASE_64 environment variable is not set.' unless CREDENTIALS_PATH.present?
+
+  TOKEN_PATH = ENV[TOKEN_GOOGLE].to_s.freeze
+  raise 'TOKEN_GOOGLE environment variable is not set.' unless TOKEN_PATH.present?
+
   SCOPE = Google::Apis::DriveV3::AUTH_DRIVE_FILE
 
   def initialize
