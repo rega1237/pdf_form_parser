@@ -121,6 +121,9 @@ GEM
       nokogiri (~> 1.13, >= 1.13.0)
       rubyzip (~> 2.0)
     dotenv (3.1.8)
+    dotenv-rails (3.1.8)
+      dotenv (= 3.1.8)
+      railties (>= 6.1)
     drb (2.2.3)
     ed25519 (1.4.0)
     erb (5.0.1)
@@ -481,6 +484,7 @@ DEPENDENCIES
   debug
   devise (~> 4.9)
   docx
+  dotenv-rails
   google-apis-drive_v3 (~> 0.5)
   hexapdf
   importmap-rails

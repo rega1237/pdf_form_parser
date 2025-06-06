@@ -20,3 +20,7 @@ app/assets/forms
 # Archivos de caché de compilación (si no están ya cubiertos por /tmp/)
 /compile-cache-iseq/
 /load-path-cache
+
+.env
+.env.local
+.env.*.local

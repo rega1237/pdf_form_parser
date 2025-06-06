@@ -1,13 +1,10 @@
 # app/services/google_drive_service.rb
 require 'google/apis/drive_v3'
 require 'googleauth'
-require 'googleauth/stores/file_token_store'
+require 'json'
 
 class GoogleDriveService
-  OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'.freeze
   APPLICATION_NAME = 'PDF Form Parser'.freeze
-  CREDENTIALS_PATH = Rails.root.join('config', 'google_drive_credentials.json').to_s.freeze
-  TOKEN_PATH = Rails.root.join('config', 'token.yaml').to_s.freeze
   SCOPE = Google::Apis::DriveV3::AUTH_DRIVE_FILE
 
   def initialize
@@ -67,31 +64,88 @@ class GoogleDriveService
   private
 
   def authorize
-    client_id = Google::Auth::ClientId.from_file(CREDENTIALS_PATH)
-    token_store = Google::Auth::Stores::FileTokenStore.new(file: TOKEN_PATH)
-    authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, token_store)
-
-    # This part needs to be handled interactively for the first time setup.
-    # For a web application, you'd typically use a service account or a web flow.
-    # For simplicity in development, we'll assume a pre-authorized token.yaml exists.
-    # In a production Rails app, you'd use a service account or OAuth 2.0 web application flow.
-
-    # For initial setup, you might run this in a Rake task or a separate script:
-    # url = authorizer.get_authorization_url(base_url: OOB_URI)
-    # puts "Open the following URL in your browser and authorize the application."
-    # puts url
-    # code = gets
-    # credentials = authorizer.get_and_store_credentials_from_code(
-    #   user_id: 'default',
-    #   code: code,
-    #   base_url: OOB_URI
-    # )
-
-    # For now, we'll try to load existing credentials.
-    authorizer.get_credentials('default')
-  rescue Google::Auth::UserAuthorizer::AuthError => e
+    if use_service_account?
+      authorize_service_account
+    else
+      authorize_oauth
+    end
+  rescue => e
     Rails.logger.error "Google Drive authorization failed: #{e.message}"
-    Rails.logger.error "Please ensure 'config/google_drive_credentials.json' and 'config/token.yaml' are correctly set up."
-    nil # Or raise a more specific error
+    Rails.logger.error "Please ensure Google Drive environment variables are correctly set up."
+    nil
+  end
+
+  def use_service_account?
+    ENV['GOOGLE_SERVICE_ACCOUNT_JSON'].present?
+  end
+
+  def authorize_service_account
+    # Para usar Service Account (recomendado para producción)
+    service_account_json = JSON.parse(ENV['GOOGLE_SERVICE_ACCOUNT_JSON'])
+    
+    Google::Auth::ServiceAccountCredentials.make_creds(
+      json_key_io: StringIO.new(service_account_json.to_json),
+      scope: SCOPE
+    )
+  end
+
+  def authorize_oauth
+    # Para usar OAuth (para desarrollo/testing)
+    credentials_hash = get_credentials_from_env
+    
+    client_id = Google::Auth::ClientId.new(
+      credentials_hash['client_id'],
+      credentials_hash['client_secret']
+    )
+    
+    token_hash = get_token_from_env
+    
+    credentials = Google::Auth::UserRefreshCredentials.new(
+      client_id: client_id.id,
+      client_secret: client_id.secret,
+      scope: SCOPE,
+      refresh_token: token_hash['refresh_token'],
+      access_token: token_hash['access_token']
+    )
+    
+    # Refresh token if needed
+    credentials.refresh! if credentials.expired?
+    credentials
+  end
+
+  def get_credentials_from_env
+    if ENV['GOOGLE_DRIVE_CREDENTIALS_JSON'].present?
+      credentials_json = ENV['GOOGLE_DRIVE_CREDENTIALS_JSON'].strip
+      # Remove any BOM or invisible characters
+      credentials_json = credentials_json.gsub(/\A\uFEFF/, '')
+      JSON.parse(credentials_json)['installed']
+    else
+      {
+        'client_id' => ENV['GOOGLE_CLIENT_ID'],
+        'client_secret' => ENV['GOOGLE_CLIENT_SECRET']
+      }
+    end
+  rescue JSON::ParserError => e
+    Rails.logger.error "Error parsing GOOGLE_DRIVE_CREDENTIALS_JSON: #{e.message}"
+    Rails.logger.error "JSON content preview: #{ENV['GOOGLE_DRIVE_CREDENTIALS_JSON']&.first(100)}"
+    raise "Invalid GOOGLE_DRIVE_CREDENTIALS_JSON format: #{e.message}"
+  end
+
+  def get_token_from_env
+    if ENV['GOOGLE_DRIVE_TOKEN_JSON'].present?
+      token_json = ENV['GOOGLE_DRIVE_TOKEN_JSON'].strip
+      # Remove any BOM or invisible characters
+      token_json = token_json.gsub(/\A\uFEFF/, '')
+      JSON.parse(token_json)
+    else
+      {
+        'access_token' => ENV['GOOGLE_ACCESS_TOKEN'],
+        'refresh_token' => ENV['GOOGLE_REFRESH_TOKEN']
+      }
+    end
+  rescue JSON::ParserError => e
+    Rails.logger.error "Error parsing GOOGLE_DRIVE_TOKEN_JSON: #{e.message}"
+    Rails.logger.error "JSON content preview: #{ENV['GOOGLE_DRIVE_TOKEN_JSON']&.first(100)}"
+    raise "Invalid GOOGLE_DRIVE_TOKEN_JSON format: #{e.message}"
   end
 end
