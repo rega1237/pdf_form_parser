@@ -82,8 +82,5 @@ group :test do
   gem "selenium-webdriver"
 end
 
-<<<<<<< Updated upstream
 gem "devise", "~> 4.9"
-=======
 gem 'dotenv-rails', groups: [:development, :test]
->>>>>>> Stashed changes
