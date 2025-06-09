@@ -8,8 +8,15 @@ fi
 
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
+   echo "Running db:prepare and db:migrate..."
    ./bin/rails db:prepare
    ./bin/rails db:migrate
+
+   # Load Solid Queue schema if db/queue_schema.rb exists
+   if [ -f "db/queue_schema.rb" ]; then
+     echo "Loading Solid Queue schema..."
+     ./bin/rails db:schema:load --trace RAILS_ENV=production DATABASE_URL=$DATABASE_URL_QUEUE
+   fi
 fi
 
 exec "${@}"

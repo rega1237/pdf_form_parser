@@ -48,8 +48,6 @@ RUN bundle exec bootsnap precompile app/ lib/
 
 # Install Solid Queue migrations
 RUN bundle exec rails solid_queue:install
-    RUN ls -l db/migrate/
-    RUN mkdir -p db/queue_migrate && mv db/migrate/*solid_queue*.rb db/queue_migrate/
 
 # Precompiling assets for production without requiring secret RAILS_MASTER_KEY
 RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
@@ -74,9 +72,11 @@ RUN groupadd --system --gid 1000 rails && \
     chown -R rails:rails db log storage tmp
 USER 1000:1000
 
-# Entrypoint prepares the database.
-ENTRYPOINT ["/rails/bin/docker-entrypoint"]
+# Add a script to be executed every time the container starts.
+COPY bin/docker-entrypoint /usr/local/bin/docker-entrypoint
+RUN chmod +x /usr/local/bin/docker-entrypoint
 
-# Start server via Thruster by default, this can be overwritten at runtime
-EXPOSE 80
-CMD ["./bin/thrust", "./bin/rails", "server"]
+ENV DATABASE_URL_QUEUE="postgresql://localhost:5432/form_processor_queue_production"
+
+ENTRYPOINT ["docker-entrypoint"]
+EXPOSE 3000
