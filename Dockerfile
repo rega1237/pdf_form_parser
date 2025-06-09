@@ -70,13 +70,13 @@ COPY --from=build /rails /rails
 RUN groupadd --system --gid 1000 rails && \
     useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
     chown -R rails:rails db log storage tmp
-USER 1000:1000
-
 # Add a script to be executed every time the container starts.
-COPY bin/docker-entrypoint /usr/local/bin/docker-entrypoint
-RUN chmod +x /usr/local/bin/docker-entrypoint
-
-ENV DATABASE_URL_QUEUE="postgresql://localhost:5432/form_processor_queue_production"
-
-ENTRYPOINT ["docker-entrypoint"]
-EXPOSE 3000
+ COPY bin/docker-entrypoint /usr/local/bin/docker-entrypoint
+ RUN chmod +x /usr/local/bin/docker-entrypoint
+ 
+ ENV DATABASE_URL_QUEUE="postgresql://localhost:5432/form_processor_queue_production"
+ 
+ USER 1000:1000
+ 
+ ENTRYPOINT ["docker-entrypoint"]
+ EXPOSE 3000
