@@ -80,6 +80,8 @@
                   <th class="py-4 px-6 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Template Name</th>
                   <th class="py-4 px-6 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Original File</th>
                   <th class="py-4 px-6 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">File Type</th>
+                  <th class="py-4 px-6 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">System Category</th>
+                  <th class="py-4 px-6 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Interval Category</th>
                   <th class="py-4 px-6 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -102,6 +104,8 @@
                         <%= template.file_type %>
                       </span>
                     </td>
+                    <td class="py-4 px-6 text-slate-300"><%= template.system_category %></td>
+                    <td class="py-4 px-6 text-slate-300"><%= template.interval_category %></td>
                     <td class="py-4 px-6">
                       <div class="flex items-center space-x-3">
                         <%= link_to form_template_path(template),
