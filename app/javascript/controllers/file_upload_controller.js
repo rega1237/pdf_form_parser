@@ -15,13 +15,14 @@ export default class extends Controller {
   }
 
   disconnect() {
-    // Limpiar event listeners si es necesario
     console.log("FileUpload controller disconnected");
   }
 
   setupEventListeners() {
-    // Los event listeners de Stimulus se manejan automáticamente
-    // Este método está aquí por si necesitas configuración adicional
+    // Prevenir que el input de archivo interfiera con otros elementos
+    this.fileInputTarget.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
   }
 
   // Acción para cuando cambia el input de archivo
@@ -31,12 +32,17 @@ export default class extends Controller {
   }
 
   // Acción para cuando se hace clic en el área de carga
-  triggerFileInput() {
+  triggerFileInput(event) {
+    // Prevenir propagación del evento
+    event.preventDefault();
+    event.stopPropagation();
     this.fileInputTarget.click();
   }
 
   // Acción para limpiar el archivo seleccionado
-  clearFile() {
+  clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
     this.fileInputTarget.value = "";
     this.fileInfoTarget.classList.add("hidden");
   }
@@ -44,16 +50,19 @@ export default class extends Controller {
   // Drag and drop actions
   dragOver(event) {
     event.preventDefault();
+    event.stopPropagation();
     this.uploadAreaTarget.classList.add("drag-over");
   }
 
   dragLeave(event) {
     event.preventDefault();
+    event.stopPropagation();
     this.uploadAreaTarget.classList.remove("drag-over");
   }
 
   drop(event) {
     event.preventDefault();
+    event.stopPropagation();
     this.uploadAreaTarget.classList.remove("drag-over");
 
     const files = event.dataTransfer.files;
