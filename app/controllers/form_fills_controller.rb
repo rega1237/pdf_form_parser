@@ -89,23 +89,20 @@ class FormFillsController < ApplicationController
     @form_fill = FormFill.find(params[:id])
     @form_template = @form_fill.form_template
 
-    # Verificar que tenemos el ID del archivo en Google Drive
-    unless @form_template.google_drive_file_id.present?
-      flash[:error] = 'No se encontró el archivo PDF en Google Drive.'
+    # Verificar que el template tiene un archivo adjunto
+    unless @form_template.original_file.attached?
+      flash[:error] = 'No se encontró el archivo PDF del template.'
       redirect_to form_fill_path(@form_fill) and return
     end
 
     begin
-      # Inicializar el servicio de Google Drive
-      drive_service = GoogleDriveService.new
-
       # Crear directorio temporal para trabajar con los archivos
       temp_dir = Rails.root.join('tmp', 'pdf_forms')
       FileUtils.mkdir_p(temp_dir) unless File.directory?(temp_dir)
 
-      # Descargar el PDF desde Google Drive
+      # Descargar el PDF desde Active Storage
       template_pdf_path = File.join(temp_dir, "template_#{@form_template.id}.pdf")
-      drive_service.download_file(@form_template.google_drive_file_id, template_pdf_path)
+      File.binwrite(template_pdf_path, @form_template.original_file.download)
 
       # Parsear los datos del formulario
       form_fields = JSON.parse(@form_fill.form_structure)
@@ -116,20 +113,12 @@ class FormFillsController < ApplicationController
       filled_pdf_path = File.join(temp_dir, filled_pdf_filename)
       pdf_service.fill_form(filled_pdf_path, form_fields)
 
-      # Crear o encontrar la carpeta 'forms/submitted' en Google Drive
-      forms_folder_id = drive_service.find_or_create_folder('forms')
-      submitted_folder_id = drive_service.find_or_create_folder('submitted', forms_folder_id)
-
-      # Subir el PDF llenado a Google Drive
-      file = drive_service.upload_file(
-        filled_pdf_path,
-        filled_pdf_filename,
-        'application/pdf',
-        submitted_folder_id
+      # Adjuntar el PDF rellenado a través de Active Storage
+      @form_fill.filled_pdf.attach(
+        io: File.open(filled_pdf_path),
+        filename: filled_pdf_filename,
+        content_type: 'application/pdf'
       )
-
-      # Guardar el ID del archivo en Google Drive
-      @form_fill.update(google_drive_file_id: file)
 
       # Limpiar archivos temporales
       FileUtils.rm_f(template_pdf_path)
@@ -154,6 +143,7 @@ class FormFillsController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def form_fill_params
-    params.require(:form_fill).permit(:name, :form_template_id, :form_structure, :google_drive_file_id, :inspection_id)
+    params.require(:form_fill).permit(:name, :form_template_id, :form_structure, :inspection_id)
+    # Eliminamos :google_drive_file_id de los parámetros permitidos
   end
 end

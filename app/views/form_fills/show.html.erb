@@ -234,7 +234,7 @@
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                 </svg>
-                Página Anterior
+                Previous page
               </button>
 
               <!-- Botones de acción -->
@@ -247,7 +247,7 @@
                   <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
                   </svg>
-                  Guardar Borrador
+                  Save draft
                 </button>
 
                 <!-- Enviar Formulario (oculto inicialmente) -->
@@ -262,7 +262,7 @@
                         data-action="click->pagination#nextPage click->form-fill#saveDraft" 
                         data-pagination-target="nextPageBtn" 
                         class="inline-flex items-center bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
-                  Siguiente Página
+                  Next page
                   <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                   </svg>
@@ -282,26 +282,28 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-white font-semibold mb-2">Acciones del Formulario</h3>
-            <p class="text-slate-300 text-sm mb-4">Genere y gestione el PDF final de su inspección</p>
+            <h3 class="text-white font-semibold mb-2">Form actions</h3>
+            <p class="text-slate-300 text-sm mb-4">Generate and manage your final inspection PDF</p>
           </div>
         </div>
         
         <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-          <%= button_to 'Llenar y Enviar PDF', 
+          <%= button_to 'Fill PDF', 
               submit_form_form_fill_path(@form_fill), 
               method: :post, 
               class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02]", 
               data: { confirm: "¿Está seguro de que desea generar y enviar el formulario PDF?" } %>
           
-          <% if @form_fill.google_drive_file_id.present? %>
-            <%= link_to 'Ver PDF Generado',
-                "https://drive.google.com/file/d/#{@form_fill.google_drive_file_id}/view", 
-                target: "_blank", 
-                class: "inline-flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02]" %>
+          <% if @form_fill.filled_pdf.attached? %>
+              <div class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
+                <a href="<%= rails_blob_path(@form_fill.filled_pdf, disposition: 'inline') %>" target="_blank" class="text-white-600 hover:text-white-800">
+                  See PDF
+                </a>
+              </div>
           <% end %>
         </div>
       </div>
     </div>
   </div>
 </div>
+
