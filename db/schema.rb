@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_05_195755) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_10_203250) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -61,7 +61,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_195755) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "form_structure"
-    t.string "google_drive_file_id"
     t.bigint "inspection_id"
     t.index ["form_template_id"], name: "index_form_fills_on_form_template_id"
     t.index ["inspection_id"], name: "index_form_fills_on_inspection_id"
@@ -75,7 +74,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_195755) do
     t.text "form_structure"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "google_drive_file_id"
   end
 
   create_table "inspections", force: :cascade do |t|
