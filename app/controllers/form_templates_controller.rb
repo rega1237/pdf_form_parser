@@ -22,7 +22,9 @@ class FormTemplatesController < ApplicationController
         id: form_template_params[:id],
         name: form_template_params[:name],
         original_filename: uploaded_file.original_filename,
-        file_type: uploaded_file.content_type
+        file_type: uploaded_file.content_type,
+        system_category: form_template_params[:system_category],
+        interval_category: form_template_params[:interval_category]
       )
       
       # Adjuntar el archivo usando Active Storage
@@ -151,7 +153,8 @@ class FormTemplatesController < ApplicationController
   # Only allow a list of trusted parameters through.
   def form_template_params
     params.require(:form_template).permit(:id, :name, :description, :original_file, :form_structure,
-                                          :form_structure_order, :label_name, :section_name, :page_number, :column_width, :required)
+                                          :form_structure_order, :label_name, :section_name, :page_number, :column_width, :required,
+                                          :system_category, :interval_category)
     # Eliminamos :google_drive_file_id de los parámetros permitidos
   end
 end
