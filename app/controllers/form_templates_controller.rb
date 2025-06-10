@@ -15,54 +15,51 @@ class FormTemplatesController < ApplicationController
   def create
     uploaded_file = form_template_params[:original_file]
     form_structure = {}
-    google_drive_file_id = nil
 
     if uploaded_file
-      # Upload to Google Drive
-      google_drive_service = GoogleDriveService.new
-      forms_folder_id = google_drive_service.find_or_create_folder('forms')
-      uploaded_folder_id = google_drive_service.find_or_create_folder('uploaded', forms_folder_id)
-      file_metadata = google_drive_service.upload_file(uploaded_file.tempfile.path, uploaded_file.original_filename,
-                                                       uploaded_file.content_type, uploaded_folder_id)
-      google_drive_file_id = file_metadata if file_metadata
-
-      if google_drive_file_id
-        # Download the file temporarily for parsing
+      # Crear un nuevo FormTemplate con el archivo adjunto
+      @form_template = FormTemplate.new(
+        id: form_template_params[:id],
+        name: form_template_params[:name],
+        original_filename: uploaded_file.original_filename,
+        file_type: uploaded_file.content_type
+      )
+      
+      # Adjuntar el archivo usando Active Storage
+      @form_template.original_file.attach(uploaded_file)
+      
+      if @form_template.original_file.attached?
+        # Descargar el archivo temporalmente para analizarlo
         temp_file = Tempfile.new([uploaded_file.original_filename.parameterize.truncate(50, omission: ''), '.pdf'],
-                                 Rails.root.join('tmp'))
+                                Rails.root.join('tmp'))
         temp_file_path = temp_file.path
-        google_drive_service.download_file(google_drive_file_id, temp_file_path)
-
+        
+        # Guardar el archivo temporalmente
+        File.binwrite(temp_file_path, uploaded_file.read)
+        
         determined_file_type = uploaded_file.content_type
 
         if determined_file_type == 'application/pdf'
           parser = PdfFormsParserService.new(temp_file_path)
           form_structure = parser.parse
         elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-               'application/msword'].include?(determined_file_type)
+              'application/msword'].include?(determined_file_type)
           Rails.logger.info 'DOCX/DOC parsing not yet implemented.'
         elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-               'application/vnd.ms-excel'].include?(determined_file_type)
+              'application/vnd.ms-excel'].include?(determined_file_type)
           Rails.logger.info 'XLS/XLSX parsing not yet implemented.'
         else
           Rails.logger.warn "Unsupported file type: #{determined_file_type}"
         end
 
-        # Clean up the temporary file
+        # Limpiar el archivo temporal
         temp_file.close
         temp_file.unlink
-
-        @form_template = FormTemplate.new(
-          id: form_template_params[:id],
-          name: form_template_params[:name],
-          original_filename: uploaded_file.original_filename,
-          file_path: google_drive_service.get_file_url(google_drive_file_id),
-          file_type: determined_file_type,
-          form_structure: form_structure.to_json,
-          google_drive_file_id: google_drive_file_id
-        )
+        
+        # Actualizar la estructura del formulario
+        @form_template.form_structure = form_structure.to_json
       else
-        flash[:alert] = 'Failed to upload file to Google Drive.'
+        flash[:alert] = 'Failed to attach file.'
         render :new, status: :unprocessable_entity
         return
       end
@@ -76,8 +73,6 @@ class FormTemplatesController < ApplicationController
     if @form_template.save
       redirect_to @form_template, notice: 'Form template was successfully created.'
     else
-      # If save fails, attempt to delete the uploaded file from Google Drive
-      google_drive_service.delete_file(google_drive_file_id) if google_drive_file_id
       render :new, status: :unprocessable_entity
     end
   end
@@ -141,7 +136,7 @@ class FormTemplatesController < ApplicationController
 
   # DELETE /form_templates/1
   def destroy
-    # The before_destroy callback in the FormTemplate model handles Google Drive file deletion.
+    # Active Storage se encargará de eliminar los archivos adjuntos
     @form_template.destroy
     redirect_to form_templates_path, notice: 'Form template deleted successfully.', status: :see_other
   end
@@ -156,6 +151,7 @@ class FormTemplatesController < ApplicationController
   # Only allow a list of trusted parameters through.
   def form_template_params
     params.require(:form_template).permit(:id, :name, :description, :original_file, :form_structure,
-                                          :form_structure_order, :label_name, :section_name, :page_number, :column_width, :required, :google_drive_file_id)
+                                          :form_structure_order, :label_name, :section_name, :page_number, :column_width, :required)
+    # Eliminamos :google_drive_file_id de los parámetros permitidos
   end
 end
