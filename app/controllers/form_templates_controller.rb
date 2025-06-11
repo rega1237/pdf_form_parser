@@ -1,13 +1,20 @@
 require_dependency Rails.root.join('app/services/pdf_forms_parser_service.rb').to_s
 
 class FormTemplatesController < ApplicationController
-  before_action :set_form_template, only: %i[show update destroy form_builder edit]
+  before_action :set_form_template, only: %i[show update destroy form_builder edit form_builder_update]
   before_action :set_interval_categories, only: %i[new edit create update]
 
   # GET /form_templates
   def index
     @form_templates = FormTemplate.all
   end
+
+  def show
+    @form_template = FormTemplate.find(params[:id])
+  end
+
+  # GET /form_templates/:id/form_builder
+  def form_builder; end
 
   def new
     @form_template = FormTemplate.new
@@ -32,10 +39,7 @@ class FormTemplatesController < ApplicationController
       
       # Asignar las categorías de intervalo
       if params[:form_template][:interval_category_ids].present?
-        puts params[:form_template][:interval_category_ids]
         @form_template.interval_category_ids = params[:form_template][:interval_category_ids]
-        puts '////////////////////////'
-        puts @form_template.interval_category_ids
       end
       
       if @form_template.original_file.attached?
@@ -87,21 +91,83 @@ class FormTemplatesController < ApplicationController
     end
   end
 
-  def show
-    @form_template = FormTemplate.find(params[:id])
-  end
-
-  # GET /form_templates/:id/form_builder
-  def form_builder
-    # @form_template is already set by before_action
-    # Logic for form builder will go here
-    # For now, it will just render the form_builder.html.erb view
-  end
-
   def edit; end
 
   # PATCH/PUT /form_templates/1
   def update
+    uploaded_file = form_template_params[:original_file]
+    form_structure = {}
+
+    if uploaded_file.present?
+      # Si hay un nuevo archivo, procesarlo
+      # Actualizar los metadatos del archivo
+      @form_template.original_filename = uploaded_file.original_filename
+      @form_template.file_type = uploaded_file.content_type
+      
+      # Adjuntar el nuevo archivo (esto reemplazará el anterior automáticamente)
+      @form_template.original_file.attach(uploaded_file)
+      
+      if @form_template.original_file.attached?
+        # Descargar el archivo temporalmente para analizarlo
+        temp_file = Tempfile.new([uploaded_file.original_filename.parameterize.truncate(50, omission: ''), '.pdf'],
+                                Rails.root.join('tmp'))
+        temp_file_path = temp_file.path
+        
+        # Guardar el archivo temporalmente
+        # Reiniciar el puntero del archivo antes de leer
+        uploaded_file.rewind
+        File.binwrite(temp_file_path, uploaded_file.read)
+        
+        determined_file_type = uploaded_file.content_type
+
+        if determined_file_type == 'application/pdf'
+          parser = PdfFormsParserService.new(temp_file_path)
+          form_structure = parser.parse
+        elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'application/msword'].include?(determined_file_type)
+          Rails.logger.info 'DOCX/DOC parsing not yet implemented.'
+        elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              'application/vnd.ms-excel'].include?(determined_file_type)
+          Rails.logger.info 'XLS/XLSX parsing not yet implemented.'
+        else
+          Rails.logger.warn "Unsupported file type: #{determined_file_type}"
+        end
+
+        # Limpiar el archivo temporal
+        temp_file.close
+        temp_file.unlink
+        
+        # Actualizar la estructura del formulario solo si se parseó correctamente
+        if form_structure.present?
+          @form_template.form_structure = form_structure.to_json
+        end
+      else
+        flash[:alert] = 'Failed to attach file.'
+        render :edit, status: :unprocessable_entity
+        return
+      end
+    end
+
+    # Actualizar otros parámetros (siempre, independientemente de si hay archivo o no)
+    update_params = form_template_params.except(:original_file)
+    
+    # Asignar las categorías de intervalo si están presentes
+    if params[:form_template][:interval_category_ids].present?
+      @form_template.interval_category_ids = params[:form_template][:interval_category_ids]
+    end
+
+    # Actualizar los atributos del modelo
+    @form_template.assign_attributes(update_params)
+
+    if @form_template.save
+      redirect_to @form_template, notice: 'Form template was successfully updated.'
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH/PUT /form_templates/:id/form_builder_update
+  def form_builder_update
     if form_template_params[:form_structure_order]
       new_order = JSON.parse(form_template_params[:form_structure_order])
       current_fields = JSON.parse(@form_template.form_structure)
@@ -139,10 +205,9 @@ class FormTemplatesController < ApplicationController
       else
         render :form_builder, status: :unprocessable_entity
       end
-    elsif @form_template.update(form_template_params.except(:form_structure_order))
-      redirect_to @form_template, notice: 'Form template was successfully updated.'
     else
-      render :edit, status: :unprocessable_entity # Assuming you might have an edit view
+      # This else block should ideally not be reached if form_structure_order is always present for this action
+      render :form_builder, status: :unprocessable_entity
     end
   end
 
