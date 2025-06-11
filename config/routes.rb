@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   resources :form_templates do
     member do
       get 'form_builder' # Route to display the form builder
+      patch 'form_builder_update' # New route for updating form structure
     end
   end
 
