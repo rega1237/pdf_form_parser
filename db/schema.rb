@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_10_213808) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_11_174901) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -75,7 +75,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_10_213808) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "system_category"
-    t.string "interval_category"
+  end
+
+  create_table "form_templates_interval_categories", id: false, force: :cascade do |t|
+    t.bigint "form_template_id", null: false
+    t.bigint "interval_category_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["form_template_id", "interval_category_id"], name: "index_form_templates_interval_categories_unique", unique: true
+    t.index ["form_template_id"], name: "index_form_templates_interval_categories_on_form_template_id"
+    t.index ["interval_category_id"], name: "idx_on_interval_category_id_f793246e4d"
   end
 
   create_table "inspections", force: :cascade do |t|
@@ -93,6 +102,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_10_213808) do
     t.index ["property_id", "date"], name: "index_inspections_on_property_id_and_date"
     t.index ["property_id"], name: "index_inspections_on_property_id"
     t.index ["status"], name: "index_inspections_on_status"
+  end
+
+  create_table "interval_categories", force: :cascade do |t|
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "properties", force: :cascade do |t|
@@ -128,6 +143,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_10_213808) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "form_fills", "form_templates"
   add_foreign_key "form_fills", "inspections"
+  add_foreign_key "form_templates_interval_categories", "form_templates"
+  add_foreign_key "form_templates_interval_categories", "interval_categories"
   add_foreign_key "inspections", "form_fills"
   add_foreign_key "inspections", "form_templates"
   add_foreign_key "inspections", "properties"
