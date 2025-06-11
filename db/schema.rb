@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_11_174901) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_11_221811) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -90,14 +90,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_11_174901) do
   create_table "inspections", force: :cascade do |t|
     t.date "date", null: false
     t.bigint "property_id", null: false
-    t.bigint "form_fill_id"
     t.text "notes"
     t.string "status", default: "pending"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "form_template_id", null: false
     t.index ["date"], name: "index_inspections_on_date"
-    t.index ["form_fill_id"], name: "index_inspections_on_form_fill_id"
     t.index ["form_template_id"], name: "index_inspections_on_form_template_id"
     t.index ["property_id", "date"], name: "index_inspections_on_property_id_and_date"
     t.index ["property_id"], name: "index_inspections_on_property_id"
@@ -145,7 +143,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_11_174901) do
   add_foreign_key "form_fills", "inspections"
   add_foreign_key "form_templates_interval_categories", "form_templates"
   add_foreign_key "form_templates_interval_categories", "interval_categories"
-  add_foreign_key "inspections", "form_fills"
   add_foreign_key "inspections", "form_templates"
   add_foreign_key "inspections", "properties"
   add_foreign_key "properties", "customers"
