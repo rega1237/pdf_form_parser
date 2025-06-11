@@ -1,7 +1,8 @@
 require_dependency Rails.root.join('app/services/pdf_forms_parser_service.rb').to_s
 
 class FormTemplatesController < ApplicationController
-  before_action :set_form_template, only: %i[show update destroy form_builder]
+  before_action :set_form_template, only: %i[show update destroy form_builder edit]
+  before_action :set_interval_categories, only: %i[new edit create update]
 
   # GET /form_templates
   def index
@@ -23,12 +24,19 @@ class FormTemplatesController < ApplicationController
         name: form_template_params[:name],
         original_filename: uploaded_file.original_filename,
         file_type: uploaded_file.content_type,
-        system_category: form_template_params[:system_category],
-        interval_category: form_template_params[:interval_category]
+        system_category: form_template_params[:system_category]
       )
       
       # Adjuntar el archivo usando Active Storage
       @form_template.original_file.attach(uploaded_file)
+      
+      # Asignar las categorías de intervalo
+      if params[:form_template][:interval_category_ids].present?
+        puts params[:form_template][:interval_category_ids]
+        @form_template.interval_category_ids = params[:form_template][:interval_category_ids]
+        puts '////////////////////////'
+        puts @form_template.interval_category_ids
+      end
       
       if @form_template.original_file.attached?
         # Descargar el archivo temporalmente para analizarlo
@@ -90,6 +98,8 @@ class FormTemplatesController < ApplicationController
     # For now, it will just render the form_builder.html.erb view
   end
 
+  def edit; end
+
   # PATCH/PUT /form_templates/1
   def update
     if form_template_params[:form_structure_order]
@@ -149,12 +159,15 @@ class FormTemplatesController < ApplicationController
   def set_form_template
     @form_template = FormTemplate.find(params[:id])
   end
+  
+  def set_interval_categories
+    @interval_categories = IntervalCategory.all
+  end
 
   # Only allow a list of trusted parameters through.
   def form_template_params
     params.require(:form_template).permit(:id, :name, :description, :original_file, :form_structure,
                                           :form_structure_order, :label_name, :section_name, :page_number, :column_width, :required,
-                                          :system_category, :interval_category)
-    # Eliminamos :google_drive_file_id de los parámetros permitidos
+                                          :system_category, interval_category_ids: [])
   end
 end
