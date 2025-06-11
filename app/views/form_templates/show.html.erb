@@ -49,6 +49,14 @@
             </svg>
             Form Builder
           <% end %>
+
+          <%= link_to edit_form_template_path(@form_template),
+           class: "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center" do %>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            Edit Template
+          <% end %>
         </div>
       </div>
       </div>
@@ -96,9 +104,17 @@
           <!-- Interval Category -->
           <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
             <label class="block text-white font-semibold text-sm mb-2">Interval Category</label>
-            <p class="text-slate-300 text-sm lg:text-base break-all">
-              <%= @form_template.interval_category %>
-            </p>
+            <div class="text-slate-300 text-sm lg:text-base break-all">
+              <div class="py-4 px-2 text-slate-300">
+                <div class="flex flex-wrap gap-1">
+                  <% @form_template.interval_categories.each do |interval| %>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100/10 text-indigo-300 border border-indigo-400/20">
+                      <%= interval.name %>
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- File Path -->

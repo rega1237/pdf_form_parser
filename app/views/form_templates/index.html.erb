@@ -105,7 +105,15 @@
                       </span>
                     </td>
                     <td class="py-4 px-6 text-slate-300"><%= template.system_category %></td>
-                    <td class="py-4 px-6 text-slate-300"><%= template.interval_category %></td>
+                    <td class="py-4 px-6 text-slate-300">
+                      <div class="flex flex-wrap gap-1">
+                        <% template.interval_categories.each do |interval| %>
+                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100/10 text-indigo-300 border border-indigo-400/20">
+                            <%= interval.name %>
+                          </span>
+                        <% end %>
+                      </div>
+                    </td>
                     <td class="py-4 px-6">
                       <div class="flex items-center space-x-3">
                         <%= link_to form_template_path(template),
