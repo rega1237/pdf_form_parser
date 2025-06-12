@@ -51,11 +51,21 @@ class InspectionsController < ApplicationController
 
   # POST /inspections
   def create
-    filtered_params = inspection_params.except(:system_category, :interval_category)
-    @inspection = Inspection.new(filtered_params)
-    @inspection.form_template_id = get_form_template(inspection_params).first&.id
+    form_template = get_form_template(inspection_params) # busca el form template que corresponda
+    @inspection = Inspection.new(inspection_params)
+    @inspection.form_template_id = form_template.first&.id
 
-    if @inspection.save
+    return unless @inspection.save
+
+    property = Property.find(inspection_params[:property_id])
+    system_category = inspection_params[:system_category]
+    interval_category = inspection_params[:interval_category]
+
+    form_fill_name = "#{property.property_name} - #{system_category} - #{interval_category}"
+
+    form_fill = FormFill.new(name: form_fill_name, form_template_id: form_template.first&.id, inspection_id: @inspection.id)
+
+    if form_fill.save
       redirect_to @inspection, notice: 'Inspección creada exitosamente.'
     else
       @selected_customer = @inspection.property&.customer
@@ -158,7 +168,7 @@ class InspectionsController < ApplicationController
   end
 
   def inspection_params
-    params.require(:inspection).permit(:date, :property_id, :form_template_id, :form_fill_id, :notes, :status,
+    params.require(:inspection).permit(:date, :property_id, :notes, :status,
                                        :system_category, :interval_category)
   end
 
