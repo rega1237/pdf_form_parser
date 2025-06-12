@@ -2,6 +2,7 @@
 class InspectionsController < ApplicationController
   before_action :set_inspection, only: %i[show edit update destroy]
   before_action :load_form_data, only: %i[new create edit update]
+  before_action :set_intervals, only: %i[new create edit update]
 
   # GET /inspections
   def index
@@ -50,7 +51,9 @@ class InspectionsController < ApplicationController
 
   # POST /inspections
   def create
-    @inspection = Inspection.new(inspection_params)
+    filtered_params = inspection_params.except(:system_category, :interval_category)
+    @inspection = Inspection.new(filtered_params)
+    @inspection.form_template_id = get_form_template(inspection_params).first&.id
 
     if @inspection.save
       redirect_to @inspection, notice: 'Inspección creada exitosamente.'
@@ -150,8 +153,13 @@ class InspectionsController < ApplicationController
     @inspection = Inspection.find(params[:id])
   end
 
+  def set_intervals
+    @intervals = IntervalCategory.all
+  end
+
   def inspection_params
-    params.require(:inspection).permit(:date, :property_id, :form_template_id, :form_fill_id, :notes, :status)
+    params.require(:inspection).permit(:date, :property_id, :form_template_id, :form_fill_id, :notes, :status,
+                                       :system_category, :interval_category)
   end
 
   def load_form_data
@@ -167,6 +175,13 @@ class InspectionsController < ApplicationController
     elsif @inspection&.property
       @selected_customer = @inspection.property.customer
       @properties = @selected_customer.properties.order(:property_name)
+    end
+  end
+
+  def get_form_template(params)
+    form_template_system = FormTemplate.where(system_category: params[:system_category])
+    form_template_system.each do |template|
+      return template if template.interval_categories.include?(params[:interval_category])
     end
   end
 end

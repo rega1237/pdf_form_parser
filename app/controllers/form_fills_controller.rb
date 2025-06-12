@@ -2,11 +2,29 @@ class FormFillsController < ApplicationController
   def index
     @form_fills = FormFill.all
   end
+  def show
+    @form_fill = FormFill.find(params[:id])
+    @form_template = @form_fill.form_template
+    if @form_fill.form_structure.present?
+      begin
+        @form_fields = JSON.parse(@form_fill.form_structure)
+      rescue JSON::ParserError => e
+        Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
+        @form_fields = []
+      end
+    else
+      @form_fields = []
+    end
+  end
 
   def new
     @form_fill = FormFill.new
     @form_templates = FormTemplate.all
-    @inspections = Inspection.includes(property: :customer).where(form_fill_id: nil).map do |inspection|
+    
+    @inspections = Inspection.includes(property: :customer)
+                            .left_joins(:form_fill)
+                            .where(form_fills: { id: nil })
+                            .map do |inspection|
       ["#{inspection.property.customer.name} - #{inspection.property.property_name}", inspection.id]
     end
 
@@ -43,21 +61,6 @@ class FormFillsController < ApplicationController
     else
       @form_templates = FormTemplate.all
       render :new, status: :unprocessable_entity
-    end
-  end
-
-  def show
-    @form_fill = FormFill.find(params[:id])
-    @form_template = @form_fill.form_template
-    if @form_fill.form_structure.present?
-      begin
-        @form_fields = JSON.parse(@form_fill.form_structure)
-      rescue JSON::ParserError => e
-        Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
-        @form_fields = []
-      end
-    else
-      @form_fields = []
     end
   end
 
@@ -144,6 +147,5 @@ class FormFillsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def form_fill_params
     params.require(:form_fill).permit(:name, :form_template_id, :form_structure, :inspection_id)
-    # Eliminamos :google_drive_file_id de los parámetros permitidos
   end
 end

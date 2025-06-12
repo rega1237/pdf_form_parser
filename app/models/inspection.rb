@@ -8,7 +8,6 @@ class Inspection < ApplicationRecord
 
   validates :date, presence: true
   validates :property_id, presence: true
-  validates :form_template_id, presence: true
 
   scope :by_customer, ->(customer) { joins(:property).where(properties: { customer_id: customer.id }) }
   scope :by_date_range, ->(start_date, end_date) { where(date: start_date..end_date) }
@@ -21,9 +20,4 @@ class Inspection < ApplicationRecord
   def property_address
     property.address
   end
-
-  # Ya no necesitamos este método ya que ahora tenemos una relación directa con form_template
-  # def form_template
-  #   form_fill.form_template
-  # end
 end
