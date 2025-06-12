@@ -130,6 +130,21 @@
   <input type="hidden" name="<%= form.object_name %>[interval_category_ids][]" value="">
 </div>
 
+          <!-- Campo de form_structure -->
+          <div class="space-y-2">
+            <%= form.label :form_structure, "Form Structure (JSON)", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                </svg>
+              </div>
+              <%= form.text_area :form_structure, 
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 h-48 font-mono",
+                  placeholder: "Ej: { \"field1\": \"value1\", \"field2\": \"value2\" }" %>
+            </div>
+          </div>
+
           <!-- Campo de archivo -->
           <div class="space-y-2">
             <%= form.label :original_file, "Template file", class: "block text-white font-semibold text-sm lg:text-base" %>
