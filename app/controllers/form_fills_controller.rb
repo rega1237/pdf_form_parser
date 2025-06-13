@@ -2,6 +2,7 @@ class FormFillsController < ApplicationController
   def index
     @form_fills = FormFill.all
   end
+
   def show
     @form_fill = FormFill.find(params[:id])
     @form_template = @form_fill.form_template
@@ -20,11 +21,11 @@ class FormFillsController < ApplicationController
   def new
     @form_fill = FormFill.new
     @form_templates = FormTemplate.all
-    
+
     @inspections = Inspection.includes(property: :customer)
-                            .left_joins(:form_fill)
-                            .where(form_fills: { id: nil })
-                            .map do |inspection|
+                             .left_joins(:form_fill)
+                             .where(form_fills: { id: nil })
+                             .map do |inspection|
       ["#{inspection.property.customer.name} - #{inspection.property.property_name}", inspection.id]
     end
 

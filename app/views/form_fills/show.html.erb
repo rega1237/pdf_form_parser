@@ -140,13 +140,16 @@
                           <% field_id = "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}" %>
                           
                           <% if field['type'] == "Button" %>
+                          
                             <!-- Checkbox -->
                             <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all duration-200">
                               <div class="flex items-center space-x-3">
-                                <%= form.check_box field['name'], 
-                                    { id: field_id, 
-                                      class: "w-5 h-5 text-indigo-600 bg-white/10 border-white/30 rounded focus:ring-indigo-500 focus:ring-2" }, 
-                                    field['value'], nil %>
+                              <%= check_box_tag "form_fill[#{field['name']}]",
+                                  'Yes',
+                                  field['value'] == 'Yes',
+                                  { id: field_id,
+                                    class: "w-5 h-5 text-indigo-600 bg-white/10 border-white/30 rounded focus:ring-indigo-500 focus:ring-2" } %>
+                                
                                 <label for="<%= field_id %>" class="text-white font-medium cursor-pointer select-none">
                                   <%= (field['label_name'].presence || field['name']).humanize %>
                                 </label>

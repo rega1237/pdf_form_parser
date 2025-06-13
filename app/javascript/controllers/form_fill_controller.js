@@ -54,10 +54,8 @@ export default class extends Controller {
           // FormData returns 'on' if checked and present, or null if not.
           // Map this to the actual value or boolean true/false.
           newValue = formData.has(`form_fill[${field.name}]`)
-            ? field.options && field.options.length > 0
-              ? field.options[0]
-              : true
-            : false;
+            ? (field.options && field.options.length > 1 ? field.options[1] : true) // If checked, use the second option ('Yes') or true
+            : (field.options && field.options.length > 0 ? field.options[0] : false); // If unchecked, use the first option ('Off') or false
         } else if (newRawValue === null) {
           // If the field wasn't in FormData (e.g. unchecked checkbox not submitted or empty text field),
           // retain its original value unless it's a checkbox that should be false.
