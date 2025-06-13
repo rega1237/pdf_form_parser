@@ -53,7 +53,7 @@ class InspectionsController < ApplicationController
   def create
     form_template = get_form_template(inspection_params) # busca el form template que corresponda
     @inspection = Inspection.new(inspection_params)
-    @inspection.form_template_id = form_template.first&.id
+    @inspection.form_template_id = form_template&.id
 
     return unless @inspection.save
 
@@ -63,7 +63,8 @@ class InspectionsController < ApplicationController
 
     form_fill_name = "#{property.property_name} - #{system_category} - #{interval_category}"
 
-    form_fill = FormFill.new(name: form_fill_name, form_template_id: form_template.first&.id, inspection_id: @inspection.id)
+    form_fill = FormFill.new(name: form_fill_name, form_template_id: form_template&.id, inspection_id: @inspection.id,
+                             form_structure: form_template&.form_structure)
 
     if form_fill.save
       redirect_to @inspection, notice: 'Inspección creada exitosamente.'
@@ -191,7 +192,9 @@ class InspectionsController < ApplicationController
   def get_form_template(params)
     form_template_system = FormTemplate.where(system_category: params[:system_category])
     form_template_system.each do |template|
-      return template if template.interval_categories.include?(params[:interval_category])
+      # Check if any of the associated interval categories have a name that matches params[:interval_category]
+      return template if template.interval_categories.any? { |ic| ic.name == params[:interval_category] }
     end
+    nil # Return nil if no matching template is found
   end
 end
