@@ -12,7 +12,7 @@ export default class extends Controller {
   ];
 
   connect() {
-    this.itemsPerPage = 5; // Adjust as needed
+    this.itemsPerPage = 50; // Adjust as needed
     this.currentPage = 1;
     this.allItems = [];
 
