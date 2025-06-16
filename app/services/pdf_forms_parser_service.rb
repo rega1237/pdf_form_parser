@@ -10,6 +10,7 @@ class PdfFormsParserService
     # Try with different encoding options
     raw_fields = get_fields_with_encoding
     
+    # Map fields and filter out those with empty values
     raw_fields.map do |field|
       {
         name: sanitize_field_name(field.name),
@@ -17,9 +18,10 @@ class PdfFormsParserService
         type: field.type,
         value: field.value,
         options: field.options,
-        human_label: generate_human_label(field.name)
+        human_label: generate_human_label(field.name),
+        label_name: field.value # Add label_name equal to value
       }
-    end
+    end.reject { |field| field[:value].nil? || field[:value].to_s.empty? || field[:value] == 'Off' }
   rescue PdfForms::PdftkError => e
     Rails.logger.error "PdftkError while parsing #{@file_path}: #{e.message}"
     
@@ -148,8 +150,7 @@ class PdfFormsParserService
     # Try with escaped field names or alternative methods
     Rails.logger.info "Retrying form fill with alternative approach"
     
-    # You could implement additional retry logic here
-    # For now, we'll re-raise the original error
+
     raise original_error
   end
 
@@ -158,7 +159,21 @@ class PdfFormsParserService
     
     # Try using system command directly
     begin
-      get_fields_via_dump_data
+      fields = get_fields_via_dump_data
+      
+      # Apply the same filtering and label_name addition as in the main parse method
+      fields.map do |field|
+        field_hash = {
+          name: sanitize_field_name(field.name),
+          original_name: field.name,
+          type: field.type,
+          value: field.value,
+          options: field.options,
+          human_label: generate_human_label(field.name),
+          label_name: field.value # Add label_name equal to value
+        }
+        field_hash
+      end.reject { |field| field[:value].nil? || field[:value].to_s.empty? }
     rescue => e
       Rails.logger.error "Fallback parsing also failed: #{e.message}"
       []
