@@ -74,18 +74,11 @@ class FormFillsController < ApplicationController
   def update
     @form_fill = FormFill.find(params[:id])
     if @form_fill.update(form_fill_params)
-      # Respond with success, perhaps a JSON response or redirect
-      # For now, let's redirect back to the show page or respond with JSON
-      respond_to do |format|
-        format.html { redirect_to form_fill_path(@form_fill), notice: 'Form fill was successfully updated.' }
-        format.json { render json: { status: 'ok', message: 'Form fill saved successfully.' }, status: :ok }
-      end
+      flash.now[:success] = 'Draft saved successfully.'
+      render json: { success: true, message: flash.now[:success] }, status: :ok
     else
-      # Respond with error, perhaps a JSON response or render the show page with errors
-      respond_to do |format|
-        format.html { render :show, status: :unprocessable_entity }
-        format.json { render json: @form_fill.errors, status: :unprocessable_entity }
-      end
+      flash.now[:error] = 'Could not save draft.'
+      render json: { success: false, errors: @form_fill.errors.full_messages, message: flash.now[:error] }, status: :unprocessable_entity
     end
   end
 

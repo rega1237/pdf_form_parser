@@ -91,27 +91,69 @@ export default class extends Controller {
       },
       body: formData, // Send as FormData
     })
-      .then((response) => {
-        if (response.ok) {
-          console.log("Draft saved successfully");
-          // Optionally, update UI or provide feedback
-          // If 'Next Page' was clicked, the pagination controller will handle the page change.
-          // We might want to reload form values if the server could have modified them.
-          // this.loadFormValues(); // Re-load values if necessary after save
+      .then((response) => response.json().then(data => ({ status: response.status, ok: response.ok, data: data })))
+      .then(({ status, ok, data }) => {
+        if (ok) {
+          this.displayFlashMessage(
+            "success",
+            data.message || "Draft saved successfully."
+          );
         } else {
-          response
-            .json()
-            .then((data) => {
-              console.error("Failed to save draft:", data);
-              // Display errors to the user
-            })
-            .catch(() => {
-              console.error("Failed to save draft and parse error response.");
-            });
+          this.displayFlashMessage(
+            "error",
+            data.message || "Could not save draft."
+          );
+          console.error("Fallo al guardar borrador:", data);
         }
       })
       .catch((error) => {
+        this.displayFlashMessage("error", "Network error when saving draft.");
         console.error("Error saving draft:", error);
       });
+  }
+
+  displayFlashMessage(type, message) {
+    const flashContainer = document.querySelector('.flash-messages');
+    if (!flashContainer) {
+      console.error("Flash message container not found.");
+      return;
+    }
+
+    const alertDiv = document.createElement('div');
+    let flashClass = '';
+    switch (type) {
+      case 'success':
+        flashClass = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300';
+        break;
+      case 'error':
+        flashClass = 'bg-red-500/10 border-red-500/20 text-red-300';
+        break;
+      case 'alert':
+        flashClass = 'bg-amber-500/10 border-amber-500/20 text-amber-300';
+        break;
+      case 'notice':
+        flashClass = 'bg-blue-500/10 border-blue-500/20 text-blue-300';
+        break;
+      default:
+        flashClass = 'bg-gray-500/10 border-gray-500/20 text-gray-300';
+    }
+
+    alertDiv.className = `${flashClass} px-4 py-3 rounded-lg relative mb-4 border backdrop-blur-sm shadow-lg animate-fade-in`;
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.innerHTML = `
+      <div class="flex items-center">
+        <div class="py-1"><svg class="fill-current h-6 w-6 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm12.73-1.41A8 8 0 1 0 4.34 4.34a8 8 0 0 0 11.32 11.32zM9 11V9h2v6H9v-4zm0-6h2v2H9V5z"/></svg></div>
+        <div>
+          <p class="font-bold">${message}</p>
+        </div>
+      </div>
+    `;
+
+    flashContainer.prepend(alertDiv);
+
+    // Automatically remove the message after 5 seconds
+    setTimeout(() => {
+      alertDiv.remove();
+    }, 5000);
   }
 }
