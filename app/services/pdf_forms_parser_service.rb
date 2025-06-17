@@ -16,12 +16,13 @@ class PdfFormsParserService
         name: sanitize_field_name(field.name),
         original_name: field.name, # Keep original for reference
         type: field.type,
-        value: field.value,
+        value: '', # Changed: Now always empty string instead of field.value
         options: field.options,
         human_label: generate_human_label(field.name),
-        label_name: field.value # Add label_name equal to value
+        label_name: field.value # Keep original value here for reference
       }
-    end.reject { |field| field[:value].nil? || field[:value].to_s.empty? || field[:value] == 'Off' }
+    end.reject { |field| field[:label_name].nil? || field[:label_name].to_s.empty? || field[:label_name] == 'Off' }
+    # Note: Changed filtering to use label_name instead of value since value is now always empty
   rescue PdfForms::PdftkError => e
     Rails.logger.error "PdftkError while parsing #{@file_path}: #{e.message}"
     
@@ -129,7 +130,8 @@ class PdfFormsParserService
     field_values = {}
     
     field_data.each do |field|
-      next unless field['name'].present? && field['value'].present?
+      # Allow processing even if field['value'] is an empty string
+      next unless field['name'].present?
       
       # Try both original name and any variations
       field_name = field['name']
@@ -150,7 +152,6 @@ class PdfFormsParserService
     # Try with escaped field names or alternative methods
     Rails.logger.info "Retrying form fill with alternative approach"
     
-
     raise original_error
   end
 
@@ -167,13 +168,14 @@ class PdfFormsParserService
           name: sanitize_field_name(field.name),
           original_name: field.name,
           type: field.type,
-          value: field.value,
+          value: '', # Changed: Now always empty string instead of field.value
           options: field.options,
           human_label: generate_human_label(field.name),
-          label_name: field.value # Add label_name equal to value
+          label_name: field.value # Keep original value here for reference
         }
         field_hash
-      end.reject { |field| field[:value].nil? || field[:value].to_s.empty? }
+      end.reject { |field| field[:label_name].nil? || field[:label_name].to_s.empty? }
+      # Note: Changed filtering to use label_name instead of value since value is now always empty
     rescue => e
       Rails.logger.error "Fallback parsing also failed: #{e.message}"
       []

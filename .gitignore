@@ -22,3 +22,5 @@ app/assets/forms
 /load-path-cache
 
 .env
+
+/JSONS/
