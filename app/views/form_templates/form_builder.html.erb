@@ -117,7 +117,7 @@
 
     <!-- Main Form -->
     <div class="max-w-6xl mx-auto" data-controller="drag" data-drag-form-template-id-value="<%= @form_template.id %>">
-      <%= form_with model: @form_template, url: form_template_path(@form_template), method: :patch, local: true, html: { class: "space-y-6" } do |form| %>
+      <%= form_with model: @form_template, url: form_builder_update_form_template_path(@form_template), method: :patch, local: true, html: { class: "space-y-6" } do |form| %>
         
         <!-- Form Fields Section -->
         <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
@@ -132,13 +132,19 @@
           </div>
 
           <!-- Drag & Drop Area -->
+          <!-- Drag & Drop Area: Items will be dynamically rendered here by Stimulus controller -->
           <div data-drag-target="list" class="space-y-4 min-h-[300px] p-6 border-2 border-dashed border-white/20 rounded-2xl bg-white/5 backdrop-blur-sm">
+            <%# Initial items are rendered here for the JS controller to pick up %>
+            <%# The JS controller will then clear this and render paginated items %>
             <% fields = @form_template.form_structure.is_a?(String) ? JSON.parse(@form_template.form_structure) : @form_template.form_structure %>
             <% if fields.present? %>
               <% fields.each_with_index do |field, index| %>
+                <%# This div structure is primarily for initial data pickup by JS. %>
+                <%# The JS controller's buildItemElement function will replicate this structure. %>
                 <div class="field-item bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg" 
                      data-drag-target="item" 
-                     data-id="<%= field['name'] %>">
+                     data-id="<%= field['name'] %>"
+                     data-field-type="<%= field['type'] %>"> <%# Added data-field-type %>
                   
                   <!-- Field Header -->
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -213,7 +219,7 @@
                 </div>
               <% end %>
             <% else %>
-              <!-- Empty State -->
+              <!-- Empty State (will also be handled by JS if allItems is empty) -->
               <div class="text-center py-12 animate-pulse-hover">
                 <div class="w-16 h-16 bg-slate-600/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,6 +230,17 @@
                 <p class="text-slate-500 text-sm mt-2">Fields will appear here when you add them to your form template</p>
               </div>
             <% end %>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="flex items-center justify-between mt-6 text-white">
+            <button type="button" data-action="click->drag#prevPage" data-drag-target="prevButton" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              Previous
+            </button>
+            <span data-drag-target="pageInfo" class="text-sm"></span>
+            <button type="button" data-action="click->drag#nextPage" data-drag-target="nextButton" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              Next
+            </button>
           </div>
         </div>
 

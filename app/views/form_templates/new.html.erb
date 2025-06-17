@@ -81,6 +81,55 @@
             </div>
           </div>
 
+          <!-- Campo de system_category -->
+          <div class="space-y-2">
+            <%= form.label :system_category, "System Category", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m7 0V5a2 2 0 012-2h2a2 2 0 012 2v6m-6 0H6"></path>
+                </svg>
+              </div>
+              <%= form.select :system_category, [
+                "Wet Pipe Fire Sprinkler System",
+                "Fire Pump",
+                "Dry Pipe Fire Sprinkler System",
+                "Stand Pipe",
+                "Water Tank",
+                "Foam",
+                "Water Spray",
+                "Private Fire Service Main"
+              ], { prompt: "Select System Category" },
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" %>
+            </div>
+          </div>
+
+          <!-- Reemplazar el campo interval_category por un select múltiple -->
+ <div class="space-y-2">
+  <%= form.label :interval_category_ids, "Interval Categories", class: "block text-white font-semibold text-sm lg:text-base" %>
+  <div class="bg-white/5 border border-white/20 rounded-xl p-4 max-h-48 overflow-y-auto">
+    <div class="space-y-3">
+      <% @interval_categories.each do |category| %>
+        <div class="flex items-center">
+          <input type="checkbox" 
+                 name="<%= form.object_name %>[interval_category_ids][]" 
+                 value="<%= category.id %>"
+                 id="interval_category_<%= category.id %>"
+                 <%= 'checked' if @form_template.interval_category_ids.include?(category.id) %>
+                 class="w-4 h-4 text-indigo-600 bg-white/10 border-white/20 rounded focus:ring-indigo-500 focus:ring-2">
+          <label for="interval_category_<%= category.id %>" 
+                 class="ml-3 text-sm text-white cursor-pointer hover:text-indigo-300 transition-colors">
+            <%= category.name %>
+          </label>
+        </div>
+      <% end %>
+    </div>
+  </div>
+  
+  <!-- Campo oculto para asegurar que se envíe el parámetro aunque no se seleccione nada -->
+  <input type="hidden" name="<%= form.object_name %>[interval_category_ids][]" value="">
+</div>
+
           <!-- Campo de archivo -->
           <div class="space-y-2">
             <%= form.label :original_file, "Template file", class: "block text-white font-semibold text-sm lg:text-base" %>
@@ -88,9 +137,19 @@
               Supported formats: PDF
             </p>
             
-            <div class="file-upload-area bg-white/5 border-2 border-dashed border-white/20 rounded-2xl p-6 lg:p-8 text-center hover:border-indigo-400/50 transition-all duration-300"
-                 data-file-upload-target="uploadArea"
-                 data-action="dragover->file-upload#dragOver dragleave->file-upload#dragLeave drop->file-upload#drop">
+            <!-- Input de archivo oculto - SEPARADO del área de drag & drop -->
+            <%= form.file_field :original_file, 
+                class: "hidden",
+                accept: ".pdf,.docx,.doc,.xls,.xlsx",
+                data: { 
+                  file_upload_target: "fileInput",
+                  action: "change->file-upload#fileChanged"
+                } %>
+            
+            <!-- Área de drag & drop -->
+            <div class="file-upload-area bg-white/5 border-2 border-dashed border-white/20 rounded-2xl p-6 lg:p-8 text-center hover:border-indigo-400/50 transition-all duration-300 relative"
+                data-file-upload-target="uploadArea"
+                data-action="dragover->file-upload#dragOver dragleave->file-upload#dragLeave drop->file-upload#drop">
               <div class="space-y-4">
                 <div class="w-16 h-16 lg:w-20 lg:h-20 bg-indigo-500/20 rounded-2xl flex items-center justify-center mx-auto">
                   <svg class="w-8 h-8 lg:w-10 lg:h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,21 +163,15 @@
                     Drag and drop your file here, or click to select
                   </p>
                   
-                  <%= form.file_field :original_file, 
-                      class: "w-full opacity-0 absolute inset-0 cursor-pointer",
-                      accept: ".pdf,.docx,.doc,.xls,.xlsx",
-                      data: { 
-                        file_upload_target: "fileInput",
-                        action: "change->file-upload#fileChanged"
-                      } %>
-                  
-                  <div class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors duration-200 cursor-pointer"
-                       data-action="click->file-upload#triggerFileInput">
+                  <!-- Botón para activar el input de archivo -->
+                  <button type="button"
+                          class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors duration-200"
+                          data-action="click->file-upload#triggerFileInput">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                     Select file
-                  </div>
+                  </button>
                 </div>
 
                 <!-- Información del archivo seleccionado -->
@@ -132,7 +185,7 @@
                     </div>
                     <button type="button" 
                             data-action="click->file-upload#clearFile"
-                            class="text-slate-400 hover:text-white">
+                            class="text-slate-400 hover:text-white transition-colors">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>

@@ -3,10 +3,29 @@ class FormFillsController < ApplicationController
     @form_fills = FormFill.all
   end
 
+  def show
+    @form_fill = FormFill.find(params[:id])
+    @form_template = @form_fill.form_template
+    if @form_fill.form_structure.present?
+      begin
+        @form_fields = JSON.parse(@form_fill.form_structure)
+      rescue JSON::ParserError => e
+        Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
+        @form_fields = []
+      end
+    else
+      @form_fields = []
+    end
+  end
+
   def new
     @form_fill = FormFill.new
     @form_templates = FormTemplate.all
-    @inspections = Inspection.includes(property: :customer).where(form_fill_id: nil).map do |inspection|
+
+    @inspections = Inspection.includes(property: :customer)
+                             .left_joins(:form_fill)
+                             .where(form_fills: { id: nil })
+                             .map do |inspection|
       ["#{inspection.property.customer.name} - #{inspection.property.property_name}", inspection.id]
     end
 
@@ -46,21 +65,6 @@ class FormFillsController < ApplicationController
     end
   end
 
-  def show
-    @form_fill = FormFill.find(params[:id])
-    @form_template = @form_fill.form_template
-    if @form_fill.form_structure.present?
-      begin
-        @form_fields = JSON.parse(@form_fill.form_structure)
-      rescue JSON::ParserError => e
-        Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
-        @form_fields = []
-      end
-    else
-      @form_fields = []
-    end
-  end
-
   def destroy
     @form_fill = FormFill.find(params[:id])
     @form_fill.destroy
@@ -70,18 +74,11 @@ class FormFillsController < ApplicationController
   def update
     @form_fill = FormFill.find(params[:id])
     if @form_fill.update(form_fill_params)
-      # Respond with success, perhaps a JSON response or redirect
-      # For now, let's redirect back to the show page or respond with JSON
-      respond_to do |format|
-        format.html { redirect_to form_fill_path(@form_fill), notice: 'Form fill was successfully updated.' }
-        format.json { render json: { status: 'ok', message: 'Form fill saved successfully.' }, status: :ok }
-      end
+      flash.now[:success] = 'Draft saved successfully.'
+      render json: { success: true, message: flash.now[:success] }, status: :ok
     else
-      # Respond with error, perhaps a JSON response or render the show page with errors
-      respond_to do |format|
-        format.html { render :show, status: :unprocessable_entity }
-        format.json { render json: @form_fill.errors, status: :unprocessable_entity }
-      end
+      flash.now[:error] = 'Could not save draft.'
+      render json: { success: false, errors: @form_fill.errors.full_messages, message: flash.now[:error] }, status: :unprocessable_entity
     end
   end
 
@@ -144,6 +141,5 @@ class FormFillsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def form_fill_params
     params.require(:form_fill).permit(:name, :form_template_id, :form_structure, :inspection_id)
-    # Eliminamos :google_drive_file_id de los parámetros permitidos
   end
 end

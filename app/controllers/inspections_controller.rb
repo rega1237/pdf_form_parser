@@ -2,6 +2,7 @@
 class InspectionsController < ApplicationController
   before_action :set_inspection, only: %i[show edit update destroy]
   before_action :load_form_data, only: %i[new create edit update]
+  before_action :set_intervals, only: %i[new create edit update]
 
   # GET /inspections
   def index
@@ -50,9 +51,22 @@ class InspectionsController < ApplicationController
 
   # POST /inspections
   def create
+    form_template = get_form_template(inspection_params) # busca el form template que corresponda
     @inspection = Inspection.new(inspection_params)
+    @inspection.form_template_id = form_template&.id
 
-    if @inspection.save
+    return unless @inspection.save
+
+    property = Property.find(inspection_params[:property_id])
+    system_category = inspection_params[:system_category]
+    interval_category = inspection_params[:interval_category]
+
+    form_fill_name = "#{property.property_name} - #{system_category} - #{interval_category}"
+
+    form_fill = FormFill.new(name: form_fill_name, form_template_id: form_template&.id, inspection_id: @inspection.id,
+                             form_structure: form_template&.form_structure)
+
+    if form_fill.save
       redirect_to @inspection, notice: 'Inspección creada exitosamente.'
     else
       @selected_customer = @inspection.property&.customer
@@ -150,8 +164,13 @@ class InspectionsController < ApplicationController
     @inspection = Inspection.find(params[:id])
   end
 
+  def set_intervals
+    @intervals = IntervalCategory.all
+  end
+
   def inspection_params
-    params.require(:inspection).permit(:date, :property_id, :form_template_id, :form_fill_id, :notes, :status)
+    params.require(:inspection).permit(:date, :property_id, :notes, :status,
+                                       :system_category, :interval_category)
   end
 
   def load_form_data
@@ -168,5 +187,14 @@ class InspectionsController < ApplicationController
       @selected_customer = @inspection.property.customer
       @properties = @selected_customer.properties.order(:property_name)
     end
+  end
+
+  def get_form_template(params)
+    form_template_system = FormTemplate.where(system_category: params[:system_category])
+    form_template_system.each do |template|
+      # Check if any of the associated interval categories have a name that matches params[:interval_category]
+      return template if template.interval_categories.any? { |ic| ic.name == params[:interval_category] }
+    end
+    nil # Return nil if no matching template is found
   end
 end

@@ -7,3 +7,16 @@
 #   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
+
+# Crear categorías de intervalo si no existen
+interval_categories = [
+  "Quarterly Inspection",
+  "Annual Inspection",
+  "5-Year Inspection",
+  "Monthly Inspection",
+  "Bi-Annual Inspection"
+]
+
+interval_categories.each do |name|
+  IntervalCategory.find_or_create_by(name: name)
+end

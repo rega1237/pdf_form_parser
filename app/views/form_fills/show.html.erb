@@ -24,6 +24,9 @@
 
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
   <div class="container mx-auto px-4 py-6 lg:py-12">
+    <!-- Flash Messages Container -->
+    <div class="flash-messages fixed top-20 left-0 right-0 z-40 p-4"></div>
+
     <!-- Header con navegación -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div class="mb-4 sm:mb-0">
@@ -119,19 +122,29 @@
                     </div>
 
                     <!-- Grid de campos -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-9 gap-4 items-end">
                       <% fields_in_section.each_with_index do |field, index| %>
                         <% next unless field.is_a?(Hash) && field.key?('name') %>
                         <% next if field['name'].blank? %>
 
                         <% column_width_int = field['column_width'].to_i %>
                         <% column_span = case column_width_int
-                                         when 1..3
-                                           'md:col-span-1'
-                                         when 4..6
+                                         when 2
                                            'md:col-span-2'
-                                         when 7..9
-                                           'md:col-span-2 lg:col-span-3'
+                                         when 3
+                                           'md:col-span-3'
+                                         when 4
+                                           'md:col-span-4'
+                                         when 5
+                                           'md:col-span-5'
+                                         when 6
+                                           'md:col-span-6'
+                                         when 7
+                                           'md:col-span-7'
+                                         when 8
+                                           'md:col-span-8'
+                                         when 9
+                                           'md:col-span-9'
                                          else
                                            'md:col-span-1'
                                          end %>
@@ -140,13 +153,16 @@
                           <% field_id = "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}" %>
                           
                           <% if field['type'] == "Button" %>
+                          
                             <!-- Checkbox -->
                             <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all duration-200">
                               <div class="flex items-center space-x-3">
-                                <%= form.check_box field['name'], 
-                                    { id: field_id, 
-                                      class: "w-5 h-5 text-indigo-600 bg-white/10 border-white/30 rounded focus:ring-indigo-500 focus:ring-2" }, 
-                                    field['value'], nil %>
+                              <%= check_box_tag "form_fill[#{field['name']}]",
+                                  'Yes',
+                                  field['value'] == 'Yes',
+                                  { id: field_id,
+                                    class: "w-5 h-5 text-indigo-600 bg-white/10 border-white/30 rounded focus:ring-indigo-500 focus:ring-2" } %>
+                                
                                 <label for="<%= field_id %>" class="text-white font-medium cursor-pointer select-none">
                                   <%= (field['label_name'].presence || field['name']).humanize %>
                                 </label>

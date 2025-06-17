@@ -114,23 +114,53 @@
     </div>
   </div>
 
-  <!-- Plantilla de formulario -->
-  <div>
-    <%= form.label :form_template_id, "Plantilla de Formulario", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
-    <div class="relative">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-        </svg>
+  <!-- Tercera fila del grid -->
+  <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
+    
+    <!-- Sytem category -->
+    <div>
+      <%= form.label :system_category, "System category", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <%= form.select :system_category, [
+          "Wet Pipe Fire Sprinkler System",
+          "Fire Pump",
+          "Dry Pipe Fire Sprinkler System",
+          "Stand Pipe",
+          "Water Tank",
+          "Foam",
+          "Water Spray",
+          "Private Fire Service Main"
+          ], { prompt: "Select System Category" },
+            class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" %>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
       </div>
-      <%= form.select :form_template_id,
-          options_from_collection_for_select(@form_templates, :id, :name, inspection.form_template_id),
-          { prompt: 'Seleccionar plantilla' },
-          class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" %>
-      <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
+    </div>
+
+    <!-- Intervalo category -->
+      <div>
+      <%= form.label :interval_category, "Interval category", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <%= form.select :interval_category, options_from_collection_for_select(@intervals, :name, :name), { prompt: "Select Interval Category" },
+            class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" %>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
       </div>
     </div>
   </div>

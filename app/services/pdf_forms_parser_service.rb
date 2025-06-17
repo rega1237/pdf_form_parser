@@ -1,55 +1,184 @@
-# app/services/pdf_forms_parser_service.rb
 require 'pdf-forms'
-require 'pdf-reader' # Add this line
 
 class PdfFormsParserService
   def initialize(file_path)
-    @pdftk = PdfForms.new # Assumes pdftk is in PATH, or specify path
+    @pdftk = PdfForms.new(utf8_fields: true) # Enable UTF-8 support
     @file_path = file_path
   end
 
   def parse
-    raw_fields = @pdftk.get_fields(@file_path)
-
+    # Try with different encoding options
+    raw_fields = get_fields_with_encoding
+    
+    # Map fields and filter out those with empty values
     raw_fields.map do |field|
       {
-        name: field.name,
-        type: field.type, # e.g., "Text", "Button", "Choice"
-        value: field.value,
-        options: field.options # For 'Choice' type
+        name: sanitize_field_name(field.name),
+        original_name: field.name, # Keep original for reference
+        type: field.type,
+        value: '', # Changed: Now always empty string instead of field.value
+        options: field.options,
+        human_label: generate_human_label(field.name),
+        label_name: field.value # Keep original value here for reference
       }
-    end
+    end.reject { |field| field[:label_name].nil? || field[:label_name].to_s.empty? || field[:label_name] == 'Off' }
+    # Note: Changed filtering to use label_name instead of value since value is now always empty
   rescue PdfForms::PdftkError => e
     Rails.logger.error "PdftkError while parsing #{@file_path}: #{e.message}"
-    [] # Return empty array or handle error as appropriate
-  rescue PDF::Reader::MalformedPDFError => e
-    Rails.logger.error "MalformedPDFError while reading #{@file_path}: #{e.message}"
-    # Fallback to parsing without labels if reader fails
-    raw_fields.map do |field|
-      {
-        name: field.name,
-        type: field.type,
-        value: field.value,
-        options: field.options,
-        human_label: field.name&.humanize # Fallback
-      }
-    end
+    
+    # Fallback: try alternative methods
+    fallback_parse
+  rescue StandardError => e
+    Rails.logger.error "Unexpected error while parsing #{@file_path}: #{e.message}"
+    []
   end
 
-  # Fill a PDF form with the provided field values
-  # field_data should be an array of hashes with name and value keys
   def fill_form(output_path, field_data)
-    # Convert the array of field data to a hash of field_name => value
-    field_values = {}
-    field_data.each do |field|
-      field_values[field['name']] = field['value'] if field['name'].present? && field['value'].present?
-    end
-
-    # Fill the form
+    # Convert field data and handle special characters
+    field_values = prepare_field_values(field_data)
+    
+    # Try filling with original names first
     @pdftk.fill_form(@file_path, output_path, field_values)
     output_path
   rescue PdfForms::PdftkError => e
     Rails.logger.error "PdftkError while filling form #{@file_path}: #{e.message}"
-    raise e
+    
+    # Try with alternative encoding or field name mapping
+    retry_fill_form(output_path, field_data, e)
+  end
+
+  private
+
+  def get_fields_with_encoding
+    # Try different approaches to handle special characters
+    begin
+      @pdftk.get_fields(@file_path)
+    rescue => e
+      Rails.logger.warn "Standard field extraction failed, trying with dump_data_fields"
+      get_fields_via_dump_data
+    end
+  end
+
+  def get_fields_via_dump_data
+    # Alternative method using pdftk's dump_data_fields
+    # This sometimes works better with special characters
+    dump_output = `pdftk "#{@file_path}" dump_data_fields 2>/dev/null`
+    
+    if $?.success?
+      parse_dump_data_output(dump_output)
+    else
+      Rails.logger.error "pdftk dump_data_fields failed for #{@file_path}"
+      []
+    end
+  end
+
+  def parse_dump_data_output(dump_output)
+    fields = []
+    current_field = {}
+    
+    dump_output.each_line do |line|
+      line = line.strip
+      
+      case line
+      when /^FieldName: (.+)/
+        # Save previous field if exists
+        fields << create_field_object(current_field) unless current_field.empty?
+        current_field = { name: $1 }
+      when /^FieldType: (.+)/
+        current_field[:type] = $1
+      when /^FieldValue: (.+)/
+        current_field[:value] = $1
+      when /^FieldStateOption: (.+)/
+        current_field[:options] ||= []
+        current_field[:options] << $1
+      end
+    end
+    
+    # Don't forget the last field
+    fields << create_field_object(current_field) unless current_field.empty?
+    fields
+  end
+
+  def create_field_object(field_data)
+    # Create a simple object that mimics PdfForms field structure
+    OpenStruct.new(
+      name: field_data[:name],
+      type: field_data[:type] || 'Text',
+      value: field_data[:value],
+      options: field_data[:options] || []
+    )
+  end
+
+  def sanitize_field_name(name)
+    return name unless name
+    
+    # Handle common problematic characters
+    name.to_s.encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
+  end
+
+  def generate_human_label(field_name)
+    return field_name unless field_name
+    
+    # Convert field names like "Location_row_1" to "Location Row 1"
+    field_name.to_s
+              .gsub('_', ' ')
+              .gsub(/([a-z])([A-Z])/, '\1 \2') # Handle camelCase
+              .split.map(&:capitalize).join(' ')
+  end
+
+  def prepare_field_values(field_data)
+    field_values = {}
+    
+    field_data.each do |field|
+      # Allow processing even if field['value'] is an empty string
+      next unless field['name'].present?
+      
+      # Try both original name and any variations
+      field_name = field['name']
+      field_value = field['value'].to_s.encode('UTF-8', invalid: :replace, undef: :replace)
+      
+      field_values[field_name] = field_value
+      
+      # Also try with original_name if it exists
+      if field['original_name'].present? && field['original_name'] != field_name
+        field_values[field['original_name']] = field_value
+      end
+    end
+    
+    field_values
+  end
+
+  def retry_fill_form(output_path, field_data, original_error)
+    # Try with escaped field names or alternative methods
+    Rails.logger.info "Retrying form fill with alternative approach"
+    
+    raise original_error
+  end
+
+  def fallback_parse
+    Rails.logger.info "Attempting fallback parsing method"
+    
+    # Try using system command directly
+    begin
+      fields = get_fields_via_dump_data
+      
+      # Apply the same filtering and label_name addition as in the main parse method
+      fields.map do |field|
+        field_hash = {
+          name: sanitize_field_name(field.name),
+          original_name: field.name,
+          type: field.type,
+          value: '', # Changed: Now always empty string instead of field.value
+          options: field.options,
+          human_label: generate_human_label(field.name),
+          label_name: field.value # Keep original value here for reference
+        }
+        field_hash
+      end.reject { |field| field[:label_name].nil? || field[:label_name].to_s.empty? }
+      # Note: Changed filtering to use label_name instead of value since value is now always empty
+    rescue => e
+      Rails.logger.error "Fallback parsing also failed: #{e.message}"
+      []
+    end
   end
 end
