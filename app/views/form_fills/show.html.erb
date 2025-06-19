@@ -1,237 +1,13 @@
-<% content_for :head do %>
-  <style>
-    #submitFormBtn {
-      display: none;
-    }
-
-    @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(20px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slideUp {
-      0% { opacity: 0; transform: translateY(30px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.8; }
-    }
-    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
-    .animate-slide-up { animation: slideUp 0.5s ease-out; }
-    .animate-pulse-custom { animation: pulse 2s infinite; }
-
-    /* Estilos para checkbox como botón */
-    .checkbox-button {
-      position: relative;
-      display: inline-block;
-      width: 100%;
-    }
-    
-    .checkbox-button input[type="checkbox"] {
-      display: none;
-    }
-    
-    .checkbox-button-label {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px 20px;
-      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-      border: 2px solid #dc2626;
-      border-radius: 16px;
-      color: #7f1d1d;
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-align: center;
-      min-height: 60px;
-      box-shadow: 0 4px 8px rgba(220, 38, 38, 0.15);
-    }
-    
-    .checkbox-button-label:hover {
-      background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-      border-color: #b91c1c;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(220, 38, 38, 0.25);
-    }
-    
-    .checkbox-button input[type="checkbox"]:checked + .checkbox-button-label {
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-      border-color: #7f1d1d;
-      color: white;
-      box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
-    }
-    
-    .checkbox-button input[type="checkbox"]:checked + .checkbox-button-label::before {
-      content: "✓";
-      margin-right: 8px;
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    /* Estilos responsivos para tabletas */
-    @media (min-width: 768px) {
-      .tablet-optimized {
-        font-size: 18px;
-      }
-      
-      .checkbox-button-label {
-        font-size: 18px;
-        padding: 20px 24px;
-        min-height: 70px;
-      }
-      
-      input[type="text"], select {
-        font-size: 18px !important;
-        padding: 16px 20px !important;
-      }
-    }
-
-    /* Mejoras para campos de formulario */
-    .form-input {
-      background: rgba(255, 255, 255, 0.95) !important;
-      border: 2px solid #1e40af !important;
-      color: #1e3a8a !important;
-    }
-    
-    .form-input:focus {
-      background: rgba(255, 255, 255, 1) !important;
-      border-color: #1d4ed8 !important;
-      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.2) !important;
-    }
-    
-    .form-input::placeholder {
-      color: #1e40af !important;
-      opacity: 0.7;
-    }
-
-    .form-select {
-      background: rgba(255, 255, 255, 0.95) !important;
-      border: 2px solid #1e40af !important;
-      color: #1e3a8a !important;
-    }
-    
-    .form-select:focus {
-      background: rgba(255, 255, 255, 1) !important;
-      border-color: #1d4ed8 !important;
-      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.2) !important;
-    }
-
-    .pagination-circle-button {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 50px; /* Aumentado para tabletas */
-      height: 50px; /* Aumentado para tabletas */
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s ease;
-      z-index: 10;
-    }
-
-    .pagination-circle-button svg {
-      width: 28px; /* Aumentado para tabletas */
-      height: 28px; /* Aumentado para tabletas */
-    }
-
-    @media (min-width: 768px) {
-      .pagination-circle-button {
-        width: 60px;
-        height: 60px;
-      }
-      .pagination-circle-button svg {
-        width: 32px;
-        height: 32px;
-      }
-    }
-
-    /* Estilos para botones Pass/Fail/N/A */
-    .choice-button-group {
-      display: flex;
-      gap: 8px; /* Espacio entre botones */
-      margin-top: 8px; /* Espacio sobre los botones */
-    }
-
-    .choice-button {
-      flex-grow: 1; /* Para que los botones ocupen el espacio disponible */
-      padding: 12px 10px; /* Ajustado para mejor apariencia en tabletas */
-      border: 2px solid transparent;
-      border-radius: 12px; /* Bordes más redondeados */
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-      text-align: center;
-      font-size: 14px; /* Tamaño base */
-    }
-
-    @media (min-width: 768px) { /* Estilos para tabletas y más grandes */
-      .choice-button {
-        padding: 14px 15px;
-        font-size: 16px;
-      }
-    }
-
-    .choice-button.selected {
-      color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    .choice-button[data-value="Pass"] {
-      background-color: #c6f6d5; /* green-100 */
-      border-color: #68d391; /* green-300 */
-      color: #2f855a; /* green-700 */
-    }
-    .choice-button[data-value="Pass"]:hover {
-      background-color: #9ae6b4; /* green-200 */
-    }
-    .choice-button[data-value="Pass"].selected {
-      background-color: #38a169; /* green-500 */
-      border-color: #2f855a; /* green-700 */
-    }
-
-    .choice-button[data-value="Fail"] {
-      background-color: #fed7d7; /* red-100 */
-      border-color: #fc8181; /* red-300 */
-      color: #c53030; /* red-700 */
-    }
-    .choice-button[data-value="Fail"]:hover {
-      background-color: #fbb6b6; /* red-200 */
-    }
-    .choice-button[data-value="Fail"].selected {
-      background-color: #e53e3e; /* red-500 */
-      border-color: #c53030; /* red-700 */
-    }
-
-    .choice-button[data-value="N/A"] {
-      background-color: #e2e8f0; /* gray-200 */
-      border-color: #a0aec0; /* gray-400 */
-      color: #4a5568; /* gray-700 */
-    }
-    .choice-button[data-value="N/A"]:hover {
-      background-color: #cbd5e0; /* gray-300 */
-    }
-    .choice-button[data-value="N/A"].selected {
-      background-color: #718096; /* gray-500 */
-      border-color: #4a5568; /* gray-700 */
-    }
-  </style>
-<% end %>
-
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
   <div class="container mx-auto px-4 py-6 lg:py-12">
-    <!-- Flash Messages Container -->
     <div class="flash-messages fixed top-20 left-0 right-0 z-40 p-4"></div>
 
-    <!-- Header con navegación -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div class="mb-4 sm:mb-0">
-        <h1 class="text-2xl lg:text-4xl font-bold text-white mb-2 tablet-optimized">
+        <h1 class="text-2xl lg:text-4xl font-bold text-white mb-2">
           <%= @form_fill.name %>
         </h1>
-        <p class="text-blue-200 text-base lg:text-lg tablet-optimized">
+        <p class="text-blue-200 text-base md:text-lg">
           Complete todos los campos requeridos para enviar la inspección
         </p>
       </div>
@@ -244,9 +20,7 @@
       <% end %>
     </div>
 
-    <!-- Contenido principal -->
     <div class="max-w-6xl mx-auto">
-      <!-- Formulario principal -->
       <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, 
           data: { controller: "pagination form-fill", turbo: false, 
                   "form-fill-form-structure-value": @form_fill.form_structure, 
@@ -258,7 +32,6 @@
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
         
         <% if @form_fields.blank? %>
-          <!-- Error: Sin campos -->
           <div class="bg-red-50 border-2 border-red-200 rounded-3xl p-8 animate-slide-up shadow-lg">
             <div class="flex items-center mb-4">
               <svg class="w-8 h-8 text-red-500 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,7 +42,6 @@
             <p class="text-red-700 text-lg">No hay campos disponibles en este formulario o la estructura no pudo ser procesada correctamente.</p>
           </div>
         <% else %>
-          <!-- Indicador de progreso -->
           <% valid_fields = @form_fields.reject { |f| f['page_number'].to_i == 0 } %>
           <% pages = valid_fields.group_by { |f| f['page_number'].to_i }.sort_by { |page_num, _| page_num } %>
           <% total_pages = pages.length %>
@@ -288,7 +60,6 @@
             </div>
           </div>
 
-          <!-- Páginas del formulario -->
           <div class="relative">
           <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
             <div class="page-content relative <%= page_index == 0 ? 'animate-slide-up' : 'hidden' %>" 
@@ -296,7 +67,6 @@
                  data-pagination-target="pageContent">
               
               <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-blue-400 shadow-2xl">
-                <!-- Título de página -->
                 <div class="mb-10">
                   <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3">
                     Página <%= page_num %>
@@ -304,10 +74,8 @@
                   <div class="w-20 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
                 </div>
 
-                <!-- Secciones de la página -->
                 <% fields_on_page.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
                   <div class="mb-10 last:mb-0">
-                    <!-- Título de sección -->
                     <div class="mb-8">
                       <div class="flex items-center mb-6">
                         <div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
@@ -321,7 +89,6 @@
                       </div>
                     </div>
 
-                    <!-- Grid de campos -->
                     <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
                       <% fields_in_section.each_with_index do |field, index| %>
                         <% next unless field.is_a?(Hash) && field.key?('name') %>
@@ -329,24 +96,15 @@
 
                         <% column_width_int = field['column_width'].to_i %>
                         <% column_span = case column_width_int
-                                         when 2
-                                           'md:col-span-2'
-                                         when 3
-                                           'md:col-span-3'
-                                         when 4
-                                           'md:col-span-4'
-                                         when 5
-                                           'md:col-span-5'
-                                         when 6
-                                           'md:col-span-6'
-                                         when 7
-                                           'md:col-span-7'
-                                         when 8
-                                           'md:col-span-8'
-                                         when 9
-                                           'md:col-span-9'
-                                         else
-                                           'md:col-span-1'
+                                         when 2 then 'md:col-span-2'
+                                         when 3 then 'md:col-span-3'
+                                         when 4 then 'md:col-span-4'
+                                         when 5 then 'md:col-span-5'
+                                         when 6 then 'md:col-span-6'
+                                         when 7 then 'md:col-span-7'
+                                         when 8 then 'md:col-span-8'
+                                         when 9 then 'md:col-span-9'
+                                         else 'md:col-span-1'
                                          end %>
 
                         <div class="<%= column_span %> space-y-4">
@@ -354,29 +112,24 @@
                           
                           <% if field['type'] == "Button" %>
                           
-                            <!-- Checkbox como botón -->
-                            <div class="checkbox-button">
-                              <%= check_box_tag "form_fill[#{field['name']}]",
-                                  'Yes',
-                                  field['value'] == 'Yes',
-                                  { id: field_id } %>
+                            <div class="relative inline-block w-full checkbox-button">
+                              <%= check_box_tag "form_fill[#{field['name']}]", 'Yes', field['value'] == 'Yes', 
+                                  { id: field_id, class: "hidden peer" } %>
                               
-                              <label for="<%= field_id %>" class="checkbox-button-label">
+                              <label for="<%= field_id %>" 
+                                     class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
+                                            bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 
+                                            hover:from-red-200 hover:to-red-400 hover:border-red-700 hover:-translate-y-0.5 hover:shadow-lg
+                                            peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">
                                 <%= (field['label_name'].presence || field['name']).humanize %>
                               </label>
                             </div>
                           
                           <% elsif field['type'] == "Text" %>
                             <% if field['label_name']&.downcase.include?('p, f, n/a') %>
-                              <!-- Botones Pass/Fail/N/A para campo de texto -->
                               <div>
-                                <%= form.label field['name'],
-                                    (field['label_name'].presence || field['name']).humanize,
-                                    for: field_id,
-                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']).humanize, for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
-                                
                                 <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
                                   <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
                                   <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Fail">Fail</button>
@@ -384,12 +137,8 @@
                                 </div>
                               </div>
                             <% else %>
-                              <!-- Campo de texto estándar -->
                               <div>
-                                <%= form.label field['name'],
-                                    (field['label_name'].presence || field['name']).humanize,
-                                    for: field_id,
-                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']).humanize, for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <div class="relative">
                                   <svg class="hidden absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
@@ -397,7 +146,7 @@
                                   <%= form.text_field field['name'],
                                       id: field_id,
                                       value: field['value'],
-                                      class: "form-input w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium focus:outline-none focus:ring-0 transition-all duration-200 shadow-md",
+                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
                                       placeholder: "     Ingrese #{(field['label_name'].presence || field['name']).humanize.downcase}" %>
                                 </div>
                               </div>
@@ -405,15 +154,9 @@
                           
                           <% elsif field['type'] == "Choice" && field['options'].is_a?(Array) %>
                             <% if field['label_name']&.downcase.include?('p, f, n/a') %>
-                              <!-- Botones Pass/Fail/N/A -->
                               <div>
-                                <%= form.label field['name'],
-                                    (field['label_name'].presence || field['name']).humanize,
-                                    for: field_id, # La etiqueta apunta al primer botón o al grupo conceptualmente
-                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']).humanize, for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
-                                
                                 <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
                                   <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
                                   <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Fail">Fail</button>
@@ -421,12 +164,8 @@
                                 </div>
                               </div>
                             <% else %>
-                              <!-- Select Estándar -->
                               <div>
-                                <%= form.label field['name'],
-                                    (field['label_name'].presence || field['name']).humanize,
-                                    for: field_id,
-                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']).humanize, for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <div class="relative">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
@@ -435,28 +174,21 @@
                                       options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
                                       { include_blank: 'Seleccione una opción' },
                                       id: field_id,
-                                      class: "form-select w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium focus:outline-none focus:ring-0 transition-all duration-200 appearance-none shadow-md" %>
+                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
                                 </div>
                               </div>
                             <% end %>
                           
                           <% else %>
-                            <!-- Campo no soportado -->
                             <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 shadow-lg">
                               <div class="flex items-start space-x-3">
                                 <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                                 </svg>
                                 <div>
-                                  <h4 class="text-amber-800 font-bold mb-2 text-lg">
-                                    <%= (field['label_name'].presence || field['name']).humanize %>
-                                  </h4>
-                                  <p class="text-amber-700 text-sm mb-2">
-                                    Tipo: <span class="font-mono font-semibold"><%= field['type'] %></span>
-                                  </p>
-                                  <p class="text-amber-700 text-sm">
-                                    Este tipo de campo aún no es compatible con la interfaz web
-                                  </p>
+                                  <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= (field['label_name'].presence || field['name']).humanize %></h4>
+                                  <p class="text-amber-700 text-sm mb-2">Tipo: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
+                                  <p class="text-amber-700 text-sm">Este tipo de campo aún no es compatible con la interfaz web</p>
                                 </div>
                               </div>
                             </div>
@@ -470,46 +202,38 @@
             </div>
           <% end %>
 
-          <!-- Controles de navegación -->
-          <!-- Botón Atrás Circular -->
           <button type="button" 
                   id="backPageBtn" 
                   data-action="click->pagination#backPage" 
                   data-pagination-target="backPageBtn" 
-                  class="pagination-circle-button left-[-25px] md:left-[-30px] bg-gray-600 hover:bg-gray-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none"
+                  class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out left-[-25px] md:left-[-30px] bg-gray-600 hover:bg-gray-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none"
                   disabled>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
             </svg>
           </button>
 
-          <!-- Botón Siguiente Circular -->
           <button type="button" 
                   id="nextPageBtn" 
                   data-action="click->pagination#nextPage click->form-fill#saveDraft" 
                   data-pagination-target="nextPageBtn" 
-                  class="pagination-circle-button right-[-25px] md:right-[-30px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out right-[-25px] md:right-[-30px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none">
+            <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
             </svg>
           </button>
+          
           <div class="hidden bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-blue-400 animate-fade-in shadow-2xl mt-8">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center space-y-6 sm:space-y-0 sm:space-x-6">
-              <!-- Botones de acción centrales -->
-              <!-- Enviar Formulario (oculto inicialmente) -->
               <%= form.submit "Enviar Formulario", 
                   id: "submitFormBtn", 
                   data: { pagination_target: "submitFormBtn" }, 
                   class: "hidden items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 md:py-4 md:px-8 rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer shadow-lg text-base md:text-lg" %>
             </div>
           </div>
-          </div> <!-- Cierre del div con class="relative" que contiene las páginas y los botones de paginación -->
-        <% end %>
+          </div> <% end %>
       <% end %>
 
-
-
-<!-- Sección de acciones adicionales -->
       <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
         <div class="flex items-start space-x-4 mb-6">
           <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg">

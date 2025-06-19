@@ -8,3 +8,11 @@
  *
  * Consider organizing styles into separate files for maintainability.
  */
+
+@import "components/_checkbox-button.css";
+@import "components/_choice-buttons.css";
+@import "animation/_fade-in.css";
+@import "animation/_slide-up.css";
+@import "animation/_scale-in.css";
+@import "animation/_pulse-animation.css";
+@import "animation/_bounce-subtle.css";

@@ -1,0 +1,7 @@
+/* Añade el tick (✓) al checkbox cuando está seleccionado. */
+.checkbox-button input[type="checkbox"]:checked+.checkbox-button-label::before {
+    content: "✓";
+    margin-right: 8px;
+    font-size: 18px;
+    font-weight: bold;
+}
