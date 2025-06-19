@@ -147,6 +147,76 @@
         height: 32px;
       }
     }
+
+    /* Estilos para botones Pass/Fail/N/A */
+    .choice-button-group {
+      display: flex;
+      gap: 8px; /* Espacio entre botones */
+      margin-top: 8px; /* Espacio sobre los botones */
+    }
+
+    .choice-button {
+      flex-grow: 1; /* Para que los botones ocupen el espacio disponible */
+      padding: 12px 10px; /* Ajustado para mejor apariencia en tabletas */
+      border: 2px solid transparent;
+      border-radius: 12px; /* Bordes más redondeados */
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      text-align: center;
+      font-size: 14px; /* Tamaño base */
+    }
+
+    @media (min-width: 768px) { /* Estilos para tabletas y más grandes */
+      .choice-button {
+        padding: 14px 15px;
+        font-size: 16px;
+      }
+    }
+
+    .choice-button.selected {
+      color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .choice-button[data-value="Pass"] {
+      background-color: #c6f6d5; /* green-100 */
+      border-color: #68d391; /* green-300 */
+      color: #2f855a; /* green-700 */
+    }
+    .choice-button[data-value="Pass"]:hover {
+      background-color: #9ae6b4; /* green-200 */
+    }
+    .choice-button[data-value="Pass"].selected {
+      background-color: #38a169; /* green-500 */
+      border-color: #2f855a; /* green-700 */
+    }
+
+    .choice-button[data-value="Fail"] {
+      background-color: #fed7d7; /* red-100 */
+      border-color: #fc8181; /* red-300 */
+      color: #c53030; /* red-700 */
+    }
+    .choice-button[data-value="Fail"]:hover {
+      background-color: #fbb6b6; /* red-200 */
+    }
+    .choice-button[data-value="Fail"].selected {
+      background-color: #e53e3e; /* red-500 */
+      border-color: #c53030; /* red-700 */
+    }
+
+    .choice-button[data-value="N/A"] {
+      background-color: #e2e8f0; /* gray-200 */
+      border-color: #a0aec0; /* gray-400 */
+      color: #4a5568; /* gray-700 */
+    }
+    .choice-button[data-value="N/A"]:hover {
+      background-color: #cbd5e0; /* gray-300 */
+    }
+    .choice-button[data-value="N/A"].selected {
+      background-color: #718096; /* gray-500 */
+      border-color: #4a5568; /* gray-700 */
+    }
   </style>
 <% end %>
 
@@ -297,42 +367,78 @@
                             </div>
                           
                           <% elsif field['type'] == "Text" %>
-                            <!-- Campo de texto -->
-                            <div>
-                              <%= form.label field['name'],
-                                  (field['label_name'].presence || field['name']).humanize,
-                                  for: field_id,
-                                  class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                              <div class="relative">
-                                <svg class="hidden absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                </svg>
-                                <%= form.text_field field['name'],
-                                    id: field_id,
-                                    value: field['value'],
-                                    class: "form-input w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium focus:outline-none focus:ring-0 transition-all duration-200 shadow-md",
-                                    placeholder: "     Ingrese #{(field['label_name'].presence || field['name']).humanize.downcase}" %>
+                            <% if field['label_name']&.downcase.include?('p, f, n/a') %>
+                              <!-- Botones Pass/Fail/N/A para campo de texto -->
+                              <div>
+                                <%= form.label field['name'],
+                                    (field['label_name'].presence || field['name']).humanize,
+                                    for: field_id,
+                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                
+                                <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
+                                
+                                <div class="choice-button-group" data-hidden-input-id="hidden_input_<%= field_id %>">
+                                  <button type="button" class="choice-button" data-value="Pass">Pass</button>
+                                  <button type="button" class="choice-button" data-value="Fail">Fail</button>
+                                  <button type="button" class="choice-button" data-value="N/A">N/A</button>
+                                </div>
                               </div>
-                            </div>
+                            <% else %>
+                              <!-- Campo de texto estándar -->
+                              <div>
+                                <%= form.label field['name'],
+                                    (field['label_name'].presence || field['name']).humanize,
+                                    for: field_id,
+                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <div class="relative">
+                                  <svg class="hidden absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                  </svg>
+                                  <%= form.text_field field['name'],
+                                      id: field_id,
+                                      value: field['value'],
+                                      class: "form-input w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium focus:outline-none focus:ring-0 transition-all duration-200 shadow-md",
+                                      placeholder: "     Ingrese #{(field['label_name'].presence || field['name']).humanize.downcase}" %>
+                                </div>
+                              </div>
+                            <% end %>
                           
                           <% elsif field['type'] == "Choice" && field['options'].is_a?(Array) %>
-                            <!-- Select -->
-                            <div>
-                              <%= form.label field['name'],
-                                  (field['label_name'].presence || field['name']).humanize,
-                                  for: field_id,
-                                  class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                              <div class="relative">
-                                <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
-                                </svg>
-                                <%= form.select field['name'],
-                                    options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
-                                    { include_blank: 'Seleccione una opción' },
-                                    id: field_id,
-                                    class: "form-select w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium focus:outline-none focus:ring-0 transition-all duration-200 appearance-none shadow-md" %>
+                            <% if field['label_name']&.downcase.include?('p, f, n/a') %>
+                              <!-- Botones Pass/Fail/N/A -->
+                              <div>
+                                <%= form.label field['name'],
+                                    (field['label_name'].presence || field['name']).humanize,
+                                    for: field_id, # La etiqueta apunta al primer botón o al grupo conceptualmente
+                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                
+                                <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
+                                
+                                <div class="choice-button-group" data-hidden-input-id="hidden_input_<%= field_id %>">
+                                  <button type="button" class="choice-button" data-value="Pass">Pass</button>
+                                  <button type="button" class="choice-button" data-value="Fail">Fail</button>
+                                  <button type="button" class="choice-button" data-value="N/A">N/A</button>
+                                </div>
                               </div>
-                            </div>
+                            <% else %>
+                              <!-- Select Estándar -->
+                              <div>
+                                <%= form.label field['name'],
+                                    (field['label_name'].presence || field['name']).humanize,
+                                    for: field_id,
+                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                  </svg>
+                                  <%= form.select field['name'],
+                                      options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
+                                      { include_blank: 'Seleccione una opción' },
+                                      id: field_id,
+                                      class: "form-select w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium focus:outline-none focus:ring-0 transition-all duration-200 appearance-none shadow-md" %>
+                                </div>
+                              </div>
+                            <% end %>
                           
                           <% else %>
                             <!-- Campo no soportado -->
@@ -401,7 +507,52 @@
         <% end %>
       <% end %>
 
-      <!-- Sección de acciones adicionales -->
+<script type="text/javascript">
+  document.addEventListener('turbo:load', () => {
+    const choiceButtonGroups = document.querySelectorAll('.choice-button-group');
+
+    choiceButtonGroups.forEach(group => {
+      const hiddenInputId = group.dataset.hiddenInputId;
+      const hiddenInput = document.getElementById(hiddenInputId);
+      const buttons = group.querySelectorAll('.choice-button');
+      
+      // Pre-seleccionar botón si hay un valor existente
+      if (hiddenInput && hiddenInput.value) {
+        buttons.forEach(button => {
+          if (button.dataset.value === hiddenInput.value) {
+            button.classList.add('selected');
+          }
+        });
+      }
+
+      buttons.forEach(button => {
+        button.addEventListener('click', (event) => {
+          event.preventDefault(); // Prevenir cualquier comportamiento por defecto del botón
+          const currentValue = button.dataset.value;
+
+          // Si el botón ya está seleccionado, deseleccionarlo y limpiar el valor
+          if (button.classList.contains('selected')) {
+            button.classList.remove('selected');
+            if (hiddenInput) {
+              hiddenInput.value = '';
+            }
+          } else {
+            // Deseleccionar todos los botones en este grupo
+            buttons.forEach(btn => btn.classList.remove('selected'));
+            // Seleccionar el botón clickeado
+            button.classList.add('selected');
+            // Actualizar el valor del input oculto
+            if (hiddenInput) {
+              hiddenInput.value = currentValue;
+            }
+          }
+        });
+      });
+    });
+  });
+</script>
+
+<!-- Sección de acciones adicionales -->
       <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
         <div class="flex items-start space-x-4 mb-6">
           <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg">
