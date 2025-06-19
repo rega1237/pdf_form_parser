@@ -377,10 +377,10 @@
                                 
                                 <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
                                 
-                                <div class="choice-button-group" data-hidden-input-id="hidden_input_<%= field_id %>">
-                                  <button type="button" class="choice-button" data-value="Pass">Pass</button>
-                                  <button type="button" class="choice-button" data-value="Fail">Fail</button>
-                                  <button type="button" class="choice-button" data-value="N/A">N/A</button>
+                                <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
+                                  <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
+                                  <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Fail">Fail</button>
+                                  <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
                                 </div>
                               </div>
                             <% else %>
@@ -414,10 +414,10 @@
                                 
                                 <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
                                 
-                                <div class="choice-button-group" data-hidden-input-id="hidden_input_<%= field_id %>">
-                                  <button type="button" class="choice-button" data-value="Pass">Pass</button>
-                                  <button type="button" class="choice-button" data-value="Fail">Fail</button>
-                                  <button type="button" class="choice-button" data-value="N/A">N/A</button>
+                                <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
+                                  <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
+                                  <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Fail">Fail</button>
+                                  <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
                                 </div>
                               </div>
                             <% else %>
@@ -507,50 +507,7 @@
         <% end %>
       <% end %>
 
-<script type="text/javascript">
-  document.addEventListener('turbo:load', () => {
-    const choiceButtonGroups = document.querySelectorAll('.choice-button-group');
 
-    choiceButtonGroups.forEach(group => {
-      const hiddenInputId = group.dataset.hiddenInputId;
-      const hiddenInput = document.getElementById(hiddenInputId);
-      const buttons = group.querySelectorAll('.choice-button');
-      
-      // Pre-seleccionar botón si hay un valor existente
-      if (hiddenInput && hiddenInput.value) {
-        buttons.forEach(button => {
-          if (button.dataset.value === hiddenInput.value) {
-            button.classList.add('selected');
-          }
-        });
-      }
-
-      buttons.forEach(button => {
-        button.addEventListener('click', (event) => {
-          event.preventDefault(); // Prevenir cualquier comportamiento por defecto del botón
-          const currentValue = button.dataset.value;
-
-          // Si el botón ya está seleccionado, deseleccionarlo y limpiar el valor
-          if (button.classList.contains('selected')) {
-            button.classList.remove('selected');
-            if (hiddenInput) {
-              hiddenInput.value = '';
-            }
-          } else {
-            // Deseleccionar todos los botones en este grupo
-            buttons.forEach(btn => btn.classList.remove('selected'));
-            // Seleccionar el botón clickeado
-            button.classList.add('selected');
-            // Actualizar el valor del input oculto
-            if (hiddenInput) {
-              hiddenInput.value = currentValue;
-            }
-          }
-        });
-      });
-    });
-  });
-</script>
 
 <!-- Sección de acciones adicionales -->
       <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
