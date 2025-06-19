@@ -117,6 +117,36 @@
       border-color: #1d4ed8 !important;
       box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.2) !important;
     }
+
+    .pagination-circle-button {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50px; /* Aumentado para tabletas */
+      height: 50px; /* Aumentado para tabletas */
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    .pagination-circle-button svg {
+      width: 28px; /* Aumentado para tabletas */
+      height: 28px; /* Aumentado para tabletas */
+    }
+
+    @media (min-width: 768px) {
+      .pagination-circle-button {
+        width: 60px;
+        height: 60px;
+      }
+      .pagination-circle-button svg {
+        width: 32px;
+        height: 32px;
+      }
+    }
   </style>
 <% end %>
 
@@ -151,6 +181,7 @@
           data: { controller: "pagination form-fill", turbo: false, 
                   "form-fill-form-structure-value": @form_fill.form_structure, 
                   "form-fill-form-fields-value": @form_fields.to_json }, 
+          id: "form-fill-main-form",
           local: true, 
           class: "space-y-8" do |form| %>
         
@@ -173,7 +204,7 @@
           <% pages = valid_fields.group_by { |f| f['page_number'].to_i }.sort_by { |page_num, _| page_num } %>
           <% total_pages = pages.length %>
           
-          <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl p-6 border-2 border-blue-500 animate-fade-in shadow-lg">
+          <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl p-6 border-2 border-blue-500 animate-fade-in shadow-lg hidden">
             <div class="flex items-center justify-between mb-4">
               <span class="text-white font-bold text-lg">Progreso del Formulario</span>
               <span class="text-blue-300 text-base font-semibold" id="page-indicator">
@@ -188,8 +219,9 @@
           </div>
 
           <!-- Páginas del formulario -->
+          <div class="relative">
           <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
-            <div class="page-content <%= page_index == 0 ? 'animate-slide-up' : 'hidden' %>" 
+            <div class="page-content relative <%= page_index == 0 ? 'animate-slide-up' : 'hidden' %>" 
                  data-page-number="<%= page_num %>" 
                  data-pagination-target="pageContent">
               
@@ -272,7 +304,7 @@
                                   for: field_id,
                                   class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                               <div class="relative">
-                                <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="hidden absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                 </svg>
                                 <%= form.text_field field['name'],
@@ -333,54 +365,39 @@
           <% end %>
 
           <!-- Controles de navegación -->
-          <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-blue-400 animate-fade-in shadow-2xl">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-6 sm:space-y-0">
-              <!-- Botón Atrás -->
-              <button type="button" 
-                      id="backPageBtn" 
-                      data-action="click->pagination#backPage" 
-                      data-pagination-target="backPageBtn" 
-                      class="inline-flex items-center bg-gray-500 hover:bg-gray-600 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg text-lg" 
-                      disabled>
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Página Anterior
-              </button>
+          <!-- Botón Atrás Circular -->
+          <button type="button" 
+                  id="backPageBtn" 
+                  data-action="click->pagination#backPage" 
+                  data-pagination-target="backPageBtn" 
+                  class="pagination-circle-button left-[-25px] md:left-[-30px] bg-gray-600 hover:bg-gray-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none"
+                  disabled>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+          </button>
 
-              <!-- Botones de acción -->
-              <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <!-- Guardar Borrador -->
-                <button type="button" 
-                        id="saveDraftBtn" 
-                        data-action="click->form-fill#saveDraft" 
-                        class="inline-flex items-center justify-center bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg text-lg">
-                  <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
-                  </svg>
-                  Guardar Borrador
-                </button>
-
-                <!-- Enviar Formulario (oculto inicialmente) -->
-                <%= form.submit "Enviar Formulario", 
-                    id: "submitFormBtn", 
-                    data: { pagination_target: "submitFormBtn" }, 
-                    class: "hidden items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer shadow-lg text-lg" %>
-
-                <!-- Siguiente Página -->
-                <button type="button" 
-                        id="nextPageBtn" 
-                        data-action="click->pagination#nextPage click->form-fill#saveDraft" 
-                        data-pagination-target="nextPageBtn" 
-                        class="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
-                  Siguiente Página
-                  <svg class="w-5 h-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                </button>
-              </div>
+          <!-- Botón Siguiente Circular -->
+          <button type="button" 
+                  id="nextPageBtn" 
+                  data-action="click->pagination#nextPage click->form-fill#saveDraft" 
+                  data-pagination-target="nextPageBtn" 
+                  class="pagination-circle-button right-[-25px] md:right-[-30px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+          <div class="hidden bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-blue-400 animate-fade-in shadow-2xl mt-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center space-y-6 sm:space-y-0 sm:space-x-6">
+              <!-- Botones de acción centrales -->
+              <!-- Enviar Formulario (oculto inicialmente) -->
+              <%= form.submit "Enviar Formulario", 
+                  id: "submitFormBtn", 
+                  data: { pagination_target: "submitFormBtn" }, 
+                  class: "hidden items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 md:py-4 md:px-8 rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer shadow-lg text-base md:text-lg" %>
             </div>
           </div>
+          </div> <!-- Cierre del div con class="relative" que contiene las páginas y los botones de paginación -->
         <% end %>
       <% end %>
 
@@ -398,7 +415,18 @@
           </div>
         </div>
         
-        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">       
+          <button type="button"
+                  data-controller="external-form-action"
+                  data-action="click->external-form-action#triggerSaveDraft"
+                  data-external-form-action-form-id-value="form-fill-main-form"
+                  class="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
+            <svg class="w-5 h-5 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            Guardar Borrador
+          </button>
+
           <%= button_to 'Generar PDF', 
               submit_form_form_fill_path(@form_fill), 
               method: :post, 
