@@ -1,197 +1,160 @@
 // app/javascript/controllers/inspection_modal_controller.js
-import { Controller } from "@hotwired/stimulus"
+import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
   static targets = [
-    "modal",
-    "modalContent",
-    "modalTitle", 
-    "systemGrid", 
-    "intervalGrid", 
-    "backButton",
+    "formContent",
+    "systemSelection",
+    "intervalSelection",
     "systemCategoryInput",
     "intervalCategoryInput",
     "systemCategoryDisplay",
-    "intervalCategoryDisplay"
-  ]
+    "intervalCategoryDisplay",
+  ];
 
   connect() {
-    // Bind escape key handler
-    this.escapeHandler = this.handleEscape.bind(this)
-    
     // Initialize display values if form has existing values
-    this.updateDisplayValues()
-  }
-
-  disconnect() {
-    // Clean up event listeners
-    document.removeEventListener("keydown", this.escapeHandler)
-    this.restoreBodyScroll()
+    this.updateDisplayValues();
   }
 
   updateDisplayValues() {
     // Update system category display
-    const systemValue = this.systemCategoryInputTarget.value
+    const systemValue = this.systemCategoryInputTarget.value;
     if (systemValue) {
-      this.systemCategoryDisplayTarget.textContent = systemValue
-      this.systemCategoryDisplayTarget.classList.remove("text-slate-400")
-      this.systemCategoryDisplayTarget.classList.add("text-white")
+      this.systemCategoryDisplayTarget.textContent = systemValue;
+      this.systemCategoryDisplayTarget.classList.remove("text-slate-400");
+      this.systemCategoryDisplayTarget.classList.add("text-white");
     }
 
     // Update interval category display
-    const intervalValue = this.intervalCategoryInputTarget.value
+    const intervalValue = this.intervalCategoryInputTarget.value;
     if (intervalValue) {
-      this.intervalCategoryDisplayTarget.textContent = intervalValue
-      this.intervalCategoryDisplayTarget.classList.remove("text-slate-400")
-      this.intervalCategoryDisplayTarget.classList.add("text-white")
+      this.intervalCategoryDisplayTarget.textContent = intervalValue;
+      this.intervalCategoryDisplayTarget.classList.remove("text-slate-400");
+      this.intervalCategoryDisplayTarget.classList.add("text-white");
     }
   }
 
   openSystemModal() {
-    this.showModal()
-    this.showSystemGrid()
-    this.modalTitleTarget.textContent = "Select System Category"
+    this.hideAllViews();
+    this.showSystemSelection();
   }
 
   openIntervalModal() {
-    this.showModal()
-    this.showSystemGrid()
-    this.modalTitleTarget.textContent = "Select System Category"
+    this.hideAllViews();
+    this.showSystemSelection();
   }
 
   selectSystemCategory(event) {
-    const value = event.currentTarget.dataset.value
-    
+    const value = event.currentTarget.dataset.value;
+
     // Update the hidden input
-    this.systemCategoryInputTarget.value = value
-    
+    this.systemCategoryInputTarget.value = value;
+
     // Update the display
-    this.systemCategoryDisplayTarget.textContent = value
-    this.systemCategoryDisplayTarget.classList.remove("text-slate-400")
-    this.systemCategoryDisplayTarget.classList.add("text-white")
-    
-    // Show interval selection
-    this.showIntervalGrid()
-    this.modalTitleTarget.textContent = "Select Interval Category"
+    this.systemCategoryDisplayTarget.textContent = value;
+    this.systemCategoryDisplayTarget.classList.remove("text-slate-400");
+    this.systemCategoryDisplayTarget.classList.add("text-white");
+
+    // Show interval selection with animation
+    this.hideAllViews();
+    setTimeout(() => {
+      this.showIntervalSelection();
+    }, 150);
   }
 
   selectIntervalCategory(event) {
-    const value = event.currentTarget.dataset.value
-    
+    const value = event.currentTarget.dataset.value;
+
     // Update the hidden input
-    this.intervalCategoryInputTarget.value = value
-    
+    this.intervalCategoryInputTarget.value = value;
+
     // Update the display
-    this.intervalCategoryDisplayTarget.textContent = value
-    this.intervalCategoryDisplayTarget.classList.remove("text-slate-400")
-    this.intervalCategoryDisplayTarget.classList.add("text-white")
-    
-    // Close modal
-    this.closeModal()
-  }
+    this.intervalCategoryDisplayTarget.textContent = value;
+    this.intervalCategoryDisplayTarget.classList.remove("text-slate-400");
+    this.intervalCategoryDisplayTarget.classList.add("text-white");
 
-  backToSystemGrid() {
-    this.showSystemGrid()
-    this.modalTitleTarget.textContent = "Select System Category"
-  }
-
-  showModal() {
-    // Block body scroll
-    this.blockBodyScroll()
-    
-    // Show modal
-    this.modalTarget.classList.remove("hidden")
-    
-    // Add escape key listener
-    document.addEventListener("keydown", this.escapeHandler)
-    
-    // Add entrance animation
-    requestAnimationFrame(() => {
-      this.modalContentTarget.style.transform = "scale(1)"
-      this.modalContentTarget.style.opacity = "1"
-    })
-  }
-
-  closeModal() {
-    // Remove escape key listener
-    document.removeEventListener("keydown", this.escapeHandler)
-    
-    // Add exit animation
-    this.modalContentTarget.style.transform = "scale(0.95)"
-    this.modalContentTarget.style.opacity = "0"
-    
-    // Hide modal after animation
+    // Return to form with animation
+    this.hideAllViews();
     setTimeout(() => {
-      this.modalTarget.classList.add("hidden")
-      this.restoreBodyScroll()
-      this.resetModal()
-    }, 200)
+      this.showFormContent();
+    }, 150);
   }
 
-  resetModal() {
-    // Hide interval grid and back button
-    this.intervalGridTarget.classList.add("hidden")
-    this.intervalGridTarget.classList.remove("grid")
-    this.backButtonTarget.classList.add("hidden")
-    
-    // Show system grid
-    this.systemGridTarget.classList.remove("hidden")
-    this.systemGridTarget.classList.add("grid")
-    
-    // Reset modal content animation
-    this.modalContentTarget.style.transform = "scale(0.95)"
-    this.modalContentTarget.style.opacity = "0"
+  backToForm() {
+    this.hideAllViews();
+    setTimeout(() => {
+      this.showFormContent();
+    }, 150);
   }
 
-  showSystemGrid() {
-    // Hide interval components
-    this.intervalGridTarget.classList.add("hidden")
-    this.intervalGridTarget.classList.remove("grid")
-    this.backButtonTarget.classList.add("hidden")
-    
-    // Show system grid
-    this.systemGridTarget.classList.remove("hidden")
-    this.systemGridTarget.classList.add("grid")
+  backToSystemSelection() {
+    this.hideAllViews();
+    setTimeout(() => {
+      this.showSystemSelection();
+    }, 150);
   }
 
-  showIntervalGrid() {
-    // Hide system grid
-    this.systemGridTarget.classList.add("hidden")
-    this.systemGridTarget.classList.remove("grid")
-    
-    // Show interval components
-    this.intervalGridTarget.classList.remove("hidden")
-    this.intervalGridTarget.classList.add("grid")
-    this.backButtonTarget.classList.remove("hidden")
+  // View management methods
+  hideAllViews() {
+    this.formContentTarget.classList.add("hidden");
+    this.systemSelectionTarget.classList.add("hidden");
+    this.intervalSelectionTarget.classList.add("hidden");
+
+    // Add fade out effect
+    this.formContentTarget.style.opacity = "0";
+    this.systemSelectionTarget.style.opacity = "0";
+    this.intervalSelectionTarget.style.opacity = "0";
   }
 
-  blockBodyScroll() {
-    // Save current scroll position
-    this.scrollPosition = window.pageYOffset || document.documentElement.scrollTop || 0
-    
-    // Add CSS class to block scroll
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${this.scrollPosition}px`
-    document.body.style.width = '100%'
-    document.body.style.overflow = 'hidden'
+  showFormContent() {
+    this.formContentTarget.classList.remove("hidden");
+    this.animateIn(this.formContentTarget);
   }
 
-  restoreBodyScroll() {
-    // Remove CSS that blocks scroll
-    document.body.style.position = ''
-    document.body.style.top = ''
-    document.body.style.width = ''
-    document.body.style.overflow = ''
-    
-    // Restore scroll position
-    if (this.scrollPosition !== undefined) {
-      window.scrollTo(0, this.scrollPosition)
-    }
+  showSystemSelection() {
+    this.systemSelectionTarget.classList.remove("hidden");
+    this.animateIn(this.systemSelectionTarget);
+  }
+
+  showIntervalSelection() {
+    this.intervalSelectionTarget.classList.remove("hidden");
+    this.animateIn(this.intervalSelectionTarget);
+  }
+
+  animateIn(element) {
+    // Reset opacity and add slide-up animation
+    element.style.opacity = "0";
+    element.style.transform = "translateY(20px)";
+
+    requestAnimationFrame(() => {
+      element.style.transition = "all 0.3s ease-out";
+      element.style.opacity = "1";
+      element.style.transform = "translateY(0)";
+    });
+  }
+
+  // Handle escape key
+  disconnect() {
+    document.removeEventListener("keydown", this.escapeHandler);
+  }
+
+  connect() {
+    // Initialize display values if form has existing values
+    this.updateDisplayValues();
+
+    // Bind escape key
+    this.escapeHandler = this.handleEscape.bind(this);
+    document.addEventListener("keydown", this.escapeHandler);
   }
 
   handleEscape(event) {
     if (event.key === "Escape") {
-      this.closeModal()
+      // If we're in a selection view, go back to form
+      if (!this.formContentTarget.classList.contains("hidden")) {
+        return; // Already in form
+      }
+      this.backToForm();
     }
   }
 }

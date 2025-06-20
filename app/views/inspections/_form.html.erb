@@ -1,349 +1,327 @@
 <!-- Contenedor principal con el controller -->
 <div data-controller="inspection-modal">
-
-<%= form_with(model: inspection, local: true, class: 'space-y-6', data: { controller: "customer-properties" }) do |form| %>
-  
-  <!-- Manejo de errores -->
-  <% if inspection.errors.any? %>
-    <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 animate-slide-up">
-      <div class="flex items-center mb-3">
-        <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <h3 class="text-red-400 font-semibold">
-          <%= pluralize(inspection.errors.count, "error") %> prevented this inspection from being saved:
-        </h3>
+  <%= form_with(model: inspection, local: true, class: 'space-y-6', data: { controller: "customer-properties" }) do |form| %>
+    <!-- Manejo de errores -->
+    <% if inspection.errors.any? %>
+      <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 animate-slide-up">
+        <div class="flex items-center mb-3">
+          <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <h3 class="text-red-400 font-semibold">
+            <%= pluralize(inspection.errors.count, "error") %> prevented this inspection from being saved:
+          </h3>
+        </div>
+        <ul class="list-disc list-inside text-red-300 text-sm space-y-1">
+          <% inspection.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
       </div>
-      <ul class="list-disc list-inside text-red-300 text-sm space-y-1">
-        <% inspection.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
-
-  <!-- Grid responsive para campos -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    
-    <!-- Fecha -->
-    <div>
-      <%= form.label :date, "Fecha", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
-      <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-          </svg>
+    <% end %>
+    <!-- Formulario Principal -->
+    <div data-inspection-modal-target="formContent">
+      <!-- Grid responsive para campos -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Fecha -->
+        <div>
+          <%= form.label :date, "Fecha", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <%= form.date_field :date,
+              class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" %>
+          </div>
         </div>
-        <%= form.date_field :date,
-            class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" %>
-      </div>
-    </div>
-
-    <!-- Estado -->
-    <div>
-      <%= form.label :status, "Estado", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
-      <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>
-        <%= form.select :status,
-            options_for_select([
-              ['Pendiente', 'pending'],
-              ['En Progreso', 'in_progress'],
-              ['Completada', 'completed'],
-              ['Cancelada', 'cancelled']
-            ], inspection.status),
-            {},
-            class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" %>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Segunda fila del grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    
-    <!-- Cliente -->
-    <div>
-      <%= label_tag :customer_id, "Cliente", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
-      <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-          </svg>
-        </div>
-        <%= select_tag :customer_id,
-            options_from_collection_for_select(@customers, :id, :name, @selected_customer&.id),
-            prompt: 'Seleccionar cliente',
-            class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none",
-            data: { 
-              customer_properties_target: "customerSelect",
-              action: "change->customer-properties#loadProperties"
-            } %>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
+        <!-- Estado -->
+        <div>
+          <%= form.label :status, "Estado", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <%= form.select :status,
+              options_for_select([
+                ['Pendiente', 'pending'],
+                ['En Progreso', 'in_progress'],
+                ['Completada', 'completed'],
+                ['Cancelada', 'cancelled']
+              ], inspection.status),
+              {},
+              class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" %>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Propiedad -->
-    <div>
-      <%= form.label :property_id, "Propiedad", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
-      <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-          </svg>
+      <!-- Segunda fila del grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <!-- Cliente -->
+        <div>
+          <%= label_tag :customer_id, "Cliente", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+            </div>
+            <%= select_tag :customer_id,
+              options_from_collection_for_select(@customers, :id, :name, @selected_customer&.id),
+              prompt: 'Seleccionar cliente',
+              class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none",
+              data: { 
+                customer_properties_target: "customerSelect",
+                action: "change->customer-properties#loadProperties"
+              } %>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
         </div>
-        <%= form.select :property_id,
-            options_from_collection_for_select(@properties, :id, ->(p) { "#{p.property_name} - #{p.address}" }, inspection.property_id),
-            { prompt: 'Seleccionar propiedad' },
-            class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none",
-            data: { customer_properties_target: "propertySelect" } %>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tercera fila del grid - Modal Buttons -->
-  <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
-    
-    <!-- System category Button -->
-    <div>
-      <%= form.label :system_category, "System category", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
-      <%= form.hidden_field :system_category, data: { inspection_modal_target: "systemCategoryInput" } %>
-      <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-        </div>
-        <button type="button"
-                data-action="click->inspection-modal#openSystemModal"
-                data-inspection-modal-target="systemCategoryButton"
-                class="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-left text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:bg-white/10">
-          <span data-inspection-modal-target="systemCategoryDisplay" class="text-slate-400">Select System Category</span>
-        </button>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none z-10">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
+        <!-- Propiedad -->
+        <div>
+          <%= form.label :property_id, "Propiedad", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+              </svg>
+            </div>
+            <%= form.select :property_id,
+              options_from_collection_for_select(@properties, :id, ->(p) { "#{p.property_name} - #{p.address}" }, inspection.property_id),
+              { prompt: 'Seleccionar propiedad' },
+              class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none",
+              data: { customer_properties_target: "propertySelect" } %>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Interval category Button -->
-    <div>
-      <%= form.label :interval_category, "Interval category", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
-      <%= form.hidden_field :interval_category, data: { inspection_modal_target: "intervalCategoryInput" } %>
-      <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
+      <!-- Tercera fila del grid - Botones de Selección -->
+      <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mt-6'>
+        <!-- System category Button -->
+        <div>
+          <%= form.label :system_category, "System category", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+          <%= form.hidden_field :system_category, data: { inspection_modal_target: "systemCategoryInput" } %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+            </div>
+            <button type="button"
+                  data-action="click->inspection-modal#openSystemModal"
+              data-inspection-modal-target="systemCategoryButton"
+              class="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-left text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:bg-white/10">
+              <span data-inspection-modal-target="systemCategoryDisplay" class="text-slate-400">Select System Category</span>
+            </button>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none z-10">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
         </div>
-        <button type="button"
-                data-action="click->inspection-modal#openIntervalModal"
-                data-inspection-modal-target="intervalCategoryButton"
-                class="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-left text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:bg-white/10">
-          <span data-inspection-modal-target="intervalCategoryDisplay" class="text-slate-400">Select Interval Category</span>
-        </button>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none z-10">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
+        <!-- Interval category Button -->
+        <div>
+          <%= form.label :interval_category, "Interval category", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+          <%= form.hidden_field :interval_category, data: { inspection_modal_target: "intervalCategoryInput" } %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+            </div>
+            <button type="button"
+                  data-action="click->inspection-modal#openIntervalModal"
+              data-inspection-modal-target="intervalCategoryButton"
+              class="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-left text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:bg-white/10">
+              <span data-inspection-modal-target="intervalCategoryDisplay" class="text-slate-400">Select Interval Category</span>
+            </button>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none z-10">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
+      <!-- Notas -->
+      <div class="mt-6">
+        <%= form.label :notes, "Notas", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+        <%= form.text_area :notes, 
+          rows: 4,
+          class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 resize-none",
+          placeholder: "Añadir notas adicionales sobre la inspección..." %>
+      </div>
+      <!-- Botones de acción -->
+      <div class="flex flex-col sm:flex-row sm:justify-end sm:space-x-4 space-y-3 sm:space-y-0 pt-6 border-t border-white/10 mt-6">
+        <%= link_to 'Cancelar', inspections_path,
+          class: "w-full sm:w-auto bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 text-center" %>
+        <%= form.submit class: "w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg" %>
+      </div>
     </div>
-  </div>
-
-  <!-- Notas -->
-  <div>
-    <%= form.label :notes, "Notas", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
-    <%= form.text_area :notes, 
-        rows: 4,
-        class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 resize-none",
-        placeholder: "Añadir notas adicionales sobre la inspección..." %>
-  </div>
-
-  <!-- Botones de acción -->
-  <div class="flex flex-col sm:flex-row sm:justify-end sm:space-x-4 space-y-3 sm:space-y-0 pt-6 border-t border-white/10">
-    <%= link_to 'Cancelar', inspections_path,
-        class: "w-full sm:w-auto bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 text-center" %>
-    <%= form.submit class: "w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg" %>
-  </div>
-<% end %>
-
-<!-- Modal - Inside the same container as the controller -->
-<div data-inspection-modal-target="modal" 
-     class="fixed inset-0 z-[9999] hidden" 
-     style="position: fixed !important;">
-  
-  <!-- Backdrop -->
-  <div data-action="click->inspection-modal#closeModal"
-       class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-  
-  <!-- Modal Container - Always centered -->
-  <div class="fixed inset-0 flex items-center justify-center p-4"
-       style="position: fixed; top: 0; left: 0; right: 0; bottom: 0;">
-    
-    <div class="bg-slate-800/95 backdrop-blur-lg rounded-3xl p-6 sm:p-8 max-w-4xl w-full border border-white/20 shadow-2xl transform transition-all duration-300 max-h-[90vh] overflow-y-auto"
-         data-inspection-modal-target="modalContent">
-      
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between mb-6 sm:mb-8">
-        <h3 data-inspection-modal-target="modalTitle" 
-            class="text-xl sm:text-2xl font-bold text-white">Select System Category</h3>
+    <!-- System Category Selection View -->
+    <div data-inspection-modal-target="systemSelection" class="hidden">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h2 class="text-2xl font-bold text-white mb-2">Select System Category</h2>
+          <p class="text-slate-300">Choose the fire protection system type for this inspection</p>
+        </div>
         <button type="button" 
-                data-action="click->inspection-modal#closeModal"
-                class="text-slate-400 hover:text-white transition-colors duration-200 flex-shrink-0">
+              data-action="click->inspection-modal#backToForm"
+          class="text-slate-400 hover:text-white transition-colors duration-200">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         </button>
       </div>
-
       <!-- System Category Grid -->
-      <div data-inspection-modal-target="systemGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <button type="button" 
-                data-action="click->inspection-modal#selectSystemCategory"
-                data-value="Wet Pipe Fire Sprinkler System"
-                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
-          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+              data-action="click->inspection-modal#selectSystemCategory"
+          data-value="Wet Pipe Fire Sprinkler System"
+          class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-3">
+          <div class="w-16 h-16 flex items-center justify-center">
             <img src="<%= asset_path('system_category/1.png') %>" class="w-full h-full object-contain" alt="Wet Pipe Fire Sprinkler System">
           </div>
-          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Wet Pipe Fire Sprinkler System</span>
+          <span class="text-sm font-semibold text-center leading-tight">Wet Pipe Fire Sprinkler System</span>
         </button>
-
         <button type="button" 
-                data-action="click->inspection-modal#selectSystemCategory"
-                data-value="Fire Pump"
-                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
-          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+              data-action="click->inspection-modal#selectSystemCategory"
+          data-value="Fire Pump"
+          class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-3">
+          <div class="w-16 h-16 flex items-center justify-center">
             <img src="<%= asset_path('system_category/2.png') %>" class="w-full h-full object-contain" alt="Fire Pump">
           </div>
-          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Fire Pump</span>
+          <span class="text-sm font-semibold text-center leading-tight">Fire Pump</span>
         </button>
-
         <button type="button" 
-                data-action="click->inspection-modal#selectSystemCategory"
-                data-value="Dry Pipe Fire Sprinkler System"
-                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
-          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+              data-action="click->inspection-modal#selectSystemCategory"
+          data-value="Dry Pipe Fire Sprinkler System"
+          class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-3">
+          <div class="w-16 h-16 flex items-center justify-center">
             <img src="<%= asset_path('system_category/3.png') %>" class="w-full h-full object-contain" alt="Dry Pipe Fire Sprinkler System">
           </div>
-          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Dry Pipe Fire Sprinkler System</span>
+          <span class="text-sm font-semibold text-center leading-tight">Dry Pipe Fire Sprinkler System</span>
         </button>
-
         <button type="button" 
-                data-action="click->inspection-modal#selectSystemCategory"
-                data-value="Stand Pipe"
-                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
-          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+              data-action="click->inspection-modal#selectSystemCategory"
+          data-value="Stand Pipe"
+          class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-3">
+          <div class="w-16 h-16 flex items-center justify-center">
             <img src="<%= asset_path('system_category/4.png') %>" class="w-full h-full object-contain" alt="Stand Pipe">
           </div>
-          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Stand Pipe</span>
+          <span class="text-sm font-semibold text-center leading-tight">Stand Pipe</span>
         </button>
-
         <button type="button" 
-                data-action="click->inspection-modal#selectSystemCategory"
-                data-value="Water Tank"
-                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
-          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+              data-action="click->inspection-modal#selectSystemCategory"
+          data-value="Water Tank"
+          class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-3">
+          <div class="w-16 h-16 flex items-center justify-center">
             <img src="<%= asset_path('system_category/5.png') %>" class="w-full h-full object-contain" alt="Water Tank">
           </div>
-          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Water Tank</span>
+          <span class="text-sm font-semibold text-center leading-tight">Water Tank</span>
         </button>
-
         <button type="button" 
-                data-action="click->inspection-modal#selectSystemCategory"
-                data-value="Foam"
-                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
-          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+              data-action="click->inspection-modal#selectSystemCategory"
+          data-value="Foam"
+          class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-3">
+          <div class="w-16 h-16 flex items-center justify-center">
             <img src="<%= asset_path('system_category/6.png') %>" class="w-full h-full object-contain" alt="Foam">
           </div>
-          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Foam</span>
+          <span class="text-sm font-semibold text-center leading-tight">Foam</span>
         </button>
-
         <button type="button" 
-                data-action="click->inspection-modal#selectSystemCategory"
-                data-value="Water Spray"
-                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
-          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+              data-action="click->inspection-modal#selectSystemCategory"
+          data-value="Water Spray"
+          class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-3">
+          <div class="w-16 h-16 flex items-center justify-center">
             <img src="<%= asset_path('system_category/7.png') %>" class="w-full h-full object-contain" alt="Water Spray">
           </div>
-          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Water Spray</span>
+          <span class="text-sm font-semibold text-center leading-tight">Water Spray</span>
         </button>
-
         <button type="button" 
-                data-action="click->inspection-modal#selectSystemCategory"
-                data-value="Private Fire Service Main"
-                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
-          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+              data-action="click->inspection-modal#selectSystemCategory"
+          data-value="Private Fire Service Main"
+          class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-3">
+          <div class="w-16 h-16 flex items-center justify-center">
             <img src="<%= asset_path('system_category/8.png') %>" class="w-full h-full object-contain" alt="Private Fire Service Main">
           </div>
-          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Private Fire Service Main</span>
-        </button>
-      </div>
-
-      <!-- Interval Category Grid -->
-      <div data-inspection-modal-target="intervalGrid" class="hidden grid-cols-1 md:grid-cols-3 gap-4">
-        <button type="button" 
-                data-action="click->inspection-modal#selectIntervalCategory"
-                data-value="Quarterly Inspection"
-                class="interval-category-btn bg-blue-600 hover:bg-blue-700 text-white p-6 sm:p-8 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center space-y-4">
-          <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-2xl flex items-center justify-center">
-            <span class="text-xl sm:text-2xl font-bold">Q</span>
-          </div>
-          <span class="text-sm sm:text-lg font-semibold text-center">Quarterly Inspection</span>
-        </button>
-
-        <button type="button" 
-                data-action="click->inspection-modal#selectIntervalCategory"
-                data-value="Annual Inspection"
-                class="interval-category-btn bg-blue-600 hover:bg-blue-700 text-white p-6 sm:p-8 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center space-y-4">
-          <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-2xl flex items-center justify-center">
-            <span class="text-xl sm:text-2xl font-bold">A</span>
-          </div>
-          <span class="text-sm sm:text-lg font-semibold text-center">Annual Inspection</span>
-        </button>
-
-        <button type="button" 
-                data-action="click->inspection-modal#selectIntervalCategory"
-                data-value="5-Year Inspection"
-                class="interval-category-btn bg-blue-600 hover:bg-blue-700 text-white p-6 sm:p-8 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center space-y-4">
-          <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-2xl flex items-center justify-center">
-            <span class="text-xl sm:text-2xl font-bold">5Y</span>
-          </div>
-          <span class="text-sm sm:text-lg font-semibold text-center">5-Year Inspection</span>
-        </button>
-      </div>
-
-      <!-- Back Button for Interval Step -->
-      <div data-inspection-modal-target="backButton" class="hidden mt-6 flex justify-start">
-        <button type="button" 
-                data-action="click->inspection-modal#backToSystemGrid"
-                class="bg-slate-600 hover:bg-slate-500 text-white px-6 py-3 rounded-xl transition-colors duration-200 flex items-center space-x-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-          </svg>
-          <span>Back to System Categories</span>
+          <span class="text-sm font-semibold text-center leading-tight">Private Fire Service Main</span>
         </button>
       </div>
     </div>
-  </div>
-</div>
-
+    <!-- Interval Category Selection View -->
+    <div data-inspection-modal-target="intervalSelection" class="hidden">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h2 class="text-2xl font-bold text-white mb-2">Select Interval Category</h2>
+          <p class="text-slate-300">Choose the inspection frequency for this system</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <button type="button" 
+                data-action="click->inspection-modal#backToSystemSelection"
+            class="text-slate-400 hover:text-white transition-colors duration-200 text-sm">
+            ← Back to Systems
+          </button>
+          <button type="button" 
+                data-action="click->inspection-modal#backToForm"
+            class="text-slate-400 hover:text-white transition-colors duration-200">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <!-- Interval Category Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <button type="button" 
+              data-action="click->inspection-modal#selectIntervalCategory"
+          data-value="Quarterly Inspection"
+          class="interval-category-btn bg-blue-600 hover:bg-blue-700 text-white p-8 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center space-y-4">
+          <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center">
+            <span class="text-2xl font-bold">Q</span>
+          </div>
+          <span class="text-lg font-semibold text-center">Quarterly Inspection</span>
+          <span class="text-sm text-blue-200 text-center">Every 3 months</span>
+        </button>
+        <button type="button" 
+              data-action="click->inspection-modal#selectIntervalCategory"
+          data-value="Annual Inspection"
+          class="interval-category-btn bg-blue-600 hover:bg-blue-700 text-white p-8 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center space-y-4">
+          <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center">
+            <span class="text-2xl font-bold">A</span>
+          </div>
+          <span class="text-lg font-semibold text-center">Annual Inspection</span>
+          <span class="text-sm text-blue-200 text-center">Once per year</span>
+        </button>
+        <button type="button" 
+              data-action="click->inspection-modal#selectIntervalCategory"
+          data-value="5-Year Inspection"
+          class="interval-category-btn bg-blue-600 hover:bg-blue-700 text-white p-8 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center space-y-4">
+          <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center">
+            <span class="text-2xl font-bold">5Y</span>
+          </div>
+          <span class="text-lg font-semibold text-center">5-Year Inspection</span>
+          <span class="text-sm text-blue-200 text-center">Every 5 years</span>
+        </button>
+      </div>
+    </div>
+  <% end %>
 </div>
