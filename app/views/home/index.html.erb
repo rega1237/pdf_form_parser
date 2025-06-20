@@ -10,7 +10,7 @@
   </div>
 
   <!-- Grid de botones principales -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-6xl mx-auto">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
     <!-- Ver Plantillas -->
     <div class="group animate-slide-up" style="animation-delay: 0.1s;">
       <%= link_to form_templates_path, class: "block bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-indigo-400/20 transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/25" do %>
@@ -29,7 +29,7 @@
     </div>
 
     <!-- Llenar Formularios -->
-    <div class="group animate-slide-up" style="animation-delay: 0.2s;">
+    <div class="hidden group animate-slide-up" style="animation-delay: 0.2s;">
       <%= link_to form_fills_path, class: "block bg-gradient-to-br from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-emerald-400/20 transition-all duration-300 hover:scale-105 hover:shadow-emerald-500/25" do %>
         <div class="text-center">
           <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
