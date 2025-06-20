@@ -1,0 +1,132 @@
+/* Add to your app/assets/stylesheets/application.css */
+
+/* Modal base styles */
+[data-inspection-modal-target="modal"] {
+  z-index: 9999;
+}
+
+[data-inspection-modal-target="modalContent"] {
+  transform: scale(0.95);
+  opacity: 0;
+  transition: all 0.2s ease-out;
+}
+
+/* Button hover effects */
+.system-category-btn:hover,
+.interval-category-btn:hover {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.3),
+    0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure proper z-index for form elements */
+[data-inspection-modal-target="systemCategoryButton"],
+[data-inspection-modal-target="intervalCategoryButton"] {
+  position: relative;
+  z-index: 1;
+}
+
+/* Animation keyframes */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out;
+}
+
+/* Responsive adjustments for system category buttons */
+@media (max-width: 640px) {
+  .system-category-btn {
+    min-height: 100px;
+    padding: 1rem;
+  }
+
+  .system-category-btn span {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .interval-category-btn {
+    padding: 1.5rem;
+  }
+
+  .interval-category-btn span {
+    font-size: 0.875rem;
+  }
+
+  /* Make modal more mobile friendly */
+  [data-inspection-modal-target="modalContent"] {
+    margin: 1rem;
+    max-height: 85vh;
+  }
+}
+
+@media (max-height: 600px) {
+  /* For short screens, make modal more compact */
+  [data-inspection-modal-target="modalContent"] {
+    max-height: 90vh;
+    padding: 1rem;
+  }
+
+  .system-category-btn {
+    padding: 0.75rem;
+  }
+
+  .interval-category-btn {
+    padding: 1rem;
+  }
+}
+
+/* Ensure images in system category buttons are properly sized */
+.system-category-btn img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Smooth transitions for all modal interactions */
+.system-category-btn,
+.interval-category-btn {
+  transition: all 0.2s ease-out;
+}
+
+/* Fix for potential backdrop blur issues */
+[data-inspection-modal-target="modal"] .backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+[data-inspection-modal-target="modal"] .backdrop-blur-lg {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Ensure modal is always on top */
+[data-inspection-modal-target="modal"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}

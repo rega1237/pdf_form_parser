@@ -1,3 +1,6 @@
+<!-- Contenedor principal con el controller -->
+<div data-controller="inspection-modal">
+
 <%= form_with(model: inspection, local: true, class: 'space-y-6', data: { controller: "customer-properties" }) do |form| %>
   
   <!-- Manejo de errores -->
@@ -114,30 +117,26 @@
     </div>
   </div>
 
-  <!-- Tercera fila del grid -->
+  <!-- Tercera fila del grid - Modal Buttons -->
   <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
     
-    <!-- Sytem category -->
+    <!-- System category Button -->
     <div>
       <%= form.label :system_category, "System category", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+      <%= form.hidden_field :system_category, data: { inspection_modal_target: "systemCategoryInput" } %>
       <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
           <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
           </svg>
         </div>
-        <%= form.select :system_category, [
-          "Wet Pipe Fire Sprinkler System",
-          "Fire Pump",
-          "Dry Pipe Fire Sprinkler System",
-          "Stand Pipe",
-          "Water Tank",
-          "Foam",
-          "Water Spray",
-          "Private Fire Service Main"
-          ], { prompt: "Select System Category" },
-            class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" %>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+        <button type="button"
+                data-action="click->inspection-modal#openSystemModal"
+                data-inspection-modal-target="systemCategoryButton"
+                class="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-left text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:bg-white/10">
+          <span data-inspection-modal-target="systemCategoryDisplay" class="text-slate-400">Select System Category</span>
+        </button>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none z-10">
           <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
           </svg>
@@ -145,18 +144,23 @@
       </div>
     </div>
 
-    <!-- Intervalo category -->
-      <div>
+    <!-- Interval category Button -->
+    <div>
       <%= form.label :interval_category, "Interval category", class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+      <%= form.hidden_field :interval_category, data: { inspection_modal_target: "intervalCategoryInput" } %>
       <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
           <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
           </svg>
         </div>
-        <%= form.select :interval_category, options_from_collection_for_select(@intervals, :name, :name), { prompt: "Select Interval Category" },
-            class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" %>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+        <button type="button"
+                data-action="click->inspection-modal#openIntervalModal"
+                data-inspection-modal-target="intervalCategoryButton"
+                class="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-left text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:bg-white/10">
+          <span data-inspection-modal-target="intervalCategoryDisplay" class="text-slate-400">Select Interval Category</span>
+        </button>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none z-10">
           <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
           </svg>
@@ -181,3 +185,165 @@
     <%= form.submit class: "w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg" %>
   </div>
 <% end %>
+
+<!-- Modal - Inside the same container as the controller -->
+<div data-inspection-modal-target="modal" 
+     class="fixed inset-0 z-[9999] hidden" 
+     style="position: fixed !important;">
+  
+  <!-- Backdrop -->
+  <div data-action="click->inspection-modal#closeModal"
+       class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+  
+  <!-- Modal Container - Always centered -->
+  <div class="fixed inset-0 flex items-center justify-center p-4"
+       style="position: fixed; top: 0; left: 0; right: 0; bottom: 0;">
+    
+    <div class="bg-slate-800/95 backdrop-blur-lg rounded-3xl p-6 sm:p-8 max-w-4xl w-full border border-white/20 shadow-2xl transform transition-all duration-300 max-h-[90vh] overflow-y-auto"
+         data-inspection-modal-target="modalContent">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between mb-6 sm:mb-8">
+        <h3 data-inspection-modal-target="modalTitle" 
+            class="text-xl sm:text-2xl font-bold text-white">Select System Category</h3>
+        <button type="button" 
+                data-action="click->inspection-modal#closeModal"
+                class="text-slate-400 hover:text-white transition-colors duration-200 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- System Category Grid -->
+      <div data-inspection-modal-target="systemGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <button type="button" 
+                data-action="click->inspection-modal#selectSystemCategory"
+                data-value="Wet Pipe Fire Sprinkler System"
+                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
+          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src="<%= asset_path('system_category/1.png') %>" class="w-full h-full object-contain" alt="Wet Pipe Fire Sprinkler System">
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Wet Pipe Fire Sprinkler System</span>
+        </button>
+
+        <button type="button" 
+                data-action="click->inspection-modal#selectSystemCategory"
+                data-value="Fire Pump"
+                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
+          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src="<%= asset_path('system_category/2.png') %>" class="w-full h-full object-contain" alt="Fire Pump">
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Fire Pump</span>
+        </button>
+
+        <button type="button" 
+                data-action="click->inspection-modal#selectSystemCategory"
+                data-value="Dry Pipe Fire Sprinkler System"
+                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
+          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src="<%= asset_path('system_category/3.png') %>" class="w-full h-full object-contain" alt="Dry Pipe Fire Sprinkler System">
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Dry Pipe Fire Sprinkler System</span>
+        </button>
+
+        <button type="button" 
+                data-action="click->inspection-modal#selectSystemCategory"
+                data-value="Stand Pipe"
+                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
+          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src="<%= asset_path('system_category/4.png') %>" class="w-full h-full object-contain" alt="Stand Pipe">
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Stand Pipe</span>
+        </button>
+
+        <button type="button" 
+                data-action="click->inspection-modal#selectSystemCategory"
+                data-value="Water Tank"
+                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
+          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src="<%= asset_path('system_category/5.png') %>" class="w-full h-full object-contain" alt="Water Tank">
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Water Tank</span>
+        </button>
+
+        <button type="button" 
+                data-action="click->inspection-modal#selectSystemCategory"
+                data-value="Foam"
+                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
+          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src="<%= asset_path('system_category/6.png') %>" class="w-full h-full object-contain" alt="Foam">
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Foam</span>
+        </button>
+
+        <button type="button" 
+                data-action="click->inspection-modal#selectSystemCategory"
+                data-value="Water Spray"
+                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
+          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src="<%= asset_path('system_category/7.png') %>" class="w-full h-full object-contain" alt="Water Spray">
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Water Spray</span>
+        </button>
+
+        <button type="button" 
+                data-action="click->inspection-modal#selectSystemCategory"
+                data-value="Private Fire Service Main"
+                class="system-category-btn bg-red-600 hover:bg-red-700 text-white p-4 sm:p-6 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2 sm:space-y-3">
+          <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src="<%= asset_path('system_category/8.png') %>" class="w-full h-full object-contain" alt="Private Fire Service Main">
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Private Fire Service Main</span>
+        </button>
+      </div>
+
+      <!-- Interval Category Grid -->
+      <div data-inspection-modal-target="intervalGrid" class="hidden grid-cols-1 md:grid-cols-3 gap-4">
+        <button type="button" 
+                data-action="click->inspection-modal#selectIntervalCategory"
+                data-value="Quarterly Inspection"
+                class="interval-category-btn bg-blue-600 hover:bg-blue-700 text-white p-6 sm:p-8 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center space-y-4">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-2xl flex items-center justify-center">
+            <span class="text-xl sm:text-2xl font-bold">Q</span>
+          </div>
+          <span class="text-sm sm:text-lg font-semibold text-center">Quarterly Inspection</span>
+        </button>
+
+        <button type="button" 
+                data-action="click->inspection-modal#selectIntervalCategory"
+                data-value="Annual Inspection"
+                class="interval-category-btn bg-blue-600 hover:bg-blue-700 text-white p-6 sm:p-8 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center space-y-4">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-2xl flex items-center justify-center">
+            <span class="text-xl sm:text-2xl font-bold">A</span>
+          </div>
+          <span class="text-sm sm:text-lg font-semibold text-center">Annual Inspection</span>
+        </button>
+
+        <button type="button" 
+                data-action="click->inspection-modal#selectIntervalCategory"
+                data-value="5-Year Inspection"
+                class="interval-category-btn bg-blue-600 hover:bg-blue-700 text-white p-6 sm:p-8 rounded-2xl transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center space-y-4">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-2xl flex items-center justify-center">
+            <span class="text-xl sm:text-2xl font-bold">5Y</span>
+          </div>
+          <span class="text-sm sm:text-lg font-semibold text-center">5-Year Inspection</span>
+        </button>
+      </div>
+
+      <!-- Back Button for Interval Step -->
+      <div data-inspection-modal-target="backButton" class="hidden mt-6 flex justify-start">
+        <button type="button" 
+                data-action="click->inspection-modal#backToSystemGrid"
+                class="bg-slate-600 hover:bg-slate-500 text-white px-6 py-3 rounded-xl transition-colors duration-200 flex items-center space-x-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          <span>Back to System Categories</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
