@@ -121,14 +121,14 @@
                                             bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 
                                             hover:from-red-200 hover:to-red-400 hover:border-red-700 hover:-translate-y-0.5 hover:shadow-lg
                                             peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">
-                                <%= (field['label_name'].presence || field['name']).humanize %>
+                                <%= (field['label_name'].presence || field['name']) %>
                               </label>
                             </div>
                           
                           <% elsif field['type'] == "Text" %>
                             <% if field['label_name']&.downcase.include?('p, f, n/a') %>
                               <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']).humanize, for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
                                 <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
                                   <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
@@ -138,7 +138,7 @@
                               </div>
                             <% else %>
                               <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']).humanize, for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <div class="relative">
                                   <svg class="hidden absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
@@ -147,7 +147,7 @@
                                       id: field_id,
                                       value: field['value'],
                                       class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
-                                      placeholder: "     Ingrese #{(field['label_name'].presence || field['name']).humanize.downcase}" %>
+                                      placeholder: "     Ingrese #{(field['label_name'].presence || field['name'])}" %>
                                 </div>
                               </div>
                             <% end %>
@@ -155,7 +155,7 @@
                           <% elsif field['type'] == "Choice" && field['options'].is_a?(Array) %>
                             <% if field['label_name']&.downcase.include?('p, f, n/a') %>
                               <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']).humanize, for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
                                 <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
                                   <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
@@ -165,7 +165,7 @@
                               </div>
                             <% else %>
                               <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']).humanize, for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <div class="relative">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
@@ -186,7 +186,7 @@
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                                 </svg>
                                 <div>
-                                  <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= (field['label_name'].presence || field['name']).humanize %></h4>
+                                  <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= (field['label_name'].presence || field['name']) %></h4>
                                   <p class="text-amber-700 text-sm mb-2">Tipo: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
                                   <p class="text-amber-700 text-sm">Este tipo de campo aún no es compatible con la interfaz web</p>
                                 </div>
