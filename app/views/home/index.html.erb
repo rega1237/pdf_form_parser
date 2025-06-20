@@ -8,13 +8,12 @@
       Manage your inspections efficiently. Quickly access templates, forms, clients and inspection history.
     </p>
   </div>
-
   <!-- Grid de botones principales -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto md:items-stretch">
     <!-- Ver Plantillas -->
-    <div class="group animate-slide-up" style="animation-delay: 0.1s;">
-      <%= link_to form_templates_path, class: "block bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-indigo-400/20 transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/25" do %>
-        <div class="text-center">
+    <div class="group animate-slide-up md:h-full" style="animation-delay: 0.1s;">
+      <%= link_to form_templates_path, class: "block bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-indigo-400/20 transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/25 md:h-full md:flex md:items-center" do %>
+        <div class="text-center md:w-full">
           <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
             <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -27,11 +26,10 @@
         </div>
       <% end %>
     </div>
-
     <!-- Llenar Formularios -->
-    <div class="hidden group animate-slide-up" style="animation-delay: 0.2s;">
-      <%= link_to form_fills_path, class: "block bg-gradient-to-br from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-emerald-400/20 transition-all duration-300 hover:scale-105 hover:shadow-emerald-500/25" do %>
-        <div class="text-center">
+    <div class="hidden group animate-slide-up md:h-full" style="animation-delay: 0.2s;">
+      <%= link_to form_fills_path, class: "block bg-gradient-to-br from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-emerald-400/20 transition-all duration-300 hover:scale-105 hover:shadow-emerald-500/25 md:h-full md:flex md:items-center" do %>
+        <div class="text-center md:w-full">
           <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
             <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -44,11 +42,10 @@
         </div>
       <% end %>
     </div>
-
     <!-- Ver Clientes -->
-    <div class="group animate-slide-up" style="animation-delay: 0.3s;">
-      <%= link_to customers_path, class: "block bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-blue-400/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/25" do %>
-        <div class="text-center">
+    <div class="group animate-slide-up md:h-full" style="animation-delay: 0.3s;">
+      <%= link_to customers_path, class: "block bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-blue-400/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/25 md:h-full md:flex md:items-center" do %>
+        <div class="text-center md:w-full">
           <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
             <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -61,11 +58,10 @@
         </div>
       <% end %>
     </div>
-
     <!-- Ver Inspecciones -->
-    <div class="group animate-slide-up" style="animation-delay: 0.4s;">
-      <%= link_to inspections_path, class: "block bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-2xl p-6 lg:p-8 shadow-2xl border border-amber-400/20 transition-all duration-300 hover:scale-105 hover:shadow-orange-500/25" do %>
-        <div class="text-center">
+    <div class="group animate-slide-up md:h-full" style="animation-delay: 0.4s;">
+      <%= link_to inspections_path, class: "block bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-2xl p-6 lg:p-8 shadow-2xl border border-amber-400/20 transition-all duration-300 hover:scale-105 hover:shadow-orange-500/25 md:h-full md:flex md:items-center" do %>
+        <div class="text-center md:w-full">
           <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
             <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -79,7 +75,6 @@
       <% end %>
     </div>
   </div>
-
   <!-- Información adicional para móviles -->
   <div class="mt-12 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in lg:hidden">
     <div class="flex items-center space-x-3 mb-3">
