@@ -131,6 +131,86 @@
               </div>
             </div>
           <% end %>
+
+                   <!-- Properties -->
+          <div class="md:col-span-2 mt-8 pt-8 border-t border-white/10">
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                  </svg>
+                </div>
+                <h2 class="text-xl font-bold text-white">Properties</h2>
+              </div>
+              <%= link_to new_property_path(customer_id: @customer.id), 
+                  class: "inline-flex items-center bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-emerald-500" do %>
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add New Property
+              <% end %>
+            </div>
+            <!-- Properties List -->
+            <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+              <% if @customer.properties.any? %>
+                <div class="divide-y divide-white/10">
+                  <% @customer.properties.each_with_index do |property, index| %>
+                    <div class="p-4 hover:bg-white/5 transition-colors duration-200 animate-slide-up" style="animation-delay: <%= 0.1 * index %>s;">
+                      <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                          <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center">
+                              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2v2zm0 0L9 12l6-6 6 6"/>
+                              </svg>
+                            </div>
+                            <div>
+                              <h3 class="text-white font-semibold">
+                                <%= property.property_name.present? ? property.property_name : (property.address.present? ? property.address : "Property ##{index + 1}") %>
+                              </h3>
+                              <p class="text-slate-400 text-sm">
+                                <% if property.city.present? || property.zip_code.present? %>
+                                  <%= [property.city, property.zip_code].compact.join(', ') %>
+                                <% else %>
+                                  No location specified
+                                <% end %>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                          <%= link_to property_path(property), 
+                              class: "p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200" do %>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                          <% end %>
+                          <%= link_to edit_property_path(property), 
+                              class: "p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all duration-200" do %>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="p-8 text-center">
+                  <div class="w-16 h-16 bg-slate-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                  </div>
+                  <h3 class="text-slate-400 font-semibold mb-2">No Properties Found</h3>
+                  <p class="text-slate-500 text-sm">This customer doesn't have any properties yet.</p>
+                </div>
+              <% end %>
+            </div>
+          </div>
         </div>
 
         <!-- Action Buttons -->
