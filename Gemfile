@@ -51,13 +51,12 @@ gem "combine_pdf"
 gem 'pdf-reader'
 
 # File processing gems
-gem "roo" # For Excel files
-gem "docx" # For Word documents
 gem "pdf-forms" # For reading PDF forms
-gem "csv"
 
 # File upload and validation
 gem "marcel" # MIME type detection
+
+gem 'kaminari' # Pagination
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
