@@ -58,7 +58,7 @@
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
 
-    /* Animación de pulso para el botón de guardar */
+    /* Animación de pulso para los botones flotantes */
     @keyframes pulse-ring {
       0% {
         transform: scale(0.8);
@@ -70,22 +70,33 @@
       }
     }
 
-    .fixed.bottom-6.right-6::before {
+    .pulse-ring {
+      position: relative;
+    }
+
+    .pulse-ring::before {
       content: '';
       position: absolute;
-      top: 50%;
-      left: 50%;
       width: 100%;
       height: 100%;
-      background: rgba(99, 102, 241, 0.3);
       border-radius: 50%;
       transform: translate(-50%, -50%);
       animation: pulse-ring 2s infinite;
       z-index: -1;
     }
 
-    .fixed.bottom-6.right-6:hover::before {
+    .pulse-ring:hover::before {
       animation: none;
+      display: none;
+    }
+
+    /* Colores específicos para cada botón */
+    .pulse-ring:has(button[data-action*="addNewField"])::before {
+      background: rgba(34, 197, 94, 0.3); /* Verde para agregar */
+    }
+
+    .pulse-ring:has(button[type="submit"])::before {
+      background: rgba(99, 102, 241, 0.3); /* Azul para guardar */
     }
 
     /* Estilos para campos editables */
@@ -232,7 +243,9 @@
     </div>
 
     <!-- Main Form -->
-    <div class="max-w-6xl mx-auto" data-controller="drag" data-drag-form-template-id-value="<%= @form_template.id %>">
+    <div class="max-w-6xl mx-auto" 
+         data-controller="drag" 
+         data-drag-form-template-id-value="<%= @form_template.id %>">
       <%= form_with model: @form_template, url: form_builder_update_form_template_path(@form_template), method: :patch, local: true, html: { class: "space-y-6" } do |form| %>
         <!-- Form Fields Section -->
         <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
@@ -414,16 +427,32 @@
           <% end %>
         </div>
 
-        <!-- Botón de Guardar Circular Fijo -->
-        <div class="fixed bottom-6 right-6 z-50">
-          <button type="submit" 
-                  title="Guardar Estructura del Formulario"
-                  class="w-16 h-16 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl hover:shadow-indigo-500/50 flex items-center justify-center group cursor-pointer border-0">
-            <!-- SVG del disco de guardar centrado -->
-            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
-            </svg>
-          </button>
+        <!-- Botones de Acción Flotantes -->
+        <div class="fixed bottom-6 right-6 z-50 flex flex-col space-y-4">
+          <!-- Botón Agregar Nuevo Campo -->
+          <div class="pulse-ring">
+            <button type="button" 
+                    title="Agregar Nuevo Campo (Deficiency)"
+                    data-action="click->drag#addNewField"
+                    class="w-16 h-16 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl hover:shadow-emerald-500/50 flex items-center justify-center group cursor-pointer border-0">
+              <!-- Icono de agregar -->
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Botón de Guardar -->
+          <div class="pulse-ring">
+            <button type="submit" 
+                    title="Guardar Estructura del Formulario"
+                    class="w-16 h-16 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl hover:shadow-indigo-500/50 flex items-center justify-center group cursor-pointer border-0">
+              <!-- SVG del disco de guardar centrado -->
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       <% end %>
     </div>
