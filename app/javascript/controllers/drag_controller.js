@@ -27,7 +27,7 @@ export default class extends Controller {
       this.sortable = Sortable.create(this.listTarget, {
         animation: 150,
         handle: ".handle",
-        ghostClass: "sortable-ghost", // Corresponds to .sortable-ghost in CSS
+        ghostClass: "sortable-ghost",
         chosenClass: "sortable-chosen",
         dragClass: "sortable-drag",
         onEnd: this.onSortEnd.bind(this),
@@ -44,9 +44,12 @@ export default class extends Controller {
     }
   }
 
-  extractItemData(itemEl) {
+  // Funcion que extrae los datos de un item del formulario y los cambia si fueron editados
+  extractItemData(itemEl) { 
     const fieldName = itemEl.dataset.id;
-    const fieldType = itemEl.dataset.fieldType; // Ensure this is added in ERB
+    const fieldType = itemEl.dataset.fieldType;
+    const nameInput = itemEl.querySelector('[data-field-attribute="name"]');
+    const typeSelect = itemEl.querySelector('[data-field-attribute="type"]');
     const labelNameInput = itemEl.querySelector('[data-field-attribute="label_name"]');
     const sectionNameInput = itemEl.querySelector('[data-field-attribute="section_name"]');
     const pageNumberInput = itemEl.querySelector('[data-field-attribute="page_number"]');
@@ -54,12 +57,17 @@ export default class extends Controller {
     const requiredInput = itemEl.querySelector('[data-field-attribute="required"]');
 
     return {
-      id: fieldName,
-      type: fieldType,
+      id: nameInput ? nameInput.value : fieldName,
+      name: nameInput ? nameInput.value : fieldName,
+      original_name: fieldName,
+      type: typeSelect ? typeSelect.value : fieldType,
+      value: "",
+      options: null,
+      human_label: nameInput ? nameInput.value : fieldName,
       label_name: labelNameInput ? labelNameInput.value : "",
       section_name: sectionNameInput ? sectionNameInput.value : "",
       page_number: pageNumberInput ? pageNumberInput.value : "",
-      column_width: columnWidthInput ? columnWidthInput.value : "3", // Default to 3 if not set
+      column_width: columnWidthInput ? columnWidthInput.value : "3",
       required: requiredInput ? requiredInput.checked : false,
     };
   }
@@ -67,7 +75,7 @@ export default class extends Controller {
   renderCurrentPage() {
     if (!this.listTarget) return;
 
-    this.listTarget.innerHTML = ''; // Clear existing items
+    this.listTarget.innerHTML = '';
 
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
@@ -85,45 +93,64 @@ export default class extends Controller {
   buildItemElement(itemData, globalIndex) {
     // This function reconstructs the HTML for a single field item.
     // It should mirror the structure in form_builder.html.erb for a field item.
-    // This is a simplified example; you'll need to match your ERB structure exactly.
     const element = document.createElement('div');
     element.classList.add('field-item', 'bg-white/10', 'backdrop-blur-sm', 'rounded-2xl', 'p-6', 'border', 'border-white/20', 'shadow-lg');
     element.dataset.dragTarget = 'item';
-    element.dataset.id = itemData.id;
+    
+    // MODIFICADO: Usar name si id no existe para compatibilidad
+    element.dataset.id = itemData.name || itemData.id;
     element.dataset.fieldType = itemData.type;
 
     // Unique IDs for labels and inputs based on globalIndex or itemData.id to avoid collisions
-    const fieldIdBase = `field_${itemData.id.replace(/\W/g, '_')}_${globalIndex}`;
+    const fieldIdBase = `field_${(itemData.name || itemData.id).replace(/\W/g, '_')}_${globalIndex}`;
 
     element.innerHTML = `
+      <!-- Field Header -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
         <div class="flex items-center mb-2 sm:mb-0">
           <span class="handle text-slate-400 hover:text-indigo-400 mr-4 text-xl transition-colors duration-200">☰</span>
-          <div>
-            <span class="font-semibold text-white text-lg">${itemData.id}</span>
-            <span class="text-indigo-300 text-sm ml-3 bg-indigo-500/20 px-2 py-1 rounded-lg">
-              ${itemData.type}
-            </span>
+          <div class="flex items-center space-x-3">
+            <!-- NUEVO: Editable Field Name -->
+            <input type="text" 
+                   value="${itemData.name || itemData.id}" 
+                   data-field-attribute="name"
+                   class="editable-name"
+                   placeholder="Field Name">
+            
+            <!-- NUEVO: Editable Type -->
+            <select data-field-attribute="type" class="editable-type">
+              <option value="Text" ${itemData.type === 'Text' ? 'selected' : ''}>Text</option>
+              <option value="Choice" ${itemData.type === 'Choice' ? 'selected' : ''}>Choice</option>
+              <option value="Button" ${itemData.type === 'Button' ? 'selected' : ''}>Button</option>
+              <option value="Photo" ${itemData.type === 'Photo' ? 'selected' : ''}>Photo</option>
+              <option value="Deficiency" ${itemData.type === 'Deficiency' ? 'selected' : ''}>Deficiency</option>
+            </select>
           </div>
         </div>
       </div>
+      <!-- Configuration Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/10">
-        <div>
+        <!-- Custom Label -->
+        <div class="space-y-2">
           <label for="${fieldIdBase}_label_name" class="block text-white font-semibold text-sm">Custom Label</label>
-          <input type="text" id="${fieldIdBase}_label_name" value="${itemData.label_name}" data-field-attribute="label_name" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter custom label">
+          <input type="text" id="${fieldIdBase}_label_name" value="${itemData.label_name || ''}" data-field-attribute="label_name" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter custom label">
         </div>
-        <div>
+        <!-- Section Name -->
+        <div class="space-y-2">
           <label for="${fieldIdBase}_section_name" class="block text-white font-semibold text-sm">Section Name</label>
-          <input type="text" id="${fieldIdBase}_section_name" value="${itemData.section_name}" data-field-attribute="section_name" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter section name">
+          <input type="text" id="${fieldIdBase}_section_name" value="${itemData.section_name || ''}" data-field-attribute="section_name" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter section name">
         </div>
-        <div>
+        <!-- Page Number -->
+        <div class="space-y-2">
           <label for="${fieldIdBase}_page_number" class="block text-white font-semibold text-sm">Page Number</label>
-          <input type="number" id="${fieldIdBase}_page_number" value="${itemData.page_number}" data-field-attribute="page_number" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Page">
+          <input type="number" id="${fieldIdBase}_page_number" value="${itemData.page_number || ''}" data-field-attribute="page_number" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Page">
         </div>
-        <div>
+        <!-- Column Width -->
+        <div class="space-y-2">
           <label for="${fieldIdBase}_column_width" class="block text-white font-semibold text-sm">Column Width (1-9)</label>
           <input type="number" id="${fieldIdBase}_column_width" value="${itemData.column_width || 3}" data-field-attribute="column_width" min="1" max="9" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="3">
         </div>
+        <!-- Required Checkbox -->
         <div class="flex items-center space-x-3 lg:col-span-4 mt-2">
           <input type="checkbox" id="${fieldIdBase}_required" ${itemData.required ? 'checked' : ''} data-field-attribute="required" class="w-5 h-5 text-indigo-600 bg-white/10 border-white/20 rounded focus:ring-indigo-500 focus:ring-2">
           <label for="${fieldIdBase}_required" class="text-white font-medium">Required Field</label>
@@ -139,7 +166,9 @@ export default class extends Controller {
       attributeInputs.forEach((input) => {
         // Remove old listener before adding new one to prevent duplicates if called multiple times
         input.removeEventListener("input", this.handleAttributeChange.bind(this)); 
+        input.removeEventListener("change", this.handleAttributeChange.bind(this)); // NUEVO: Para selects
         input.addEventListener("input", this.handleAttributeChange.bind(this));
+        input.addEventListener("change", this.handleAttributeChange.bind(this)); // NUEVO: Para selects
       });
     });
   }
@@ -150,10 +179,30 @@ export default class extends Controller {
     const itemId = itemEl.dataset.id;
     const attributeName = changedInput.dataset.fieldAttribute;
 
-    const itemInAllItems = this.allItems.find(item => item.id === itemId);
+
+    const itemInAllItems = this.allItems.find(item => (item.name === itemId || item.id === itemId));
     if (itemInAllItems) {
       if (changedInput.type === 'checkbox') {
         itemInAllItems[attributeName] = changedInput.checked;
+      } else if (attributeName === 'name') {
+        // NUEVO: Manejar cambio de nombre del campo
+        const oldId = itemInAllItems.name || itemInAllItems.id;
+        const newName = changedInput.value;
+        
+        // Actualizar tanto id como name
+        itemInAllItems.id = newName;
+        itemInAllItems.name = newName;
+        itemInAllItems.human_label = newName;
+        
+        // Actualizar el dataset del elemento
+        itemEl.dataset.id = newName;
+        
+        console.log(`Campo renombrado de "${oldId}" a "${newName}"`);
+      } else if (attributeName === 'type') {
+        itemInAllItems.type = changedInput.value;
+        itemEl.dataset.fieldType = changedInput.value;
+        
+        console.log(`Tipo de campo "${itemInAllItems.name}" cambiado a "${changedInput.value}"`);
       } else {
         itemInAllItems[attributeName] = changedInput.value;
       }
@@ -166,29 +215,17 @@ export default class extends Controller {
     const itemId = item.dataset.id;
 
     // Calculate global indices based on current page
-    const globalOldIndex = (this.currentPage - 1) * this.itemsPerPage + oldIndex;
     const globalNewIndex = (this.currentPage - 1) * this.itemsPerPage + newIndex;
 
     // Update allItems array
-    const movedItem = this.allItems.find(i => i.id === itemId);
+    const movedItem = this.allItems.find(i => (i.name === itemId || i.id === itemId));
     if (!movedItem) return;
 
-    // Temporarily remove from array to correctly calculate new position if item moved within same page
-    const tempAllItems = this.allItems.filter(i => i.id !== itemId);
-    
-    // Find the actual item that was at globalOldIndex before this item was picked up
-    // This is tricky because SortableJS gives indices relative to the current DOM state.
-    // A simpler way: find the item in allItems, remove it, then insert it at the new global position.
-    
-    const itemToMoveIndex = this.allItems.findIndex(i => i.id === itemId);
+    // Find the item in allItems, remove it, then insert it at the new global position
+    const itemToMoveIndex = this.allItems.findIndex(i => (i.name === itemId || i.id === itemId));
     if (itemToMoveIndex === -1) return; // Should not happen
 
     const [itemActualToMove] = this.allItems.splice(itemToMoveIndex, 1);
-    
-    // The newIndex from SortableJS is within the paginated view.
-    // We need to insert it relative to the items on the current page, then map to global.
-    // Or, more directly, calculate the target global index.
-    // If item is dragged from globalOldIndex to globalNewIndex:
     this.allItems.splice(globalNewIndex, 0, itemActualToMove);
 
     this.updateHiddenInput();
@@ -196,15 +233,14 @@ export default class extends Controller {
   }
 
   updateHiddenInput() {
-    const payload = this.allItems.map((item, index) => ({
-      ...item,
-      position: index, // Server expects position
+    const payload = this.allItems.map((item) => ({
+      ...item
     }));
 
     if (this.hasInputTarget) {
       this.inputTarget.value = JSON.stringify(payload);
     }
-    // console.log("Updated hidden input with all items:", payload);
+    console.log("Updated hidden input with all items:", payload); // Para debugging
   }
 
   updatePaginationControls() {
