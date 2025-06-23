@@ -15,7 +15,8 @@ export default class extends Controller {
     this.itemsPerPage = 500; // Adjust as needed
     this.currentPage = 1;
     this.allItems = [];
-    this.fieldCounter = 1;
+    this.fieldCounter = 1; // NUEVO: Contador para nuevos campos
+    this.isInitialLoad = true; // NUEVO: Flag para detectar carga inicial
 
     // Initial population of allItems from the DOM elements rendered by ERB
     // These elements are expected to have data-id and data-field-type, etc.
@@ -24,13 +25,14 @@ export default class extends Controller {
       return this.extractItemData(itemEl);
     });
 
+    // NUEVO: Inicializar contador basándose en campos existentes
     this.initializeFieldCounter();
 
     if (this.listTarget) {
       this.sortable = Sortable.create(this.listTarget, {
         animation: 150,
         handle: ".handle",
-        ghostClass: "sortable-ghost",
+        ghostClass: "sortable-ghost", // Corresponds to .sortable-ghost in CSS
         chosenClass: "sortable-chosen",
         dragClass: "sortable-drag",
         onEnd: this.onSortEnd.bind(this),
@@ -41,6 +43,7 @@ export default class extends Controller {
     this.updateHiddenInput();
   }
 
+  // NUEVO: Método para inicializar el contador de campos
   initializeFieldCounter() {
     // Contar campos existentes y empezar desde el siguiente número
     this.fieldCounter = this.allItems.length + 1;
@@ -57,6 +60,7 @@ export default class extends Controller {
     const fieldName = itemEl.dataset.id;
     const fieldType = itemEl.dataset.fieldType; // Ensure this is added in ERB
     
+    // NUEVO: Extraer el nombre y tipo actuales (pueden haber sido editados)
     const nameInput = itemEl.querySelector('[data-field-attribute="name"]');
     const typeSelect = itemEl.querySelector('[data-field-attribute="type"]');
     
@@ -66,20 +70,23 @@ export default class extends Controller {
     const columnWidthInput = itemEl.querySelector('[data-field-attribute="column_width"]');
     const requiredInput = itemEl.querySelector('[data-field-attribute="required"]');
 
+    // NUEVO: Extraer opciones para campos de tipo Choice
     const optionInputs = itemEl.querySelectorAll('[data-field-attribute="option-value"]');
     const options = Array.from(optionInputs).map(input => input.value).filter(val => val.trim() !== '');
 
     return {
+      // MODIFICADO: Usar el valor actual del input de nombre si existe
       id: nameInput ? nameInput.value : fieldName,
-      name: nameInput ? nameInput.value : fieldName,
-      original_name: fieldName,
-      type: typeSelect ? typeSelect.value : fieldType,
-      value: "", 
-      options: options.length > 0 ? options : null, 
+      name: nameInput ? nameInput.value : fieldName, // NUEVO: Agregar campo name
+      original_name: fieldName, // NUEVO: Mantener referencia original
+      type: typeSelect ? typeSelect.value : fieldType, // MODIFICADO: Usar valor actual del select
+      value: "", // NUEVO: Agregar campo value
+      options: options.length > 0 ? options : null, // NUEVO: Agregar opciones extraídas
+      human_label: nameInput ? nameInput.value : fieldName, // NUEVO: Agregar human_label
       label_name: labelNameInput ? labelNameInput.value : "",
       section_name: sectionNameInput ? sectionNameInput.value : "",
       page_number: pageNumberInput ? pageNumberInput.value : "",
-      column_width: columnWidthInput ? columnWidthInput.value : "3",
+      column_width: columnWidthInput ? columnWidthInput.value : "3", // Default to 3 if not set
       required: requiredInput ? requiredInput.checked : false,
     };
   }
@@ -87,7 +94,16 @@ export default class extends Controller {
   renderCurrentPage() {
     if (!this.listTarget) return;
 
-    this.listTarget.innerHTML = ''; // Clear existing items
+    // CORREGIDO: Solo limpiar si no es la carga inicial
+    if (this.isInitialLoad) {
+      // En la carga inicial, no limpiar el DOM, solo agregar event listeners
+      this.isInitialLoad = false;
+      this.addEventListenersToPageItems();
+      this.updatePaginationControls();
+      return;
+    }
+
+    this.listTarget.innerHTML = ''; // Clear existing items solo si no es carga inicial
 
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
@@ -109,12 +125,13 @@ export default class extends Controller {
     element.classList.add('field-item', 'bg-white/10', 'backdrop-blur-sm', 'rounded-2xl', 'p-6', 'border', 'border-white/20', 'shadow-lg');
     element.dataset.dragTarget = 'item';
     
+    // MODIFICADO: Usar name si id no existe para compatibilidad
     element.dataset.id = itemData.name || itemData.id;
     element.dataset.fieldType = itemData.type;
 
     // Unique IDs for labels and inputs based on globalIndex or itemData.id to avoid collisions
     const fieldIdBase = `field_${(itemData.name || itemData.id).replace(/\W/g, '_')}_${globalIndex}`;
-    // Incluir Deficiency como tipo que puede tener opciones
+    // MODIFICADO: Incluir Deficiency como tipo que puede tener opciones
     const isChoiceField = itemData.type === 'Choice' || itemData.type === 'Deficiency';
 
     element.innerHTML = `
@@ -178,7 +195,7 @@ export default class extends Controller {
             <button type="button" 
                     class="add-option-btn text-xs px-3 py-1" 
                     data-action="click->drag#addOption"
-                    data-field-name="${itemData.name || itemData.id}">
+                    data-field-name="${itemData.name}">
               + Add Option
             </button>
           </div>
@@ -191,7 +208,7 @@ export default class extends Controller {
     return element;
   }
 
-  // Campo para los options
+  // NUEVO: Método para construir el HTML de las opciones
   buildOptionsHTML(options) {
     return options.map(option => `
       <div class="option-item">
@@ -230,7 +247,7 @@ export default class extends Controller {
     const itemId = itemEl.dataset.id;
     const attributeName = changedInput.dataset.fieldAttribute;
 
-    // Buscar por name o id para compatibilidad
+    // MODIFICADO: Buscar por name o id para compatibilidad
     const itemInAllItems = this.allItems.find(item => (item.name === itemId || item.id === itemId));
     if (itemInAllItems) {
       if (changedInput.type === 'checkbox') {
@@ -243,6 +260,7 @@ export default class extends Controller {
         // Actualizar tanto id como name
         itemInAllItems.id = newName;
         itemInAllItems.name = newName;
+        itemInAllItems.human_label = newName; // También actualizar human_label
         
         // Actualizar el dataset del elemento
         itemEl.dataset.id = newName;
@@ -264,7 +282,7 @@ export default class extends Controller {
     }
   }
 
-  // Método para actualizar opciones desde el DOM
+  // NUEVO: Método para actualizar opciones desde el DOM
   updateOptionsFromDOM(itemEl, itemData) {
     const optionInputs = itemEl.querySelectorAll('[data-field-attribute="option-value"]');
     const options = Array.from(optionInputs).map(input => input.value).filter(val => val.trim() !== '');
@@ -272,7 +290,7 @@ export default class extends Controller {
     this.updateHiddenInput();
   }
 
-  // Método para agregar una nueva opción
+  // NUEVO: Método para agregar una nueva opción
   addOption(event) {
     const button = event.target.closest('[data-action*="addOption"]');
     const itemEl = button.closest('[data-drag-target="item"]');
@@ -314,7 +332,7 @@ export default class extends Controller {
     console.log(`Nueva opción agregada al campo "${itemId}"`);
   }
 
-  // Método para eliminar una opción
+  // NUEVO: Método para eliminar una opción
   removeOption(event) {
     const button = event.target.closest('.remove-option-btn');
     const optionItem = button.closest('.option-item');
@@ -332,6 +350,55 @@ export default class extends Controller {
     console.log(`Opción eliminada del campo "${itemId}"`);
   }
 
+  // NUEVO: Método para eliminar un campo completo
+  deleteField(event) {
+    const button = event.target.closest('.delete-field-btn');
+    const itemEl = button.closest('[data-drag-target="item"]');
+    const itemId = itemEl.dataset.id;
+    
+    // Buscar el campo en allItems
+    const fieldToDelete = this.allItems.find(item => item.name === itemId);
+    
+    if (!fieldToDelete) {
+      console.error(`Campo "${itemId}" no encontrado en allItems`);
+      this.showNotification("Error: Campo no encontrado", "error");
+      return;
+    }
+    
+    // Confirmar eliminación
+    if (confirm(`¿Está seguro de que desea eliminar el campo "${fieldToDelete.name}"?\n\nEsta acción no se puede deshacer.`)) {
+      try {
+        // Eliminar del array
+        this.allItems = this.allItems.filter(item => item.name !== itemId);
+        
+        console.log(`Campo "${itemId}" eliminado. Campos restantes: ${this.allItems.length}`);
+        
+        // Re-renderizar la página actual (forzar re-render)
+        this.isInitialLoad = false; // Asegurar que no es carga inicial  
+        this.renderCurrentPage();
+        
+        // Actualizar el input hidden
+        this.updateHiddenInput();
+        
+        // Mostrar notificación de éxito
+        this.showNotification(`Campo "${fieldToDelete.name}" eliminado exitosamente`, "success");
+        
+        // Si la página actual está vacía y no es la primera, ir a la página anterior
+        if (this.allItems.length > 0) {
+          const totalPages = Math.ceil(this.allItems.length / this.itemsPerPage);
+          if (this.currentPage > totalPages) {
+            this.currentPage = totalPages;
+            this.renderCurrentPage();
+          }
+        }
+        
+      } catch (error) {
+        console.error("Error al eliminar campo:", error);
+        this.showNotification("Error al eliminar el campo", "error");
+      }
+    }
+  }
+
   onSortEnd(event) {
     const { oldIndex, newIndex, item } = event;
     const itemId = item.dataset.id;
@@ -341,22 +408,24 @@ export default class extends Controller {
     const globalNewIndex = (this.currentPage - 1) * this.itemsPerPage + newIndex;
 
     // Update allItems array
-    // MODIFICADO: Buscar por name o id para compatibilidad
-    const movedItem = this.allItems.find(i => (i.name === itemId || i.id === itemId));
+    // Buscar por name para compatibilidad
+    const movedItem = this.allItems.find(i => i.name === itemId);
     if (!movedItem) return;
 
     // Find the item in allItems, remove it, then insert it at the new global position
-    const itemToMoveIndex = this.allItems.findIndex(i => (i.name === itemId || i.id === itemId));
+    const itemToMoveIndex = this.allItems.findIndex(i => i.name === itemId);
     if (itemToMoveIndex === -1) return; // Should not happen
 
     const [itemActualToMove] = this.allItems.splice(itemToMoveIndex, 1);
     this.allItems.splice(globalNewIndex, 0, itemActualToMove);
 
     this.updateHiddenInput();
-    this.renderCurrentPage(); // Re-render to reflect sort on current page and maintain consistency
+    // CORREGIDO: No re-renderizar después de drag & drop para mantener elementos DOM
+    // this.renderCurrentPage(); // Comentado para evitar que desaparezcan los campos
   }
 
   updateHiddenInput() {
+    // CORREGIDO: No agregar campo position innecesario
     const payload = this.allItems.map((item) => ({
       ...item
     }));
@@ -396,7 +465,7 @@ export default class extends Controller {
     }
   }
 
-  // Método para agregar un nuevo campo
+  // NUEVO: Método para agregar un nuevo campo
   addNewField(event) {
     console.log("=== AGREGANDO NUEVO CAMPO ===");
     
@@ -439,7 +508,7 @@ export default class extends Controller {
     }
   }
 
-  // Método para crear un campo por defecto tipo Deficiency
+  // NUEVO: Método para crear un campo por defecto tipo Deficiency
   createDefaultField() {
     const fieldName = `Deficiency Field ${this.fieldCounter}`;
     
@@ -450,6 +519,7 @@ export default class extends Controller {
       type: "Deficiency",
       value: "",
       options: ["Minor", "Major", "Critical"], // Opciones por defecto para Deficiency
+      human_label: fieldName,
       label_name: fieldName,
       section_name: "",
       page_number: "1",
@@ -458,7 +528,7 @@ export default class extends Controller {
     };
   }
 
-  // Método para hacer scroll al nuevo campo
+  // NUEVO: Método para hacer scroll al nuevo campo
   scrollToNewField() {
     setTimeout(() => {
       const listContainer = this.listTarget;
@@ -468,7 +538,7 @@ export default class extends Controller {
     }, 100);
   }
 
-  // Método para mostrar notificaciones
+  // NUEVO: Método para mostrar notificaciones
   showNotification(message, type = "info") {
     // Crear notificación temporal
     const notification = document.createElement('div');
@@ -514,7 +584,7 @@ export default class extends Controller {
     }, 3000);
   }
 
-  // Método para validar que el nombre del campo sea único
+  // NUEVO: Método para validar que el nombre del campo sea único
   isFieldNameUnique(fieldName) {
     return !this.allItems.some(item => 
       (item.name === fieldName || item.id === fieldName)
