@@ -339,11 +339,11 @@
                     </div>
                   </div>
 
-                  <!-- Options Section (for Choice fields) -->
-                  <div class="options-container <%= 'hidden' unless field['type'] == 'Choice' %>" data-field-attribute="options-container">
+                  <!-- Options Section (for Choice and Deficiency fields) -->
+                  <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency'].include?(field['type']) %>" data-field-attribute="options-container">
                     <div class="border-t border-white/10 pt-4 mt-4">
                       <div class="flex items-center justify-between mb-3">
-                        <label class="block text-white font-semibold text-sm">Options (for Choice fields)</label>
+                        <label class="block text-white font-semibold text-sm">Options (for Choice & Deficiency fields)</label>
                         <button type="button" 
                                 class="add-option-btn text-xs px-3 py-1" 
                                 data-action="click->drag#addOption"
