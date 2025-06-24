@@ -136,9 +136,61 @@ class FormFill < ApplicationRecord
     photos_hash
   end
   
-  # Método para verificar si un campo tiene foto
-  def has_photo_for_field?(field_name)
-    get_photo_for_field(field_name).present?
+  # Método para eliminar foto de un campo específico
+  def remove_photo_for_field(field_name)
+    return { success: false, error: "Campo vacío" } if field_name.blank?
+    
+    begin
+      # Buscar y eliminar la foto
+      existing_photo = get_photo_for_field(field_name)
+      if existing_photo.present?
+        existing_photo.purge
+        Rails.logger.info "Photo purged for field: #{field_name}"
+      end
+      
+      # Actualizar form_structure para limpiar photo_attachment_id
+      success = clear_photo_attachment_id_in_structure(field_name)
+      
+      if success
+        Rails.logger.info "Photo removed completely for field: #{field_name}"
+        { success: true, message: "Foto eliminada exitosamente" }
+      else
+        { success: false, error: "Error al actualizar estructura del formulario" }
+      end
+      
+    rescue => e
+      Rails.logger.error "Error removing photo for field #{field_name}: #{e.message}"
+      { success: false, error: e.message }
+    end
+  end
+  
+  # Método para limpiar photo_attachment_id en form_structure
+  def clear_photo_attachment_id_in_structure(field_name)
+    return false unless form_structure.present?
+    
+    begin
+      structure = JSON.parse(form_structure)
+      
+      # Buscar el campo en la estructura
+      field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
+      
+      if field_data
+        field_data['photo_attachment_id'] = nil
+        field_data['value'] = ""
+        update(form_structure: structure.to_json)
+        true
+      else
+        Rails.logger.error "Photo field '#{field_name}' not found in form structure"
+        false
+      end
+      
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure: #{e.message}"
+      false
+    rescue => e
+      Rails.logger.error "Error clearing photo attachment ID in structure: #{e.message}"
+      false
+    end
   end
   
   # Método de debug para ver todas las fotos

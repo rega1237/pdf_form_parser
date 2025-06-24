@@ -97,6 +97,36 @@ class FormFillsController < ApplicationController
     end
   end
 
+  # Endpoint para eliminar foto específica
+  def remove_photo
+    @form_fill = FormFill.find(params[:id])
+    
+    # Obtener parámetros del request JSON
+    request_data = JSON.parse(request.body.read) rescue {}
+    field_name = request_data['field_name'] || params[:field_name]
+    
+    if field_name.blank?
+      render json: { error: "Field name required" }, status: :bad_request
+      return
+    end
+    
+    result = @form_fill.remove_photo_for_field(field_name)
+    
+    if result[:success]
+      render json: { 
+        success: true, 
+        message: result[:message],
+        field_name: field_name
+      }
+    else
+      render json: { 
+        success: false, 
+        error: result[:error],
+        field_name: field_name 
+      }, status: :unprocessable_entity
+    end
+  end
+
   # Endpoint para obtener URL de foto específica
   def photo_url
     @form_fill = FormFill.find(params[:id])

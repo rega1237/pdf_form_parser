@@ -26,10 +26,11 @@ Rails.application.routes.draw do
   # Form fills routes
   resources :form_fills, only: %i[index new create show update destroy] do
     member do
-      post 'submit_form' # Ruta para procesar y enviar el formulario PDF
-      post :photo_url          # Nuevo endpoint para obtener URL de foto
-      get :structure           # Nuevo endpoint para obtener estructura actualizada
-      post :upload_photo       # Opcional: endpoint específico para subir fotos
+      post :submit_form
+      post :photo_url          # Endpoint para obtener URL de foto
+      delete :remove_photo     # Nuevo endpoint para eliminar foto
+      get :structure           # Endpoint para obtener estructura actualizada
+      post :upload_photo 
     end
   end
 
