@@ -1,3 +1,133 @@
+<% content_for :head do %>
+  <style>
+    /* Estilos para campos de foto */
+    .photo-field-container {
+      transition: all 0.3s ease;
+    }
+
+    .photo-preview-container {
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Estilos para el botón de cámara */
+    .camera-button {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .camera-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .camera-button:hover::before {
+      left: 100%;
+    }
+
+    /* Estilos para la vista previa de imagen */
+    .photo-preview img {
+      transition: transform 0.2s ease;
+    }
+
+    .photo-preview img:hover {
+      transform: scale(1.02);
+    }
+
+    /* Estilos para el estado de carga */
+    .loading-state {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .loading-spinner {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Estilos para indicadores de estado */
+    .file-status-saved {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 0.5rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .file-status-new {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 0.5rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .photo-preview img {
+        height: 120px;
+      }
+
+      .camera-button {
+        padding: 1rem;
+      }
+
+      .camera-button svg {
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+
+      .camera-button span {
+        font-size: 0.875rem;
+      }
+    }
+
+    /* Estados de validación */
+    .photo-field-error {
+      border-color: rgba(239, 68, 68, 0.5) !important;
+      background: rgba(239, 68, 68, 0.05) !important;
+    }
+
+    .photo-field-success {
+      border-color: rgba(34, 197, 94, 0.5) !important;
+      background: rgba(34, 197, 94, 0.05) !important;
+    }
+
+    /* Animación para remover foto */
+    .photo-removing {
+      animation: fadeOut 0.3s ease-out forwards;
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+    }
+  </style>
+<% end %>
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
   <div class="container mx-auto px-4 py-6 lg:py-12">
     <div class="flash-messages fixed top-20 left-0 right-0 z-40 p-4"></div>
@@ -192,134 +322,219 @@
                                 <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <!-- Hidden file input -->
                                 <%= form.file_field field['name'],
-                                  id: field_id,
-                                  accept: "image/*",
-                                  capture: "environment",
-                                  class: "hidden",
-                                  data: { action: "change->photo-capture#handleFileChange" } %>
-                                <!-- Camera button -->
-                                <button type="button"
-                                      data-controller="photo-capture"
-                                      data-action="click->photo-capture#openCamera"
-                                  data-photo-capture-input-id-value="<%= field_id %>"
-                                  class="w-full flex items-center justify-center bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-6 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-red-400">
-                                  <!-- Camera icon -->
-                                  <svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                  </svg>
-                                  <span class="text-lg">Take Photo</span>
-                                </button>
-                                <!-- Photo preview container -->
-                                <div id="photo-preview-<%= field_id %>" 
-                                   data-photo-capture-target="preview" 
-                                   class="mt-4 hidden">
-                                  <div class="relative bg-slate-700 rounded-2xl p-4 border-2 border-blue-400">
-                                    <div class="flex items-center justify-between mb-3">
-                                      <span class="text-white font-semibold text-sm">Foto capturada:</span>
-                                      <button type="button"
-                                            data-action="click->photo-capture#removePhoto"
-                                        class="text-red-400 hover:text-red-300 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
-                                      </button>
+                                    id: field_id,
+                                    accept: "image/*",
+                                    capture: "environment",
+                                    class: "hidden" %>
+                                <!-- Camera button CON todos los data attributes necesarios -->
+                                <div data-controller="photo-capture"
+                                     data-photo-capture-input-id-value="<%= field_id %>">
+                                  <button type="button"
+                                          data-action="click->photo-capture#openCamera"
+                                    class="w-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-6 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-purple-400">
+                                    <!-- Camera icon -->
+                                    <svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    <span class="text-lg">
+                                      <% if field['photo_attachment_id'].present? %>
+                                        Cambiar Foto
+                                      <% else %>
+                                        Tomar Foto
+                                      <% end %>
+                                    </span>
+                                  </button>
+                                  <!-- Photo preview container CON targets correctos -->
+                                  <div id="photo-preview-<%= field_id %>" 
+                                       data-photo-capture-target="preview" 
+                                       class="mt-4 <%= field['photo_attachment_id'].present? ? '' : 'hidden' %>">
+                                    <div class="relative bg-slate-700 rounded-2xl p-4 border-2 border-blue-400">
+                                      <div class="flex items-center justify-between mb-3">
+                                        <span class="text-white font-semibold text-sm">
+                                          <% if field['photo_attachment_id'].present? %>
+                                            Foto guardada:
+                                          <% else %>
+                                            Foto capturada:
+                                          <% end %>
+                                        </span>
+                                        <button type="button"
+                                                data-action="click->photo-capture#removePhoto"
+                                          class="text-red-400 hover:text-red-300 transition-colors">
+                                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                          </svg>
+                                        </button>
+                                      </div>
+                                      <!-- Imagen de vista previa -->
+                                      <% if field['photo_attachment_id'].present? %>
+                                        <% existing_photo = @form_fill.get_photo_for_field(field['name']) %>
+                                        <% if existing_photo.present? %>
+                                          <%= image_tag rails_blob_path(existing_photo), 
+                                              data: { photo_capture_target: "image" },
+                                              class: "w-full h-32 object-cover rounded-xl border border-slate-600",
+                                              alt: "Foto de #{field['label_name'].presence || field['name']}" %>
+                                        <% else %>
+                                          <img data-photo-capture-target="image" 
+                                               class="w-full h-32 object-cover rounded-xl border border-slate-600" 
+                                               alt="Foto capturada"
+                                               src="">
+                                        <% end %>
+                                      <% else %>
+                                        <img data-photo-capture-target="image" 
+                                             class="w-full h-32 object-cover rounded-xl border border-slate-600" 
+                                             alt="Foto capturada"
+                                             src="">
+                                      <% end %>
+                                      <!-- Info del archivo -->
+                                      <% if field['photo_attachment_id'].present? %>
+                                        <div class="file-info text-xs text-slate-300 mt-2">
+                                          <div class="flex justify-between items-center">
+                                            <span class="flex items-center">
+                                              <svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                              </svg>
+                                              <%= field['label_name'].presence || field['name'] %>
+                                            </span>
+                                            <span class="text-green-400">Guardada</span>
+                                          </div>
+                                        </div>
+                                      <% end %>
                                     </div>
-                                    <img data-photo-capture-target="image" 
-                                       class="w-full h-32 object-cover rounded-xl border border-slate-600" 
-                                       alt="Foto capturada">
+                                  </div>
+                                </div>
+                                <!-- Debug info (solo en desarrollo) -->
+                                <% if Rails.env.development? && field['photo_attachment_id'].present? %>
+                                  <div class="mt-2 text-xs text-purple-300 bg-purple-900/20 rounded p-2">
+                                    <strong>Debug:</strong> photo_attachment_id: <%= field['photo_attachment_id'] %>
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% else %>
+                              <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 shadow-lg">
+                                <div class="flex items-start space-x-3">
+                                  <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                  </svg>
+                                  <div>
+                                    <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= (field['label_name'].presence || field['name']) %></h4>
+                                    <p class="text-amber-700 text-sm mb-2">Tipo: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
+                                    <p class="text-amber-700 text-sm">Este tipo de campo aún no es compatible con la interfaz web</p>
                                   </div>
                                 </div>
                               </div>
-                          <% else %>
-                            <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 shadow-lg">
-                              <div class="flex items-start space-x-3">
-                                <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                                </svg>
-                                <div>
-                                  <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= (field['label_name'].presence || field['name']) %></h4>
-                                  <p class="text-amber-700 text-sm mb-2">Tipo: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
-                                  <p class="text-amber-700 text-sm">Este tipo de campo aún no es compatible con la interfaz web</p>
-                                </div>
-                              </div>
-                            </div>
-                          <% end %>
-                        </div>
-                      <% end %>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
                     </div>
-                  </div>
-                <% end %>
+                  <% end %>
+                </div>
               </div>
-            </div>
-          <% end %>
-          <button type="button" 
+            <% end %>
+            <button type="button" 
                   id="backPageBtn" 
                   data-action="click->pagination#backPage" 
-            data-pagination-target="backPageBtn" 
-            class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out left-[-25px] md:left-[-30px] bg-gray-600 hover:bg-gray-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none"
-            disabled>
-            <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-          </button>
-          <button type="button" 
+              data-pagination-target="backPageBtn" 
+              class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out left-[-25px] md:left-[-30px] bg-gray-600 hover:bg-gray-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none"
+              disabled>
+              <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+              </svg>
+            </button>
+            <button type="button" 
                   id="nextPageBtn" 
                   data-action="click->pagination#nextPage click->form-fill#saveDraft" 
-            data-pagination-target="nextPageBtn" 
-            class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out right-[-25px] md:right-[-30px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none">
-            <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-          </button>
-          <div class="hidden bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-blue-400 animate-fade-in shadow-2xl mt-8">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center space-y-6 sm:space-y-0 sm:space-x-6">
-              <%= form.submit "Enviar Formulario", 
+              data-pagination-target="nextPageBtn" 
+              class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out right-[-25px] md:right-[-30px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none">
+              <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </button>
+            <div class="hidden bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-blue-400 animate-fade-in shadow-2xl mt-8">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center space-y-6 sm:space-y-0 sm:space-x-6">
+                <%= form.submit "Enviar Formulario", 
                   id: "submitFormBtn", 
                   data: { pagination_target: "submitFormBtn" }, 
                   class: "hidden items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 md:py-4 md:px-8 rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer shadow-lg text-base md:text-lg" %>
+              </div>
             </div>
           </div>
-        </div>
+        <% end %>
       <% end %>
-    <% end %>
-    <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
-      <div class="flex items-start space-x-4 mb-6">
-        <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
+      <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
+        <div class="flex items-start space-x-4 mb-6">
+          <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-white font-bold text-xl mb-2">Acciones del Formulario</h3>
+            <p class="text-blue-300 text-base mb-4">Genere y administre su PDF de inspección final</p>
+          </div>
         </div>
-        <div>
-          <h3 class="text-white font-bold text-xl mb-2">Acciones del Formulario</h3>
-          <p class="text-blue-300 text-base mb-4">Genere y administre su PDF de inspección final</p>
-        </div>
-      </div>
-      <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
-        <button type="button"
+        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+          <button type="button"
                   data-controller="external-form-action"
                   data-action="click->external-form-action#triggerSaveDraft"
-          data-external-form-action-form-id-value="form-fill-main-form"
-          class="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
-          <svg class="w-5 h-5 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
-          </svg>
-          Guardar Borrador
-        </button>
-        <%= button_to 'Generar PDF', 
+            data-external-form-action-form-id-value="form-fill-main-form"
+            class="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
+            <svg class="w-5 h-5 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            Guardar Borrador
+          </button>
+          <%= button_to 'Generar PDF', 
               submit_form_form_fill_path(@form_fill), 
               method: :post, 
               class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", 
               data: { confirm: "¿Está seguro de que desea generar y enviar el formulario PDF?" } %>
-        <% if @form_fill.filled_pdf.attached? %>
-          <div class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg">
-            <a href="<%= rails_blob_path(@form_fill.filled_pdf, disposition: 'inline') %>" target="_blank" class="text-white hover:text-white text-lg">
-              Ver PDF
-            </a>
-          </div>
-        <% end %>
+          <% if @form_fill.filled_pdf.attached? %>
+            <div class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg">
+              <a href="<%= rails_blob_path(@form_fill.filled_pdf, disposition: 'inline') %>" target="_blank" class="text-white hover:text-white text-lg">
+                Ver PDF
+              </a>
+            </div>
+          <% end %>
+        </div>
       </div>
     </div>
   </div>
-</div>
-</div>
+  <% if Rails.env.development? %>
+    <script>
+      function debugPhotoFields() {
+        const formFillController = document.querySelector('[data-controller*="form-fill"]');
+        if (formFillController) {
+          const formStructure = JSON.parse(formFillController.dataset.formFillFormStructureValue || '[]');
+          const photoFields = formStructure.filter(field => field.type === 'Photo');
+
+          console.log('Photo fields in form:', photoFields);
+
+          photoFields.forEach(field => {
+            console.log(`Field: ${field.name}`);
+            console.log(`  - Has attachment ID: ${!!field.photo_attachment_id}`);
+            console.log(`  - Attachment ID: ${field.photo_attachment_id}`);
+
+            const inputElement = document.querySelector(`input[name="form_fill[${field.name}]"]`);
+            if (inputElement) {
+              console.log(`  - Input found: ${inputElement.id}`);
+              const previewContainer = document.getElementById(`photo-preview-${inputElement.id}`);
+              console.log(`  - Preview container: ${previewContainer ? 'Found' : 'Not found'}`);
+
+              if (previewContainer) {
+                const imageElement = previewContainer.querySelector('[data-photo-capture-target="image"]');
+                console.log(`  - Image element: ${imageElement ? 'Found' : 'Not found'}`);
+                if (imageElement) {
+                  console.log(`  - Image src: ${imageElement.src}`);
+                }
+              }
+            }
+          });
+        }
+      }
+
+      // Hacer función disponible en consola para debugging
+      window.debugPhotoFields = debugPhotoFields;
+    </script>
+  <% end %>
