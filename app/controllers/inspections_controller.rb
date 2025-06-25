@@ -36,17 +36,20 @@ class InspectionsController < ApplicationController
   # GET /inspections/new
   def new
     @inspection = Inspection.new
-
+  
     # Pre-cargar si viene de una propiedad específica
-    return unless params[:property_id].present?
-
-    @inspection.property_id = params[:property_id]
-    @selected_customer = Property.find(params[:property_id]).customer
-  end
-
-  # GET /inspections/1/edit
-  def edit
-    @selected_customer = @inspection.property.customer
+    if params[:property_id].present?
+      @property = Property.find(params[:property_id])
+      @inspection.property_id = params[:property_id]
+      @selected_customer = @property.customer
+      
+      # Pre-cargar las propiedades del cliente seleccionado
+      @properties = @selected_customer.properties.order(:property_name)
+    else
+      # Si no viene de una propiedad específica, inicializar arrays vacíos
+      @properties = []
+      @selected_customer = nil
+    end
   end
 
   # POST /inspections
@@ -137,14 +140,22 @@ class InspectionsController < ApplicationController
   end
 
   # GET /properties/:property_id/inspections
+# GET /properties/:property_id/inspections
   def by_property
     @property = Property.find(params[:property_id])
     @customer = @property.customer
-    return unless defined?(Kaminari)
 
+    # Cargar inspecciones con paginación
     @inspections = @property.inspections.includes(:form_fill)
                             .order(date: :desc)
-                            .page(params[:page]).per(10)
+                            .page(params[:page])
+                            .per(10) # 10 inspecciones por página
+
+    # Para los totales en la tarjeta de resumen (sin paginación)
+    @total_inspections = @property.inspections.count
+    @completed_inspections = @property.inspections.where(status: 'completed').count
+    @pending_inspections = @property.inspections.where(status: 'pending').count
+    @due_soon_inspections = @property.inspections.where('date > ? AND date <= ?', Date.current, 3.days.from_now).count
   end
 
   # API endpoint para obtener propiedades por customer (AJAX)
@@ -176,14 +187,24 @@ class InspectionsController < ApplicationController
   def load_form_data
     @customers = Customer.order(:name)
     @form_templates = FormTemplate.order(:name)
-    @properties = []
 
-    # Si ya hay un customer seleccionado, cargar sus propiedades
-    if params[:inspection] && params[:inspection][:property_id].present?
+    # Si ya se definieron en el método new, no los sobreescribir
+    @properties = [] unless defined?(@properties) && @properties.present?
+
+    @selected_customer = nil unless defined?(@selected_customer)
+
+    if params[:property_id].present? && @selected_customer.nil?
+      # Caso 1: Viene desde vista de propiedad
+      @property = Property.find(params[:property_id])
+      @selected_customer = @property.customer
+      @properties = @selected_customer.properties.order(:property_name)
+    elsif params[:inspection] && params[:inspection][:property_id].present?
+      # Caso 2: Formulario enviado con property_id
       property = Property.find(params[:inspection][:property_id])
       @properties = property.customer.properties.order(:property_name)
       @selected_customer = property.customer
     elsif @inspection&.property
+      # Caso 3: Edición de inspección existente
       @selected_customer = @inspection.property.customer
       @properties = @selected_customer.properties.order(:property_name)
     end

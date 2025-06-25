@@ -1,21 +1,40 @@
 Rails.application.routes.draw do
   devise_for :users
+  
+  # Customers routes
   resources :customers, only: %i[index show new create edit update]
-  resources :properties
+  
+  # Properties routes with nested and member routes
+  resources :properties do
+    # Nested inspections for viewing inspections by property
+    resources :inspections, only: [:index], controller: 'inspections', action: 'by_property'
+    
+    # Member route for creating inspection from specific property
+    member do
+      get :new_inspection, to: 'inspections#new'
+    end
+  end
+  
+  # Form templates routes
   resources :form_templates do
     member do
       get 'form_builder' # Route to display the form builder
-      patch 'form_builder_update' # New route for updating form structure
+      patch 'form_builder_update' # Route for updating form structure
     end
   end
 
+  # Form fills routes
   resources :form_fills, only: %i[index new create show update destroy] do
     member do
-      post 'submit_form' # Ruta para procesar y enviar el formulario PDF
+      post :submit_form
+      post :photo_url          # Endpoint para obtener URL de foto
+      delete :remove_photo     # Nuevo endpoint para eliminar foto
+      get :structure           # Endpoint para obtener estructura actualizada
+      post :upload_photo 
     end
   end
 
-   # Rutas principales de inspections
+  # Inspections routes
   resources :inspections do
     member do
       patch :update_status
@@ -28,27 +47,13 @@ Rails.application.routes.draw do
     end
   end
   
-  # Rutas anidadas para ver inspections por propiedad
-  resources :properties do
-    resources :inspections, only: [:index], controller: 'inspections', action: 'by_property'
-  end
-  
-  # Ruta para crear inspection desde una propiedad específica
-  # Ejemplo: /properties/1/new_inspection
-  resources :properties do
-    member do
-      get :new_inspection, to: 'inspections#new'
-    end
-  end
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  # Health check route
   get 'up' => 'rails/health#show', as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
+  # PWA routes (commented out)
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
-  #root 'inspections#dashboard'
+  
+  # Root route
   root 'home#index'
 end

@@ -1,325 +1,550 @@
 <% content_for :head do %>
   <style>
-    #submitFormBtn {
-      display: none;
+    /* Estilos para campos de foto */
+    .photo-field-container {
+      transition: all 0.3s ease;
     }
 
-    @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(20px); }
-      100% { opacity: 1; transform: translateY(0); }
+    .photo-preview-container {
+      animation: slideDown 0.3s ease-out;
     }
-    @keyframes slideUp {
-      0% { opacity: 0; transform: translateY(30px); }
-      100% { opacity: 1; transform: translateY(0); }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
+
+    /* Estilos para el botón de cámara */
+    .camera-button {
+      position: relative;
+      overflow: hidden;
     }
-    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
-    .animate-slide-up { animation: slideUp 0.5s ease-out; }
-    .animate-pulse-custom { animation: pulse 2s infinite; }
+
+    .camera-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .camera-button:hover::before {
+      left: 100%;
+    }
+
+    /* Estilos para la vista previa de imagen */
+    .photo-preview img {
+      transition: transform 0.2s ease;
+    }
+
+    .photo-preview img:hover {
+      transform: scale(1.02);
+    }
+
+    /* Estilos para el estado de carga */
+    .loading-state {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .loading-spinner {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Estilos para indicadores de estado */
+    .file-status-saved {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 0.5rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .file-status-new {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 0.5rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .photo-preview img {
+        height: 120px;
+      }
+
+      .camera-button {
+        padding: 1rem;
+      }
+
+      .camera-button svg {
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+
+      .camera-button span {
+        font-size: 0.875rem;
+      }
+    }
+
+    /* Estados de validación */
+    .photo-field-error {
+      border-color: rgba(239, 68, 68, 0.5) !important;
+      background: rgba(239, 68, 68, 0.05) !important;
+    }
+
+    .photo-field-success {
+      border-color: rgba(34, 197, 94, 0.5) !important;
+      background: rgba(34, 197, 94, 0.05) !important;
+    }
+
+    /* Animación para remover foto */
+    .photo-removing {
+      animation: fadeOut 0.3s ease-out forwards;
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+    }
   </style>
 <% end %>
-
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900" data-controller="notification" data-action="showNotification@window->notification#showNotification">
   <div class="container mx-auto px-4 py-6 lg:py-12">
-    <!-- Flash Messages Container -->
-    <div class="flash-messages fixed top-20 left-0 right-0 z-40 p-4"></div>
-
-    <!-- Header con navegación -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div class="mb-4 sm:mb-0">
-        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">
+        <h1 class="text-2xl lg:text-4xl font-bold text-white mb-2">
           <%= @form_fill.name %>
         </h1>
-        <p class="text-slate-300 text-sm lg:text-base">
+        <p class="text-blue-200 text-base md:text-lg">
           Complete todos los campos requeridos para enviar la inspección
         </p>
       </div>
-      
-      <%= link_to form_fills_path, class: "inline-flex items-center bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02]" do %>
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <%= link_to inspections_path, class: "inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl" do %>
+        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
         </svg>
-        <span class="text-sm lg:text-base">Volver a Plantillas</span>
+        <span class="text-base lg:text-lg">Back to inspections</span>
       <% end %>
     </div>
-
-    <!-- Contenido principal -->
     <div class="max-w-6xl mx-auto">
-      <!-- Formulario principal -->
       <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, 
           data: { controller: "pagination form-fill", turbo: false, 
                   "form-fill-form-structure-value": @form_fill.form_structure, 
                   "form-fill-form-fields-value": @form_fields.to_json }, 
+          id: "form-fill-main-form",
           local: true, 
-          class: "space-y-6" do |form| %>
-        
+          class: "space-y-8" do |form| %>
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
-        
         <% if @form_fields.blank? %>
-          <!-- Error: Sin campos -->
-          <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 animate-slide-up">
-            <div class="flex items-center mb-3">
-              <svg class="w-6 h-6 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="bg-red-50 border-2 border-red-200 rounded-3xl p-8 animate-slide-up shadow-lg">
+            <div class="flex items-center mb-4">
+              <svg class="w-8 h-8 text-red-500 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              <h3 class="text-red-400 font-semibold text-lg">Formulario sin campos</h3>
+              <h3 class="text-red-600 font-bold text-xl">Formulario sin campos</h3>
             </div>
-            <p class="text-red-300">No hay campos disponibles en este formulario o la estructura no pudo ser procesada correctamente.</p>
+            <p class="text-red-700 text-lg">No hay campos disponibles en este formulario o la estructura no pudo ser procesada correctamente.</p>
           </div>
         <% else %>
-          <!-- Indicador de progreso -->
           <% valid_fields = @form_fields.reject { |f| f['page_number'].to_i == 0 } %>
           <% pages = valid_fields.group_by { |f| f['page_number'].to_i }.sort_by { |page_num, _| page_num } %>
           <% total_pages = pages.length %>
-          
-          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 animate-fade-in">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-white font-semibold">Progreso del Formulario</span>
-              <span class="text-slate-300 text-sm" id="page-indicator">
+          <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl p-6 border-2 border-blue-500 animate-fade-in shadow-lg hidden">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-white font-bold text-lg">Progreso del Formulario</span>
+              <span class="text-blue-300 text-base font-semibold" id="page-indicator">
                 Página 1 de --
               </span>
             </div>
-            <div class="w-full bg-slate-700 rounded-full h-2">
-              <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 h-2 rounded-full transition-all duration-500" 
+            <div class="w-full bg-slate-700 rounded-full h-3">
+              <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500" 
                    style="width: 0%" 
                    id="progress-bar"></div>
             </div>
           </div>
-
-          <!-- Páginas del formulario -->
-          <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
-            <div class="page-content <%= page_index == 0 ? 'animate-slide-up' : 'hidden' %>" 
+          <div class="relative">
+            <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
+              <div class="page-content relative <%= page_index == 0 ? 'animate-slide-up' : 'hidden' %>" 
                  data-page-number="<%= page_num %>" 
                  data-pagination-target="pageContent">
-              
-              <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl">
-                <!-- Título de página -->
-                <div class="mb-8">
-                  <h2 class="text-xl lg:text-2xl font-bold text-white mb-2">
-                    Página <%= page_num %>
-                  </h2>
-                  <div class="w-16 h-1 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full"></div>
-                </div>
-
-                <!-- Secciones de la página -->
-                <% fields_on_page.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
-                  <div class="mb-8 last:mb-0">
-                    <!-- Título de sección -->
-                    <div class="mb-6">
-                      <div class="flex items-center mb-4">
-                        <div class="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center mr-3">
-                          <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                          </svg>
+                <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-blue-400 shadow-2xl">
+                  <div class="mb-10">
+                    <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3">
+                      Página <%= page_num %>
+                    </h2>
+                    <div class="w-20 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
+                  </div>
+                  <% fields_on_page.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
+                    <div class="mb-10 last:mb-0">
+                      <div class="mb-8">
+                        <div class="flex items-center mb-6">
+                          <div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                          </div>
+                          <h3 class="text-white font-bold text-xl lg:text-2xl">
+                            <%= section_name.humanize %>
+                          </h3>
                         </div>
-                        <h3 class="text-white font-semibold text-lg lg:text-xl">
-                          <%= section_name.humanize %>
-                        </h3>
                       </div>
-                    </div>
-
-                    <!-- Grid de campos -->
-                    <div class="grid grid-cols-1 md:grid-cols-9 gap-4 items-end">
-                      <% fields_in_section.each_with_index do |field, index| %>
-                        <% next unless field.is_a?(Hash) && field.key?('name') %>
-                        <% next if field['name'].blank? %>
-
-                        <% column_width_int = field['column_width'].to_i %>
-                        <% column_span = case column_width_int
-                                         when 2
-                                           'md:col-span-2'
-                                         when 3
-                                           'md:col-span-3'
-                                         when 4
-                                           'md:col-span-4'
-                                         when 5
-                                           'md:col-span-5'
-                                         when 6
-                                           'md:col-span-6'
-                                         when 7
-                                           'md:col-span-7'
-                                         when 8
-                                           'md:col-span-8'
-                                         when 9
-                                           'md:col-span-9'
-                                         else
-                                           'md:col-span-1'
+                      <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
+                        <% fields_in_section.each_with_index do |field, index| %>
+                          <% next unless field.is_a?(Hash) && field.key?('name') %>
+                          <% next if field['name'].blank? %>
+                          <% column_width_int = field['column_width'].to_i %>
+                          <% column_span = case column_width_int
+                                         when 2 then 'md:col-span-2'
+                                         when 3 then 'md:col-span-3'
+                                         when 4 then 'md:col-span-4'
+                                         when 5 then 'md:col-span-5'
+                                         when 6 then 'md:col-span-6'
+                                         when 7 then 'md:col-span-7'
+                                         when 8 then 'md:col-span-8'
+                                         when 9 then 'md:col-span-9'
+                                         else 'md:col-span-1'
                                          end %>
-
-                        <div class="<%= column_span %> space-y-3">
-                          <% field_id = "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}" %>
-                          
-                          <% if field['type'] == "Button" %>
-                          
-                            <!-- Checkbox -->
-                            <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all duration-200">
-                              <div class="flex items-center space-x-3">
-                              <%= check_box_tag "form_fill[#{field['name']}]",
-                                  'Yes',
-                                  field['value'] == 'Yes',
-                                  { id: field_id,
-                                    class: "w-5 h-5 text-indigo-600 bg-white/10 border-white/30 rounded focus:ring-indigo-500 focus:ring-2" } %>
-                                
-                                <label for="<%= field_id %>" class="text-white font-medium cursor-pointer select-none">
-                                  <%= (field['label_name'].presence || field['name']).humanize %>
+                          <div class="<%= column_span %> space-y-4">
+                            <% field_id = "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}" %>
+                            <% if field['type'] == "Button" %>
+                              <div class="relative inline-block w-full checkbox-button">
+                                <%= check_box_tag "form_fill[#{field['name']}]", 'Yes', field['value'] == 'Yes', 
+                                  { id: field_id, class: "hidden peer" } %>
+                                <label for="<%= field_id %>" 
+                                     class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
+                                            bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 
+                                            hover:from-red-200 hover:to-red-400 hover:border-red-700 hover:-translate-y-0.5 hover:shadow-lg
+                                            peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">
+                                  <%= (field['label_name'].presence || field['name']) %>
                                 </label>
                               </div>
-                            </div>
-                          
-                          <% elsif field['type'] == "Text" %>
-                            <!-- Campo de texto -->
-                            <div>
-                              <%= form.label field['name'],
-                                  (field['label_name'].presence || field['name']).humanize,
-                                  for: field_id,
-                                  class: "block text-white font-semibold text-sm lg:text-base mb-2" %>
-                              <div class="relative">
-                                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                </svg>
-                                <%= form.text_field field['name'],
+                            <% elsif field['type'] == "Text" %>
+                              <% if field['label_name']&.downcase.include?('p, f, n/a') %>
+                                <div>
+                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                  <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
+                                  <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
+                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
+                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Fail">Fail</button>
+                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
+                                  </div>
+                                </div>
+                              <% else %>
+                                <div>
+                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                  <div class="relative">
+                                    <svg class="hidden absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                    </svg>
+                                    <%= form.text_field field['name'],
+                                      id: field_id,
+                                      value: field['value'],
+                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                      placeholder: "     Ingrese #{(field['label_name'].presence || field['name'])}" %>
+                                  </div>
+                                </div>
+                              <% end %>
+                            <% elsif (field['type'] == "Choice" || field['type'] == "Deficiency") && field['options'].is_a?(Array) %>
+                              <% if field['label_name']&.downcase.include?('p, f, n/a') %>
+                                <div>
+                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                  <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
+                                  <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
+                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
+                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Fail">Fail</button>
+                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
+                                  </div>
+                                </div>
+                              <% elsif field['type'] == "Deficiency" %>
+                                <div class="space-y-4">
+                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                  <!-- Select dropdown -->
+                                  <div class="relative">
+                                    <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                    </svg>
+                                    <%= form.select "#{field['name']}_select",
+                                      options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
+                                      { include_blank: 'Seleccione una opción' },
+                                      id: "#{field_id}_select",
+                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+                                  </div>
+                                  <!-- Text field -->
+                                  <div class="relative">
+                                    <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                    </svg>
+                                    <%= form.text_field "#{field['name']}_comment",
+                                      id: "#{field_id}_comment",
+                                      value: field['comment_value'] || '',
+                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                      placeholder: "Ingrese comentarios adicionales..." %>
+                                  </div>
+                                </div>
+                              <% else %>
+                                <div>
+                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                  <div class="relative">
+                                    <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                    </svg>
+                                    <%= form.select field['name'],
+                                      options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
+                                      { include_blank: 'Seleccione una opción' },
+                                      id: field_id,
+                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+                                  </div>
+                                </div>
+                              <% end %>
+                            <% elsif field['type'] == "Photo" %>
+                              <div>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <!-- Hidden file input -->
+                                <%= form.file_field field['name'],
                                     id: field_id,
-                                    value: field['value'],
-                                    class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
-                                    placeholder: "Ingrese #{(field['label_name'].presence || field['name']).humanize.downcase}" %>
+                                    accept: "image/*",
+                                    capture: "environment",
+                                    class: "hidden" %>
+                                <!-- Camera button CON todos los data attributes necesarios -->
+                                <div data-controller="photo-capture"
+                                     data-photo-capture-input-id-value="<%= field_id %>">
+                                  <button type="button"
+                                          data-action="click->photo-capture#openCamera"
+                                    class="w-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-6 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-purple-400">
+                                    <!-- Camera icon -->
+                                    <svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    <span class="text-lg">
+                                      <% if field['photo_attachment_id'].present? %>
+                                        Cambiar Foto
+                                      <% else %>
+                                        Tomar Foto
+                                      <% end %>
+                                    </span>
+                                  </button>
+                                  <!-- Photo preview container CON targets correctos -->
+                                  <div id="photo-preview-<%= field_id %>" 
+                                       data-photo-capture-target="preview" 
+                                       class="mt-4 <%= field['photo_attachment_id'].present? ? '' : 'hidden' %>">
+                                    <div class="relative bg-slate-700 rounded-2xl p-4 border-2 border-blue-400">
+                                      <div class="flex items-center justify-between mb-3">
+                                        <span class="text-white font-semibold text-sm">
+                                          <% if field['photo_attachment_id'].present? %>
+                                            Foto guardada:
+                                          <% else %>
+                                            Foto capturada:
+                                          <% end %>
+                                        </span>
+                                        <div class="flex space-x-2">
+                                          <!-- Botón de debug temporal (solo en desarrollo) -->
+                                          <% if Rails.env.development? %>
+                                            <button type="button"
+                                                    data-action="click->photo-capture#debugRemovePhoto"
+                                              class="text-yellow-400 hover:text-yellow-300 transition-colors text-xs">
+                                              🐛
+                                            </button>
+                                          <% end %>
+                                          <!-- Botón de eliminar -->
+                                          <button type="button"
+                                                  data-action="click->photo-capture#removePhoto"
+                                            class="text-red-400 hover:text-red-300 transition-colors">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <!-- Imagen de vista previa -->
+                                      <% if field['photo_attachment_id'].present? %>
+                                        <% existing_photo = @form_fill.get_photo_for_field(field['name']) %>
+                                        <% if existing_photo.present? %>
+                                          <%= image_tag rails_blob_path(existing_photo), 
+                                              data: { photo_capture_target: "image" },
+                                              class: "w-full object-cover rounded-xl border border-slate-600",
+                                              alt: "Foto de #{field['label_name'].presence || field['name']}" %>
+                                        <% else %>
+                                          <img data-photo-capture-target="image" 
+                                               class="w-full object-cover rounded-xl border border-slate-600" 
+                                               alt="Foto capturada"
+                                               src="">
+                                        <% end %>
+                                      <% else %>
+                                        <img data-photo-capture-target="image" 
+                                             class="w-full object-cover rounded-xl border border-slate-600" 
+                                             alt="Foto capturada"
+                                             src="">
+                                      <% end %>
+                                      <!-- Info del archivo -->
+                                      <% if field['photo_attachment_id'].present? %>
+                                        <div class="file-info text-xs text-slate-300 mt-2">
+                                          <div class="flex justify-between items-center">
+                                            <span class="flex items-center">
+                                              <svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                              </svg>
+                                              <%= field['label_name'].presence || field['name'] %>
+                                            </span>
+                                            <span class="text-green-400">Guardada</span>
+                                          </div>
+                                        </div>
+                                      <% end %>
+                                    </div>
+                                  </div>
+                                </div>
+                                <!-- Debug info (solo en desarrollo) -->
+                                <% if Rails.env.development? && field['photo_attachment_id'].present? %>
+                                  <div class="mt-2 text-xs text-purple-300 bg-purple-900/20 rounded p-2">
+                                    <strong>Debug:</strong> photo_attachment_id: <%= field['photo_attachment_id'] %>
+                                  </div>
+                                <% end %>
                               </div>
-                            </div>
-                          
-                          <% elsif field['type'] == "Choice" && field['options'].is_a?(Array) %>
-                            <!-- Select -->
-                            <div>
-                              <%= form.label field['name'],
-                                  (field['label_name'].presence || field['name']).humanize,
-                                  for: field_id,
-                                  class: "block text-white font-semibold text-sm lg:text-base mb-2" %>
-                              <div class="relative">
-                                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
-                                </svg>
-                                <%= form.select field['name'],
-                                    options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
-                                    { include_blank: 'Seleccione una opción' },
-                                    id: field_id,
-                                    class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none" %>
-                              </div>
-                            </div>
-                          
-                          <% else %>
-                            <!-- Campo no soportado -->
-                            <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-                              <div class="flex items-start space-x-2">
-                                <svg class="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                                </svg>
-                                <div class="text-sm">
-                                  <h4 class="text-amber-300 font-medium mb-1">
-                                    <%= (field['label_name'].presence || field['name']).humanize %>
-                                  </h4>
-                                  <p class="text-amber-200 text-xs mb-2">
-                                    Tipo: <span class="font-mono"><%= field['type'] %></span>
-                                  </p>
-                                  <p class="text-amber-200 text-xs">
-                                    Este tipo de campo aún no es compatible con la interfaz web
-                                  </p>
+                            <% else %>
+                              <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 shadow-lg">
+                                <div class="flex items-start space-x-3">
+                                  <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                  </svg>
+                                  <div>
+                                    <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= (field['label_name'].presence || field['name']) %></h4>
+                                    <p class="text-amber-700 text-sm mb-2">Tipo: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
+                                    <p class="text-amber-700 text-sm">Este tipo de campo aún no es compatible con la interfaz web</p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          <% end %>
-                        </div>
-                      <% end %>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
                     </div>
-                  </div>
-                <% end %>
+                  <% end %>
+                </div>
               </div>
-            </div>
-          <% end %>
-
-          <!-- Controles de navegación -->
-          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 animate-fade-in">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <!-- Botón Atrás -->
-              <button type="button" 
-                      id="backPageBtn" 
-                      data-action="click->pagination#backPage" 
-                      data-pagination-target="backPageBtn" 
-                      class="inline-flex items-center bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none" 
-                      disabled>
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Previous page
-              </button>
-
-              <!-- Botones de acción -->
-              <div class="flex space-x-3">
-                <!-- Guardar Borrador -->
-                <button type="button" 
-                        id="saveDraftBtn" 
-                        data-action="click->form-fill#saveDraft" 
-                        class="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02]">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
-                  </svg>
-                  Save draft
-                </button>
-
-                <!-- Enviar Formulario (oculto inicialmente) -->
+            <% end %>
+            <button type="button" 
+                  id="backPageBtn" 
+                  data-action="click->pagination#backPage" 
+              data-pagination-target="backPageBtn" 
+              class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out left-[-25px] md:left-[-30px] bg-gray-600 hover:bg-gray-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none"
+              disabled>
+              <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+              </svg>
+            </button>
+            <button type="button" 
+                  id="nextPageBtn" 
+                  data-action="click->pagination#nextPage click->form-fill#saveDraft" 
+              data-pagination-target="nextPageBtn" 
+              class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out right-[-25px] md:right-[-30px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none">
+              <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </button>
+            <div class="hidden bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-blue-400 animate-fade-in shadow-2xl mt-8">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center space-y-6 sm:space-y-0 sm:space-x-6">
                 <%= form.submit "Enviar Formulario", 
-                    id: "submitFormBtn", 
-                    data: { pagination_target: "submitFormBtn" }, 
-                    class: "hideen items-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer" %>
-
-                <!-- Siguiente Página -->
-                <button type="button" 
-                        id="nextPageBtn" 
-                        data-action="click->pagination#nextPage click->form-fill#saveDraft" 
-                        data-pagination-target="nextPageBtn" 
-                        class="inline-flex items-center bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
-                  Next page
-                  <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                </button>
+                  id: "submitFormBtn", 
+                  data: { pagination_target: "submitFormBtn" }, 
+                  class: "hidden items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 md:py-4 md:px-8 rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer shadow-lg text-base md:text-lg" %>
               </div>
             </div>
           </div>
         <% end %>
       <% end %>
-
-      <!-- Sección de acciones adicionales -->
-      <div class="bg-white/5 backdrop-blur-sm rounded-2xl mt-5 p-6 border border-white/10 animate-fade-in">
-        <div class="flex items-start space-x-3 mb-4">
-          <div class="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center mt-1">
-            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
+        <div class="flex items-start space-x-4 mb-6">
+          <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
           <div>
-            <h3 class="text-white font-semibold mb-2">Form actions</h3>
-            <p class="text-slate-300 text-sm mb-4">Generate and manage your final inspection PDF</p>
+            <h3 class="text-white font-bold text-xl mb-2">Acciones del Formulario</h3>
+            <p class="text-blue-300 text-base mb-4">Genere y administre su PDF de inspección final</p>
           </div>
         </div>
-        
-        <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-          <%= button_to 'Fill PDF', 
+        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+          <button type="button"
+                  data-controller="external-form-action"
+                  data-action="click->external-form-action#triggerSaveDraft"
+            data-external-form-action-form-id-value="form-fill-main-form"
+            class="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
+            <svg class="w-5 h-5 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            Guardar Borrador
+          </button>
+          <%= button_to 'Generar PDF', 
               submit_form_form_fill_path(@form_fill), 
               method: :post, 
-              class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02]", 
+              class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", 
               data: { confirm: "¿Está seguro de que desea generar y enviar el formulario PDF?" } %>
-          
           <% if @form_fill.filled_pdf.attached? %>
-              <div class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
-                <a href="<%= rails_blob_path(@form_fill.filled_pdf, disposition: 'inline') %>" target="_blank" class="text-white-600 hover:text-white-800">
-                  See PDF
-                </a>
-              </div>
+            <div class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg">
+              <a href="<%= rails_blob_path(@form_fill.filled_pdf, disposition: 'inline') %>" target="_blank" class="text-white hover:text-white text-lg">
+                Ver PDF
+              </a>
+            </div>
           <% end %>
         </div>
       </div>
     </div>
   </div>
-</div>
+  <% if Rails.env.development? %>
+    <script>
+      function debugPhotoFields() {
+        const formFillController = document.querySelector('[data-controller*="form-fill"]');
+        if (formFillController) {
+          const formStructure = JSON.parse(formFillController.dataset.formFillFormStructureValue || '[]');
+          const photoFields = formStructure.filter(field => field.type === 'Photo');
 
+          console.log('Photo fields in form:', photoFields);
+
+          photoFields.forEach(field => {
+            console.log(`Field: ${field.name}`);
+            console.log(`  - Has attachment ID: ${!!field.photo_attachment_id}`);
+            console.log(`  - Attachment ID: ${field.photo_attachment_id}`);
+
+            const inputElement = document.querySelector(`input[name="form_fill[${field.name}]"]`);
+            if (inputElement) {
+              console.log(`  - Input found: ${inputElement.id}`);
+              const previewContainer = document.getElementById(`photo-preview-${inputElement.id}`);
+              console.log(`  - Preview container: ${previewContainer ? 'Found' : 'Not found'}`);
+
+              if (previewContainer) {
+                const imageElement = previewContainer.querySelector('[data-photo-capture-target="image"]');
+                console.log(`  - Image element: ${imageElement ? 'Found' : 'Not found'}`);
+                if (imageElement) {
+                  console.log(`  - Image src: ${imageElement.src}`);
+                }
+              }
+            }
+          });
+        }
+      }
+
+      // Hacer función disponible en consola para debugging
+      window.debugPhotoFields = debugPhotoFields;
+    </script>
+  <% end %>

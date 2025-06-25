@@ -1,0 +1,214 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    <!-- Header con navegación -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div class="mb-4 sm:mb-0">
+        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">
+          Editar Propiedad
+        </h1>
+        <p class="text-slate-300 text-sm lg:text-base">
+          Cliente: <span class="text-emerald-400 font-semibold"><%= @property.customer.name %></span>
+          <span class="text-slate-400 mx-2">•</span>
+          <span class="text-blue-400 font-semibold"><%= @property.property_name %></span>
+        </p>
+      </div>
+      
+      <div class="flex items-center space-x-3">
+        <%= link_to property_path(@property), 
+            class: "inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all duration-200 transform hover:scale-[1.02]" do %>
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          Ver Propiedad
+        <% end %>
+        
+        <%= link_to edit_customer_path(@property.customer), 
+            class: "inline-flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all duration-200 transform hover:scale-[1.02]" do %>
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Volver al Cliente
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Sección Informativa -->
+    <div class="max-w-2xl mx-auto mb-6">
+      <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in">
+        <div class="flex items-start space-x-3">
+          <div class="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center mt-1">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-white font-semibold mb-2">Edición de Propiedad</h3>
+            <p class="text-slate-300 text-sm">Modifique los campos necesarios y guarde los cambios para actualizar la información de la propiedad.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        
+        <%= form_with(model: @property, local: true, class: "space-y-6") do |form| %>
+
+          <!-- Property Type -->
+          <div class="space-y-2">
+            <%= form.label :property_type, "Tipo de Propiedad", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+              <%= form.text_field :property_type,
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "Ej: Casa, Apartamento, Oficina" %>
+            </div>
+          </div>
+
+          <!-- Property Name -->
+          <div class="space-y-2">
+            <%= form.label :property_name, "Nombre de la Propiedad", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+              </svg>
+              <%= form.text_field :property_name,
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "Nombre identificativo de la propiedad" %>
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div class="space-y-2">
+            <%= form.label :address, "Dirección", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <%= form.text_field :address,
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "Dirección completa de la propiedad" %>
+            </div>
+          </div>
+
+          <!-- City and Zip Code -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <%= form.label :city, "Ciudad", class: "block text-white font-semibold text-sm lg:text-base" %>
+              <div class="relative">
+                <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <%= form.text_field :city,
+                    class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                    placeholder: "Ciudad" %>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <%= form.label :zip_code, "Código Postal", class: "block text-white font-semibold text-sm lg:text-base" %>
+              <div class="relative">
+                <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <%= form.text_field :zip_code,
+                    class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                    placeholder: "Código postal" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Construction Type -->
+          <div class="space-y-2">
+            <%= form.label :construction_type, "Tipo de Construcción", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+              </svg>
+              <%= form.text_field :construction_type,
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200",
+                  placeholder: "Ej: Concreto, Ladrillo, Madera" %>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="space-y-2">
+            <%= form.label :note, "Notas Adicionales", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-4 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              <%= form.text_area :note,
+                  rows: 4,
+                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 resize-none",
+                  placeholder: "Información adicional sobre la propiedad..." %>
+            </div>
+          </div>
+
+          <!-- Property Status Info -->
+          <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+            <div class="flex items-center space-x-3">
+              <div class="w-6 h-6 bg-slate-500/20 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div class="text-sm text-slate-300">
+                <span class="font-semibold">Última actualización:</span>
+                <%= @property.updated_at.strftime("%d/%m/%Y a las %H:%M") %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error handling -->
+          <% if @property.errors.any? %>
+            <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 animate-slide-up">
+              <div class="flex items-center mb-3">
+                <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+                <h3 class="text-red-400 font-semibold">Error al actualizar la propiedad</h3>
+              </div>
+              <ul class="text-red-300 text-sm space-y-1 ml-7">
+                <% @property.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 sm:space-x-4 pt-6">
+            <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+              <%= form.submit "Guardar Cambios", 
+                  class: "w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-500" %>
+              
+              <%= link_to "Cancelar", property_path(@property), 
+                  class: "w-full sm:w-auto text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02]" %>
+            </div>
+            
+            <div class="flex justify-center sm:justify-end">
+              <%= link_to property_path(@property), method: :delete,
+                  data: { 
+                    confirm: "¿Está seguro que desea eliminar esta propiedad? Esta acción no se puede deshacer.",
+                    turbo_method: :delete
+                  },
+                  class: "inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-red-500" do %>
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Eliminar
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+        
+      </div>
+    </div>
+  </div>
+</div>

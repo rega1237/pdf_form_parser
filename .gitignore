@@ -24,3 +24,9 @@ app/assets/forms
 .env
 
 /JSONS/
+
+.prettierrc.json
+
+/node_modules
+.erb-lint.yml
+.vscode/settings.json

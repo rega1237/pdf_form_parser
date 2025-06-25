@@ -166,47 +166,43 @@ class FormTemplatesController < ApplicationController
     end
   end
 
-  # PATCH/PUT /form_templates/:id/form_builder_update
   def form_builder_update
     if form_template_params[:form_structure_order]
-      new_order = JSON.parse(form_template_params[:form_structure_order])
-      current_fields = JSON.parse(@form_template.form_structure)
-
-      # Create a hash for quick lookup of fields by id
-      fields_hash = current_fields.index_by { |field| field['name'] }
-
-      # Reorder fields based on new_order, preserving existing field data and updating with new attributes
-      # new_order is an array of hashes like [{"id":"FieldName1","position":0,"label_name":"Custom Label","section_name":"Section A","page_number":"1"}]
-      # fields_hash is a hash of current fields indexed by their 'name'
-      ordered_fields = new_order.map do |order_item|
-        field = fields_hash[order_item['id']]
-        if field
-          # Update field attributes from the order_item
-          field['label_name'] = order_item['label_name'] if order_item.key?('label_name')
-          field['section_name'] = order_item['section_name'] if order_item.key?('section_name')
-          field['page_number'] = order_item['page_number'] if order_item.key?('page_number')
-          field['column_width'] = order_item['column_width'] if order_item.key?('column_width')
-          field['required'] = order_item['required'] if order_item.key?('required')
+      begin
+        # Parsear los datos del frontend directamente
+        new_order = JSON.parse(form_template_params[:form_structure_order])
+        
+        # Validación básica: que sea un array válido
+        if new_order.is_a?(Array)
+          # Actualizar la estructura del formulario directamente
+          if @form_template.update(form_structure: new_order.to_json)
+            Rails.logger.info "Form structure updated successfully"
+            redirect_to form_builder_form_template_path(@form_template), 
+                        notice: 'Form structure updated successfully.'
+          else
+            Rails.logger.error "Failed to update form template: #{@form_template.errors.full_messages}"
+            flash[:alert] = 'Failed to update form structure.'
+            render :form_builder, status: :unprocessable_entity
+          end
+        else
+          Rails.logger.error "Invalid form structure format: #{new_order.class}"
+          flash[:alert] = 'Invalid form structure format.'
+          render :form_builder, status: :unprocessable_entity
         end
-        field # Return the (potentially updated) field
-      end.compact
-
-      # Check if all original fields are present in the new order, if not, append them
-      # This handles cases where new_order might not include all fields (e.g., if JS fails)
-      current_field_names = current_fields.map { |f| f['name'] }
-      ordered_field_names_from_new_order = new_order.map { |item| item['id'] }
-      missing_field_names = current_field_names - ordered_field_names_from_new_order
-      missing_field_names.each do |name_val|
-        ordered_fields << fields_hash[name_val] if fields_hash[name_val]
-      end
-
-      if @form_template.update(form_structure: ordered_fields.to_json)
-        redirect_to form_builder_form_template_path(@form_template), notice: 'Form structure updated successfully.'
-      else
+        
+      rescue JSON::ParserError => e
+        Rails.logger.error "JSON parsing error in form_builder_update: #{e.message}"
+        flash[:alert] = 'Invalid JSON format received. Please try again.'
+        render :form_builder, status: :unprocessable_entity
+      rescue StandardError => e
+        Rails.logger.error "Error in form_builder_update: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
+        flash[:alert] = 'An error occurred while updating the form structure.'
         render :form_builder, status: :unprocessable_entity
       end
     else
-      # This else block should ideally not be reached if form_structure_order is always present for this action
+      Rails.logger.error "No form_structure_order received in params"
+      flash[:alert] = 'No form structure data received.'
       render :form_builder, status: :unprocessable_entity
     end
   end

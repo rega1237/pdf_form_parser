@@ -1,21 +1,5 @@
 <% content_for :head do %>
   <style>
-    @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(20px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slideUp {
-      0% { opacity: 0; transform: translateY(30px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.02); }
-    }
-    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
-    .animate-slide-up { animation: slideUp 0.5s ease-out; }
-    .animate-pulse-hover { animation: pulse 2s infinite; }
-    
     .handle {
       cursor: grab;
       transition: all 0.2s ease;
@@ -27,7 +11,7 @@
     .handle:active {
       cursor: grabbing;
     }
-    
+
     .gu-mirror {
       position: fixed !important;
       margin: 0 !important;
@@ -41,42 +25,200 @@
       padding: 1rem !important;
       transform: rotate(5deg) !important;
     }
-    
+
     .gu-hide {
       display: none !important;
     }
-    
+
     .gu-unselectable {
       -webkit-user-select: none !important;
       -moz-user-select: none !important;
       -ms-user-select: none !important;
       user-select: none !important;
     }
-    
+
     .gu-transit {
       opacity: 0.4;
       background: rgba(99, 102, 241, 0.1) !important;
       transform: scale(0.98);
       transition: all 0.3s ease;
     }
-    
+
     [data-drag-target="list"].sortable-ghost {
       background: rgba(99, 102, 241, 0.05) !important;
       border-color: rgba(99, 102, 241, 0.3) !important;
     }
-    
+
     .field-item {
       transition: all 0.3s ease;
     }
-    
+
     .field-item:hover {
       transform: translateY(-2px);
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Animación de pulso para los botones flotantes */
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.8);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    .pulse-ring {
+      position: relative;
+    }
+
+    .pulse-ring::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: pulse-ring 2s infinite;
+      z-index: -1;
+    }
+
+    .pulse-ring:hover::before {
+      animation: none;
+      display: none;
+    }
+
+    /* Colores específicos para cada botón */
+    .pulse-ring:has(button[data-action*="addNewField"])::before {
+      background: rgba(34, 197, 94, 0.3); /* Verde para agregar */
+    }
+
+    .pulse-ring:has(button[type="submit"])::before {
+      background: rgba(99, 102, 241, 0.3); /* Azul para guardar */
+    }
+
+    /* Estilos para campos editables */
+    .editable-name {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: white;
+      font-size: 1.125rem;
+      font-weight: 600;
+      padding: 0.25rem 0;
+      transition: all 0.2s ease;
+      min-width: 150px;
+    }
+
+    .editable-name:hover {
+      border-bottom-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .editable-name:focus {
+      outline: none;
+      border-bottom-color: rgb(99, 102, 241);
+      background: rgba(99, 102, 241, 0.1);
+      border-radius: 0.375rem 0.375rem 0 0;
+    }
+
+    .editable-type {
+      background: rgba(99, 102, 241, 0.2);
+      color: rgb(165, 180, 252);
+      border: none;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+
+    .editable-type:hover {
+      background: rgba(99, 102, 241, 0.3);
+    }
+
+    .editable-type:focus {
+      outline: none;
+      ring: 2px;
+      ring-color: rgb(99, 102, 241);
+      background: rgba(99, 102, 241, 0.4);
+    }
+
+    /* Estilos para el campo de opciones */
+    .options-container {
+      transition: all 0.3s ease;
+    }
+
+    .options-container.hidden {
+      display: none;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .option-input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .remove-option-btn {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(239, 68, 68, 0.2);
+      color: rgb(248, 113, 113);
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .remove-option-btn:hover {
+      background: rgba(239, 68, 68, 0.3);
+      transform: scale(1.1);
+    }
+
+    .add-option-btn {
+      width: 100%;
+      padding: 0.5rem;
+      background: rgba(34, 197, 94, 0.2);
+      color: rgb(74, 222, 128);
+      border: 1px dashed rgba(34, 197, 94, 0.5);
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.875rem;
+    }
+
+    .add-option-btn:hover {
+      background: rgba(34, 197, 94, 0.3);
+      border-color: rgba(34, 197, 94, 0.7);
+    }
+
+    /* Estilos para el botón de eliminar campo */
+    .delete-field-btn {
+      transition: all 0.2s ease;
+    }
+
+    .delete-field-btn:hover {
+      transform: scale(1.1);
     }
   </style>
 <% end %>
 
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <!-- Contenedor para notificaciones -->
+  <div data-controller="notification" 
+       data-action="show-notification@document->notification#showNotification">
+  </div>
+
   <div class="container mx-auto px-4 py-6 lg:py-12">
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
@@ -91,7 +233,6 @@
         </div>
         <p class="text-slate-300 text-sm lg:text-base"><%= @form_template.name %></p>
       </div>
-      
       <%= link_to form_template_path(@form_template), class: "inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105" do %>
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -99,7 +240,7 @@
         Back to Template
       <% end %>
     </div>
-
+    
     <!-- Info Section -->
     <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 mb-8 animate-fade-in">
       <div class="flex items-start space-x-3">
@@ -110,15 +251,16 @@
         </div>
         <div>
           <h3 class="text-white font-semibold mb-2">Form Structure Builder</h3>
-          <p class="text-slate-300 text-sm">Drag and drop fields to reorder them. Configure labels, sections, and layout properties for each field.</p>
+          <p class="text-slate-300 text-sm">Drag and drop fields to reorder them. Click on field names and types to edit them. Configure labels, sections, and layout properties for each field.</p>
         </div>
       </div>
     </div>
 
     <!-- Main Form -->
-    <div class="max-w-6xl mx-auto" data-controller="drag" data-drag-form-template-id-value="<%= @form_template.id %>">
+    <div class="max-w-6xl mx-auto" 
+         data-controller="drag" 
+         data-drag-form-template-id-value="<%= @form_template.id %>">
       <%= form_with model: @form_template, url: form_builder_update_form_template_path(@form_template), method: :patch, local: true, html: { class: "space-y-6" } do |form| %>
-        
         <!-- Form Fields Section -->
         <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
           <div class="flex items-center space-x-3 mb-6">
@@ -132,34 +274,53 @@
           </div>
 
           <!-- Drag & Drop Area -->
-          <!-- Drag & Drop Area: Items will be dynamically rendered here by Stimulus controller -->
           <div data-drag-target="list" class="space-y-4 min-h-[300px] p-6 border-2 border-dashed border-white/20 rounded-2xl bg-white/5 backdrop-blur-sm">
             <%# Initial items are rendered here for the JS controller to pick up %>
-            <%# The JS controller will then clear this and render paginated items %>
             <% fields = @form_template.form_structure.is_a?(String) ? JSON.parse(@form_template.form_structure) : @form_template.form_structure %>
             <% if fields.present? %>
               <% fields.each_with_index do |field, index| %>
-                <%# This div structure is primarily for initial data pickup by JS. %>
-                <%# The JS controller's buildItemElement function will replicate this structure. %>
                 <div class="field-item bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg" 
                      data-drag-target="item" 
                      data-id="<%= field['name'] %>"
-                     data-field-type="<%= field['type'] %>"> <%# Added data-field-type %>
+                     data-field-type="<%= field['type'] %>">
                   
                   <!-- Field Header -->
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                     <div class="flex items-center mb-2 sm:mb-0">
                       <span class="handle text-slate-400 hover:text-indigo-400 mr-4 text-xl transition-colors duration-200">☰</span>
-                      <div>
-                        <span class="font-semibold text-white text-lg"><%= field['name'] %></span>
-                        <span class="text-indigo-300 text-sm ml-3 bg-indigo-500/20 px-2 py-1 rounded-lg">
-                          <%= field['type'] %>
-                        </span>
+                      <div class="flex items-center space-x-3">
+                        <!-- Editable Field Name -->
+                        <input type="text" 
+                               value="<%= field['name'] %>" 
+                               data-field-attribute="name"
+                               class="editable-name"
+                               placeholder="Field Name">
+                        
+                        <!-- Editable Type -->
+                        <select data-field-attribute="type" class="editable-type">
+                          <option value="Text" <%= 'selected' if field['type'] == 'Text' %>>Text</option>
+                          <option value="Choice" <%= 'selected' if field['type'] == 'Choice' %>>Choice</option>
+                          <option value="Button" <%= 'selected' if field['type'] == 'Button' %>>Button</option>
+                          <option value="Photo" <%= 'selected' if field['type'] == 'Photo' %>>Photo</option>
+                          <option value="Deficiency" <%= 'selected' if field['type'] == 'Deficiency' %>>Deficiency</option>
+                        </select>
                       </div>
+                    </div>
+                    
+                    <!-- Botón de eliminar campo -->
+                    <div class="flex items-center space-x-2">
+                      <button type="button" 
+                              class="delete-field-btn text-red-400 hover:text-red-300 hover:bg-red-500/20 p-2 rounded-lg transition-all duration-200" 
+                              data-action="click->drag#deleteField"
+                              title="Eliminar campo">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      </button>
                     </div>
                   </div>
 
-                  <!-- Configuration Grid -->
+                  <!-- Configuration Grid (mantenemos igual) -->
                   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/10">
                     <!-- Custom Label -->
                     <div class="space-y-2">
@@ -216,10 +377,45 @@
                           class: "text-white font-medium" %>
                     </div>
                   </div>
+
+                  <!-- Options Section (for Choice and Deficiency fields) -->
+                  <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency'].include?(field['type']) %>" data-field-attribute="options-container">
+                    <div class="border-t border-white/10 pt-4 mt-4">
+                      <div class="flex items-center justify-between mb-3">
+                        <label class="block text-white font-semibold text-sm">Options (for Choice & Deficiency fields)</label>
+                        <button type="button" 
+                                class="add-option-btn text-xs px-3 py-1" 
+                                data-action="click->drag#addOption"
+                                data-field-name="<%= field['name'] %>">
+                          + Add Option
+                        </button>
+                      </div>
+                      <div class="options-list space-y-2" data-field-attribute="options-list">
+                        <% if field['options'] && field['options'].is_a?(Array) %>
+                          <% field['options'].each_with_index do |option, opt_index| %>
+                            <div class="option-item">
+                              <input type="text" 
+                                     value="<%= option %>" 
+                                     data-field-attribute="option-value"
+                                     class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                     placeholder="Option value">
+                              <button type="button" 
+                                      class="remove-option-btn" 
+                                      data-action="click->drag#removeOption">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                              </button>
+                            </div>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               <% end %>
             <% else %>
-              <!-- Empty State (will also be handled by JS if allItems is empty) -->
+              <!-- Empty State -->
               <div class="text-center py-12 animate-pulse-hover">
                 <div class="w-16 h-16 bg-slate-600/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,7 +443,7 @@
         <%= form.hidden_field :form_structure_order, data: { drag_target: "input" } %>
 
         <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 animate-fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-start space-y-4 sm:space-y-0 animate-fade-in">
           <%= link_to form_template_path(@form_template), 
               class: "inline-flex items-center justify-center bg-slate-700/50 hover:bg-slate-600/50 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-[1.02]" do %>
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,9 +451,34 @@
             </svg>
             Back to Template
           <% end %>
+        </div>
+
+        <!-- Botones de Acción Flotantes -->
+        <div class="fixed bottom-6 right-6 z-50 flex flex-col space-y-4">
+          <!-- Botón Agregar Nuevo Campo -->
+          <div class="pulse-ring">
+            <button type="button" 
+                    title="Agregar Nuevo Campo (Deficiency)"
+                    data-action="click->drag#addNewField"
+                    class="w-16 h-16 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl hover:shadow-emerald-500/50 flex items-center justify-center group cursor-pointer border-0">
+              <!-- Icono de agregar -->
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+            </button>
+          </div>
           
-          <%= form.submit "Save Form Structure", 
-              class: "inline-flex items-center justify-center bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl" %>
+          <!-- Botón de Guardar -->
+          <div class="pulse-ring">
+            <button type="submit" 
+                    title="Guardar Estructura del Formulario"
+                    class="w-16 h-16 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl hover:shadow-indigo-500/50 flex items-center justify-center group cursor-pointer border-0">
+              <!-- SVG del disco de guardar centrado -->
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       <% end %>
     </div>
