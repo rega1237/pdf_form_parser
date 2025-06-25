@@ -56,6 +56,15 @@ export default class extends Controller {
     }
   }
 
+  // Método para enviar notificaciones usando el notification controller
+  sendNotification(message, type = "info") {
+    const event = new CustomEvent("show-notification", {
+      detail: { message, type },
+      bubbles: true
+    });
+    document.dispatchEvent(event);
+  }
+
   extractItemData(itemEl) {
     const fieldName = itemEl.dataset.id;
     const fieldType = itemEl.dataset.fieldType;
@@ -479,7 +488,7 @@ export default class extends Controller {
 
     if (!fieldToDelete) {
       console.error(`Campo "${itemId}" no encontrado en allItems`);
-      this.showNotification("Error: Campo no encontrado", "error");
+      this.sendNotification("Error: Campo no encontrado", "error");
       return;
     }
 
@@ -504,8 +513,8 @@ export default class extends Controller {
         // Actualizar el input hidden
         this.updateHiddenInput();
 
-        // Mostrar notificación de éxito
-        this.showNotification(
+        // Mostrar notificación de éxito usando notification controller
+        this.sendNotification(
           `Campo "${fieldToDelete.name}" eliminado exitosamente`,
           "success",
         );
@@ -522,7 +531,7 @@ export default class extends Controller {
         }
       } catch (error) {
         console.error("Error al eliminar campo:", error);
-        this.showNotification("Error al eliminar el campo", "error");
+        this.sendNotification("Error al eliminar el campo", "error");
       }
     }
   }
@@ -625,8 +634,8 @@ export default class extends Controller {
       // Scroll al campo recién agregado
       this.scrollToNewField();
 
-      // Mostrar notificación de éxito
-      this.showNotification(
+      // Mostrar notificación de éxito usando notification controller
+      this.sendNotification(
         `Campo "${newField.name}" agregado exitosamente`,
         "success",
       );
@@ -637,7 +646,7 @@ export default class extends Controller {
       console.log(`=== CAMPO AGREGADO EXITOSAMENTE: ${newField.name} ===`);
     } catch (error) {
       console.error("Error detallado al agregar nuevo campo:", error);
-      this.showNotification("Error al agregar el campo", "error");
+      this.sendNotification("Error al agregar el campo", "error");
     }
   }
 
@@ -669,52 +678,6 @@ export default class extends Controller {
         listContainer.scrollIntoView({ behavior: "smooth", block: "end" });
       }
     }, 100);
-  }
-
-  // Método para mostrar notificaciones
-  showNotification(message, type = "info") {
-    // Crear notificación temporal
-    const notification = document.createElement("div");
-    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
-
-    // Estilos según el tipo
-    if (type === "success") {
-      notification.className += ` bg-green-500 text-white`;
-    } else if (type === "error") {
-      notification.className += ` bg-red-500 text-white`;
-    } else {
-      notification.className += ` bg-blue-500 text-white`;
-    }
-
-    notification.innerHTML = `
-      <div class="flex items-center space-x-2">
-        <span>${message}</span>
-        <button class="ml-2 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-    `;
-
-    document.body.appendChild(notification);
-
-    // Animar entrada
-    setTimeout(() => {
-      notification.classList.remove("translate-x-full");
-    }, 10);
-
-    // Auto-remover después de 3 segundos
-    setTimeout(() => {
-      if (notification.parentElement) {
-        notification.classList.add("translate-x-full");
-        setTimeout(() => {
-          if (notification.parentElement) {
-            notification.remove();
-          }
-        }, 300);
-      }
-    }, 3000);
   }
 
   isFieldNameUnique(fieldName) {
