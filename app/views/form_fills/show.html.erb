@@ -382,17 +382,17 @@
                                         <% if existing_photo.present? %>
                                           <%= image_tag rails_blob_path(existing_photo), 
                                               data: { photo_capture_target: "image" },
-                                              class: "w-full h-32 object-cover rounded-xl border border-slate-600",
+                                              class: "w-full object-cover rounded-xl border border-slate-600",
                                               alt: "Foto de #{field['label_name'].presence || field['name']}" %>
                                         <% else %>
                                           <img data-photo-capture-target="image" 
-                                               class="w-full h-32 object-cover rounded-xl border border-slate-600" 
+                                               class="w-full object-cover rounded-xl border border-slate-600" 
                                                alt="Foto capturada"
                                                src="">
                                         <% end %>
                                       <% else %>
                                         <img data-photo-capture-target="image" 
-                                             class="w-full h-32 object-cover rounded-xl border border-slate-600" 
+                                             class="w-full object-cover rounded-xl border border-slate-600" 
                                              alt="Foto capturada"
                                              src="">
                                       <% end %>
