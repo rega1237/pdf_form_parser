@@ -180,7 +180,7 @@ export default class extends Controller {
       .then((response) => response.json().then(data => ({ status: response.status, ok: response.ok, data: data })))
       .then(({ status, ok, data }) => {
         if (ok) {
-          this.displayFlashMessage(
+          this.dispatchNotification(
             "success",
             data.message || "Draft saved successfully."
           );
@@ -189,7 +189,7 @@ export default class extends Controller {
           // (como nuevos photo_attachment_ids)
           this.reloadFormStructure();
         } else {
-          this.displayFlashMessage(
+          this.dispatchNotification(
             "error",
             data.message || "Could not save draft."
           );
@@ -197,7 +197,7 @@ export default class extends Controller {
         }
       })
       .catch((error) => {
-        this.displayFlashMessage("error", "Network error when saving draft.");
+        this.dispatchNotification("error", "Network error when saving draft.");
         console.error("Error saving draft:", error);
       });
   }
@@ -228,49 +228,10 @@ export default class extends Controller {
     }
   }
 
-  displayFlashMessage(type, message) {
-    const notification = document.createElement("div");
-    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
-
-    if (type === "success") {
-      notification.className += ` bg-green-500 text-white`;
-    } else if (type === "error") {
-      notification.className += ` bg-red-500 text-white`;
-    } else {
-      notification.className += ` bg-blue-500 text-white`;
-    }
-
-    notification.innerHTML = `
-      <div class="flex items-center space-x-2">
-        <span>${message}</span>
-        <button class="ml-2 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-    `;
-
-    // Eliminar cualquier notificación existente antes de añadir una nueva
-    const existingNotification = document.querySelector('.fixed.top-4.right-4.z-50');
-    if (existingNotification) {
-      existingNotification.remove();
-    }
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.classList.remove("translate-x-full");
-    }, 10);
-
-    setTimeout(() => {
-      if (notification.parentElement) {
-        notification.classList.add("translate-x-full");
-        setTimeout(() => {
-          if (notification.parentElement) {
-            notification.remove();
-          }
-        }, 300);
-      }
-    }, 3000);
+  dispatchNotification(type, message) {
+    this.dispatch("showNotification", {
+      detail: { type, message },
+      prefix: "",
+    });
   }
 }
