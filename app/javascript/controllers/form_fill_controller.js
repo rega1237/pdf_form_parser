@@ -229,51 +229,48 @@ export default class extends Controller {
   }
 
   displayFlashMessage(type, message) {
-    const flashContainer = document.querySelector('.flash-messages');
-    if (!flashContainer) {
-      console.error("Flash message container not found.");
-      return;
+    const notification = document.createElement("div");
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+
+    if (type === "success") {
+      notification.className += ` bg-green-500 text-white`;
+    } else if (type === "error") {
+      notification.className += ` bg-red-500 text-white`;
+    } else {
+      notification.className += ` bg-blue-500 text-white`;
     }
 
-    const alertDiv = document.createElement('div');
-    let flashClass = '';
-    switch (type) {
-      case 'success':
-        flashClass = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300';
-        break;
-      case 'error':
-        flashClass = 'bg-red-500/10 border-red-500/20 text-red-300';
-        break;
-      case 'alert':
-        flashClass = 'bg-amber-500/10 border-amber-500/20 text-amber-300';
-        break;
-      case 'notice':
-        flashClass = 'bg-blue-500/10 border-blue-500/20 text-blue-300';
-        break;
-      default:
-        flashClass = 'bg-gray-500/10 border-gray-500/20 text-gray-300';
-    }
-
-    alertDiv.className = `${flashClass} px-4 py-3 rounded-lg relative mb-4 border backdrop-blur-sm shadow-lg animate-fade-in`;
-    alertDiv.setAttribute('role', 'alert');
-    alertDiv.innerHTML = `
-      <div class="flex items-center">
-        <div class="py-1">
-          <svg class="fill-current h-6 w-6 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-            <path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm12.73-1.41A8 8 0 1 0 4.34 4.34a8 8 0 0 0 11.32 11.32zM9 11V9h2v6H9v-4zm0-6h2v2H9V5z"/>
+    notification.innerHTML = `
+      <div class="flex items-center space-x-2">
+        <span>${message}</span>
+        <button class="ml-2 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
-        </div>
-        <div>
-          <p class="font-bold">${message}</p>
-        </div>
+        </button>
       </div>
     `;
 
-    flashContainer.prepend(alertDiv);
+    // Eliminar cualquier notificación existente antes de añadir una nueva
+    const existingNotification = document.querySelector('.fixed.top-4.right-4.z-50');
+    if (existingNotification) {
+      existingNotification.remove();
+    }
+    document.body.appendChild(notification);
 
-    // Automatically remove the message after 5 seconds
     setTimeout(() => {
-      alertDiv.remove();
-    }, 5000);
+      notification.classList.remove("translate-x-full");
+    }, 10);
+
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.classList.add("translate-x-full");
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 300);
+      }
+    }, 3000);
   }
 }
