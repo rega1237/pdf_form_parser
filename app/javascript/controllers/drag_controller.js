@@ -114,8 +114,8 @@ export default class extends Controller {
     // Agregar campos específicos según el tipo
     if (currentType === "Photo") {
       baseField.photo_attachment_id = null; // Se llenará cuando se use en form_fill
-    } else if (currentType === "Choice" || currentType === "Deficiency") {
-      baseField.options = options.length > 0 ? options : null;
+    } else if (["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(currentType)) {
+      baseField.options = options.length > 0 ? options : this.getDefaultOptionsForType(currentType);
     }
 
     if (currentType === "Deficiency") {
@@ -123,6 +123,22 @@ export default class extends Controller {
     }
 
     return baseField;
+  }
+
+  // Método para obtener opciones por defecto según el tipo
+  getDefaultOptionsForType(type) {
+    switch (type) {
+      case "Deficiency":
+        return ["Minor", "Major", "Critical"];
+      case "Pass/Fail":
+        return ["Pass", "Fail", "N/A"];
+      case "Radio":
+        return ["Option 1", "Option 2"];
+      case "Choice":
+        return [];
+      default:
+        return null;
+    }
   }
 
   renderCurrentPage() {
@@ -161,7 +177,7 @@ export default class extends Controller {
     element.dataset.fieldType = itemData.type;
 
     const fieldIdBase = `field_${(itemData.name || itemData.id).replace(/\W/g, '_')}_${globalIndex}`;
-    const hasOptions = itemData.type === 'Choice' || itemData.type === 'Deficiency';
+    const hasOptions = ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].includes(itemData.type);
 
     element.innerHTML = `
       <!-- Field Header -->
@@ -181,6 +197,8 @@ export default class extends Controller {
               <option value="Button" ${itemData.type === 'Button' ? 'selected' : ''}>Button</option>
               <option value="Photo" ${itemData.type === 'Photo' ? 'selected' : ''}>Photo</option>
               <option value="Deficiency" ${itemData.type === 'Deficiency' ? 'selected' : ''}>Deficiency</option>
+              <option value="Pass/Fail" ${itemData.type === 'Pass/Fail' ? 'selected' : ''}>Pass/Fail</option>
+              <option value="Radio" ${itemData.type === 'Radio' ? 'selected' : ''}>Radio</option>
             </select>
           </div>
         </div>
@@ -219,11 +237,11 @@ export default class extends Controller {
         </div>
       </div>
 
-      <!-- Options Section (for Choice and Deficiency fields) -->
+      <!-- Options Section (for Choice, Deficiency, Pass/Fail and Radio fields) -->
       <div class="options-container ${hasOptions ? '' : 'hidden'}" data-field-attribute="options-container">
         <div class="border-t border-white/10 pt-4 mt-4">
           <div class="flex items-center justify-between mb-3">
-            <label class="block text-white font-semibold text-sm">Options (for Choice & Deficiency fields)</label>
+            <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail & Radio fields)</label>
             <button type="button" 
                     class="add-option-btn bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-3 py-1 rounded-lg transition-colors" 
                     data-action="click->drag#addOption"
@@ -333,6 +351,7 @@ export default class extends Controller {
     const itemInAllItems = this.allItems.find(
       (item) => item.name === itemId || item.id === itemId,
     );
+    
     if (itemInAllItems) {
       if (changedInput.type === "checkbox") {
         itemInAllItems[attributeName] = changedInput.checked;
@@ -352,19 +371,44 @@ export default class extends Controller {
         console.log(`Campo renombrado de "${oldId}" a "${newName}"`);
       } else if (attributeName === "type") {
         // Manejar cambio de tipo
-        itemInAllItems.type = changedInput.value;
-        itemEl.dataset.fieldType = changedInput.value;
+        const oldType = itemInAllItems.type;
+        const newType = changedInput.value;
+        
+        console.log(`Cambiando tipo de campo "${itemInAllItems.name}" de "${oldType}" a "${newType}"`);
+        
+        // Actualizar tipo
+        itemInAllItems.type = newType;
+        itemEl.dataset.fieldType = newType;
 
-        console.log(
-          `Tipo de campo "${itemInAllItems.name}" cambiado a "${changedInput.value}"`,
-        );
+        // Aplicar cambios específicos del tipo
+        this.handleTypeChange(itemInAllItems, oldType, newType);
+        
+        // Actualizar visibilidad del contenedor de opciones
+        this.updateOptionsContainerVisibility(itemEl, newType);
+
+        console.log(`Tipo de campo "${itemInAllItems.name}" cambiado a "${newType}"`);
       } else if (attributeName === "option-value") {
         // Manejar cambio en opciones
         this.updateOptionsFromDOM(itemEl, itemInAllItems);
       } else {
         itemInAllItems[attributeName] = changedInput.value;
       }
+      
       this.updateHiddenInput();
+    }
+  }
+
+  // Método para actualizar la visibilidad del contenedor de opciones
+  updateOptionsContainerVisibility(itemEl, fieldType) {
+    const optionsContainer = itemEl.querySelector('[data-field-attribute="options-container"]');
+    const hasOptions = ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].includes(fieldType);
+    
+    if (optionsContainer) {
+      if (hasOptions) {
+        optionsContainer.classList.remove('hidden');
+      } else {
+        optionsContainer.classList.add('hidden');
+      }
     }
   }
 
@@ -373,7 +417,7 @@ export default class extends Controller {
     // Limpiar campos específicos del tipo anterior
     if (oldType === "Photo") {
       delete itemData.photo_attachment_id;
-    } else if (oldType === "Choice" || oldType === "Deficiency") {
+    } else if (["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(oldType)) {
       delete itemData.options;
     }
 
@@ -385,9 +429,8 @@ export default class extends Controller {
     if (newType === "Photo") {
       // Agregar campo para ID de photo que se llenará después
       itemData.photo_attachment_id = null; // Se llenará cuando se suba la foto
-    } else if (newType === "Choice" || newType === "Deficiency") {
-      itemData.options =
-        newType === "Deficiency" ? ["Minor", "Major", "Critical"] : [];
+    } else if (["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(newType)) {
+      itemData.options = this.getDefaultOptionsForType(newType);
     }
 
     if (newType === "Deficiency") {
@@ -661,6 +704,7 @@ export default class extends Controller {
       type: "Deficiency",
       value: "",
       options: ["Minor", "Major", "Critical"], // Opciones por defecto para Deficiency
+      comment_value: "", // Agregar comment_value para Deficiency
       human_label: fieldName,
       label_name: fieldName,
       section_name: "",
