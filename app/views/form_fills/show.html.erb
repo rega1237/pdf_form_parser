@@ -238,84 +238,95 @@
                                   <%= (field['label_name'].presence || field['name']) %>
                                 </label>
                               </div>
-                            <% elsif field['type'] == "Text" %>
-                              <% if field['label_name']&.downcase.include?('p, f, n/a') %>
-                                <div>
-                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                  <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
-                                  <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
-                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
-                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Fail">Fail</button>
-                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
-                                  </div>
+                            <% elsif field['type'] == "Pass/Fail" %>
+                              <div>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
+                                <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
+                                  <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
+                                  <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Fail">Fail</button>
+                                  <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
                                 </div>
-                              <% else %>
-                                <div>
-                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                  <div class="relative">
-                                    <svg class="hidden absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                    </svg>
-                                    <%= form.text_field field['name'],
+                              </div>
+                            <% elsif field['type'] == "Radio" %>
+                              <div>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
+                                <div class="radio-button-group space-y-3" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
+                                  <% field['options'].each_with_index do |option, option_index| %>
+                                    <% option_value = option.is_a?(Array) ? option.last : option %>
+                                    <% option_label = option.is_a?(Array) ? option.first : option %>
+                                    <% is_selected = field['value'] == option_value %>
+                                    <button type="button" 
+                class="radio-choice-button w-full flex items-center justify-start px-6 py-4 text-base lg:text-lg font-semibold rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br <%= is_selected ? 'from-blue-600 to-blue-700 border-2 border-blue-900 text-white shadow-xl' : 'from-slate-100 to-slate-200 border-2 border-slate-400 text-slate-900 hover:from-slate-200 hover:to-slate-300 hover:border-slate-500 hover:-translate-y-0.5 hover:shadow-lg' %>"
+                data-choice-buttons-target="button" 
+                data-action="click->choice-buttons#select" 
+                                      data-value="<%= option_value %>"
+                                      data-selected="<%= is_selected ? 'true' : 'false' %>">
+                                      <!-- Radio circle indicator -->
+                                      <div class="radio-indicator w-5 h-5 rounded-full border-2 border-current mr-4 flex items-center justify-center flex-shrink-0">
+                                        <div class="w-2.5 h-2.5 rounded-full bg-current transition-opacity duration-200 <%= is_selected ? 'opacity-100' : 'opacity-0' %>"></div>
+                                      </div>
+                                      <!-- Option label -->
+                                      <span class="flex-1 text-left"><%= option_label %></span>
+                                    </button>
+                                  <% end %>
+                                </div>
+                              </div>
+                            <% elsif field['type'] == "Text" %>
+                              <div>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <div class="relative">
+                                  <svg class="hidden absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                  </svg>
+                                  <%= form.text_field field['name'],
                                       id: field_id,
                                       value: field['value'],
                                       class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
                                       placeholder: "     Ingrese #{(field['label_name'].presence || field['name'])}" %>
-                                  </div>
                                 </div>
-                              <% end %>
-                            <% elsif (field['type'] == "Choice" || field['type'] == "Deficiency") && field['options'].is_a?(Array) %>
-                              <% if field['label_name']&.downcase.include?('p, f, n/a') %>
-                                <div>
-                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                  <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
-                                  <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
-                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
-                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Fail">Fail</button>
-                                    <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
-                                  </div>
-                                </div>
-                              <% elsif field['type'] == "Deficiency" %>
-                                <div class="space-y-4">
-                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                  <!-- Select dropdown -->
-                                  <div class="relative">
-                                    <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
-                                    </svg>
-                                    <%= form.select "#{field['name']}_select",
-                                      options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
-                                      { include_blank: 'Seleccione una opción' },
-                                      id: "#{field_id}_select",
-                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
-                                  </div>
-                                  <!-- Text field -->
-                                  <div class="relative">
-                                    <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                    </svg>
-                                    <%= form.text_field "#{field['name']}_comment",
-                                      id: "#{field_id}_comment",
-                                      value: field['comment_value'] || '',
-                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
-                                      placeholder: "Ingrese comentarios adicionales..." %>
-                                  </div>
-                                </div>
-                              <% else %>
-                                <div>
-                                  <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                  <div class="relative">
-                                    <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
-                                    </svg>
-                                    <%= form.select field['name'],
+                              </div>
+                            <% elsif (field['type'] == "Choice") && field['options'].is_a?(Array) %>
+                              <div>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                  </svg>
+                                  <%= form.select field['name'],
                                       options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
                                       { include_blank: 'Seleccione una opción' },
                                       id: field_id,
                                       class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
-                                  </div>
                                 </div>
-                              <% end %>
+                              </div>
+                            <% elsif field['type'] == "Deficiency" %>
+                              <div class="space-y-4">
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <!-- Select dropdown -->
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                  </svg>
+                                  <%= form.select "#{field['name']}_select",
+                                      options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
+                                      { include_blank: 'Seleccione una opción' },
+                                      id: "#{field_id}_select",
+                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+                                </div>
+                                <!-- Text field -->
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                  </svg>
+                                  <%= form.text_field "#{field['name']}_comment",
+                                      id: "#{field_id}_comment",
+                                      value: field['comment_value'] || '',
+                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                      placeholder: "Ingrese comentarios adicionales..." %>
+                                </div>
+                              </div>
                             <% elsif field['type'] == "Photo" %>
                               <div>
                                 <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
