@@ -303,6 +303,8 @@
                           <option value="Button" <%= 'selected' if field['type'] == 'Button' %>>Button</option>
                           <option value="Photo" <%= 'selected' if field['type'] == 'Photo' %>>Photo</option>
                           <option value="Deficiency" <%= 'selected' if field['type'] == 'Deficiency' %>>Deficiency</option>
+                          <option value="Pass/Fail" <%= 'selected' if field['type'] == 'Pass/Fail' %>>Pass/Fail</option>
+                          <option value="Radio" <%= 'selected' if field['type'] == 'Radio' %>>Radio button</option>
                         </select>
                       </div>
                     </div>
@@ -379,10 +381,10 @@
                   </div>
 
                   <!-- Options Section (for Choice and Deficiency fields) -->
-                  <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency'].include?(field['type']) %>" data-field-attribute="options-container">
+                  <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].include?(field['type']) %>" data-field-attribute="options-container">
                     <div class="border-t border-white/10 pt-4 mt-4">
                       <div class="flex items-center justify-between mb-3">
-                        <label class="block text-white font-semibold text-sm">Options (for Choice & Deficiency fields)</label>
+                        <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail & Radio fields)</label>
                         <button type="button" 
                                 class="add-option-btn text-xs px-3 py-1" 
                                 data-action="click->drag#addOption"
