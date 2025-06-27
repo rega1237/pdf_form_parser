@@ -263,11 +263,9 @@
                 data-action="click->choice-buttons#select" 
                                       data-value="<%= option_value %>"
                                       data-selected="<%= is_selected ? 'true' : 'false' %>">
-                                      <!-- Radio circle indicator -->
                                       <div class="radio-indicator w-5 h-5 rounded-full border-2 border-current mr-4 flex items-center justify-center flex-shrink-0">
                                         <div class="w-2.5 h-2.5 rounded-full bg-current transition-opacity duration-200 <%= is_selected ? 'opacity-100' : 'opacity-0' %>"></div>
                                       </div>
-                                      <!-- Option label -->
                                       <span class="flex-1 text-left"><%= option_label %></span>
                                     </button>
                                   <% end %>
@@ -287,6 +285,22 @@
                                       placeholder: "     Ingrese #{(field['label_name'].presence || field['name'])}" %>
                                 </div>
                               </div>
+                            <% elsif field['type'] == "Date" %>
+                              <div>
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), 
+                                    for: field_id, 
+                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                  </svg>
+                                  <%= form.date_field field['name'], 
+                                      id: field_id, 
+                                      value: field['value'].presence || Date.current.strftime("%Y-%m-%d"),
+                                      data: { controller: "date-fix" }, 
+                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+                                </div>
+                              </div>
                             <% elsif (field['type'] == "Choice") && field['options'].is_a?(Array) %>
                               <div>
                                 <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
@@ -304,7 +318,6 @@
                             <% elsif field['type'] == "Deficiency" %>
                               <div class="space-y-4">
                                 <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                <!-- Select dropdown -->
                                 <div class="relative">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
@@ -315,7 +328,6 @@
                                       id: "#{field_id}_select",
                                       class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
                                 </div>
-                                <!-- Text field -->
                                 <div class="relative">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
@@ -330,19 +342,16 @@
                             <% elsif field['type'] == "Photo" %>
                               <div>
                                 <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                <!-- Hidden file input -->
                                 <%= form.file_field field['name'],
                                     id: field_id,
                                     accept: "image/*",
                                     capture: "environment",
                                     class: "hidden" %>
-                                <!-- Camera button CON todos los data attributes necesarios -->
                                 <div data-controller="photo-capture"
                                      data-photo-capture-input-id-value="<%= field_id %>">
                                   <button type="button"
                                           data-action="click->photo-capture#openCamera"
                                     class="w-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-6 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-purple-400">
-                                    <!-- Camera icon -->
                                     <svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -355,7 +364,6 @@
                                       <% end %>
                                     </span>
                                   </button>
-                                  <!-- Photo preview container CON targets correctos -->
                                   <div id="photo-preview-<%= field_id %>" 
                                        data-photo-capture-target="preview" 
                                        class="mt-4 <%= field['photo_attachment_id'].present? ? '' : 'hidden' %>">
@@ -369,7 +377,6 @@
                                           <% end %>
                                         </span>
                                         <div class="flex space-x-2">
-                                          <!-- Botón de debug temporal (solo en desarrollo) -->
                                           <% if Rails.env.development? %>
                                             <button type="button"
                                                     data-action="click->photo-capture#debugRemovePhoto"
@@ -377,7 +384,6 @@
                                               🐛
                                             </button>
                                           <% end %>
-                                          <!-- Botón de eliminar -->
                                           <button type="button"
                                                   data-action="click->photo-capture#removePhoto"
                                             class="text-red-400 hover:text-red-300 transition-colors">
@@ -387,7 +393,6 @@
                                           </button>
                                         </div>
                                       </div>
-                                      <!-- Imagen de vista previa -->
                                       <% if field['photo_attachment_id'].present? %>
                                         <% existing_photo = @form_fill.get_photo_for_field(field['name']) %>
                                         <% if existing_photo.present? %>
@@ -407,7 +412,6 @@
                                              alt="Foto capturada"
                                              src="">
                                       <% end %>
-                                      <!-- Info del archivo -->
                                       <% if field['photo_attachment_id'].present? %>
                                         <div class="file-info text-xs text-slate-300 mt-2">
                                           <div class="flex justify-between items-center">
@@ -424,7 +428,6 @@
                                     </div>
                                   </div>
                                 </div>
-                                <!-- Debug info (solo en desarrollo) -->
                                 <% if Rails.env.development? && field['photo_attachment_id'].present? %>
                                   <div class="mt-2 text-xs text-purple-300 bg-purple-900/20 rounded p-2">
                                     <strong>Debug:</strong> photo_attachment_id: <%= field['photo_attachment_id'] %>
@@ -559,3 +562,4 @@
       window.debugPhotoFields = debugPhotoFields;
     </script>
   <% end %>
+</div>
