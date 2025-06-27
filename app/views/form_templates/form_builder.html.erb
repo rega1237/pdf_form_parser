@@ -210,6 +210,23 @@
     .delete-field-btn:hover {
       transform: scale(1.1);
     }
+
+    /* Estilos para campos de Deficiency */
+    .deficiency-fields {
+      background: rgba(249, 115, 22, 0.05);
+      border-radius: 1rem;
+      padding: 1rem;
+    }
+
+    .deficiency-field-input {
+      background: rgba(249, 115, 22, 0.1) !important;
+      border-color: rgba(249, 115, 22, 0.2) !important;
+    }
+
+    .deficiency-field-input:focus {
+      ring-color: rgb(249, 115, 22) !important;
+      border-color: rgba(249, 115, 22, 0.5) !important;
+    }
   </style>
 <% end %>
 
@@ -251,7 +268,7 @@
         </div>
         <div>
           <h3 class="text-white font-semibold mb-2">Form Structure Builder</h3>
-          <p class="text-slate-300 text-sm">Drag and drop fields to reorder them. Click on field names and types to edit them. Configure labels, sections, and layout properties for each field.</p>
+          <p class="text-slate-300 text-sm">Drag and drop fields to reorder them. Click on field names and types to edit them. Configure labels, sections, and layout properties for each field. <strong>Deficiency and Deficiency_field types include special Item, Riser, D, and C fields.</strong></p>
         </div>
       </div>
     </div>
@@ -324,7 +341,7 @@
                     </div>
                   </div>
 
-                  <!-- Configuration Grid (mantenemos igual) -->
+                  <!-- Configuration Grid -->
                   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/10">
                     <!-- Custom Label -->
                     <div class="space-y-2">
@@ -381,6 +398,48 @@
                           class: "text-white font-medium" %>
                     </div>
                   </div>
+
+                  <!-- Campos específicos para Deficiency y Deficiency_field -->
+                  <% if ['Deficiency', 'Deficiency_field'].include?(field['type']) %>
+                    <div class="deficiency-fields border-t border-white/10 pt-4 mt-4">
+                      <div class="mb-4">
+                        <div class="flex items-center space-x-2 mb-3">
+                          <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                          </svg>
+                          <span class="text-orange-300 font-semibold text-sm">Deficiency Fields</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <!-- Item Field -->
+                          <div class="space-y-2">
+                            <%= label_tag "field_item_#{index}_#{field['name'].parameterize}", "Item", 
+                                class: "block text-white font-semibold text-sm" %>
+                            <%= text_field_tag "field_item_#{index}_#{field['name'].parameterize}", 
+                                field['Item'], 
+                                data: { field_attribute: "item" },
+                                class: "deficiency-field-input w-full bg-orange-500/10 border border-orange-500/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200",
+                                placeholder: "Enter item description" %>
+                          </div>
+                          
+                          <!-- Riser Field -->
+                          <div class="space-y-2">
+                            <%= label_tag "field_riser_#{index}_#{field['name'].parameterize}", "Riser", 
+                                class: "block text-white font-semibold text-sm" %>
+                            <%= text_field_tag "field_riser_#{index}_#{field['name'].parameterize}", 
+                                field['Riser'], 
+                                data: { field_attribute: "riser" },
+                                class: "deficiency-field-input w-full bg-orange-500/10 border border-orange-500/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200",
+                                placeholder: "Enter riser information" %>
+                          </div>
+                        </div>
+                        <div class="mt-3 p-3 bg-orange-500/5 border border-orange-500/10 rounded-lg">
+                          <p class="text-orange-200 text-xs">
+                            <strong>Note:</strong> Fields D and C are automatically included in the JSON structure and will be filled in the form completion view.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
 
                   <!-- Options Section (for Choice and Deficiency fields) -->
                   <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].include?(field['type']) %>" data-field-attribute="options-container">

@@ -95,6 +95,10 @@ export default class extends Controller {
       .map((input) => input.value)
       .filter((val) => val.trim() !== "");
 
+    // Extraer campos específicos de Deficiency
+    const itemInput = itemEl.querySelector('[data-field-attribute="item"]');
+    const riserInput = itemEl.querySelector('[data-field-attribute="riser"]');
+
     const baseField = {
       id: nameInput ? nameInput.value : fieldName,
       name: nameInput ? nameInput.value : fieldName,
@@ -118,8 +122,13 @@ export default class extends Controller {
       baseField.options = options.length > 0 ? options : this.getDefaultOptionsForType(currentType);
     }
 
-    if (currentType === "Deficiency") {
+    // Campos específicos para Deficiency y Deficiency_field
+    if (["Deficiency", "Deficiency_field"].includes(currentType)) {
       baseField.comment_value = "";
+      baseField.Item = itemInput ? itemInput.value : "";
+      baseField.Riser = riserInput ? riserInput.value : "";
+      baseField.D = ""; // Campo oculto para llenar en otra vista
+      baseField.C = ""; // Campo oculto para llenar en otra vista
     }
 
     return baseField;
@@ -178,6 +187,7 @@ export default class extends Controller {
 
     const fieldIdBase = `field_${(itemData.name || itemData.id).replace(/\W/g, '_')}_${globalIndex}`;
     const hasOptions = ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].includes(itemData.type);
+    const isDeficiencyType = ['Deficiency', 'Deficiency_field'].includes(itemData.type);
 
     element.innerHTML = `
       <!-- Field Header -->
@@ -199,6 +209,8 @@ export default class extends Controller {
               <option value="Deficiency" ${itemData.type === 'Deficiency' ? 'selected' : ''}>Deficiency</option>
               <option value="Pass/Fail" ${itemData.type === 'Pass/Fail' ? 'selected' : ''}>Pass/Fail</option>
               <option value="Radio" ${itemData.type === 'Radio' ? 'selected' : ''}>Radio</option>
+              <option value="Date" ${itemData.type === 'Date' ? 'selected' : ''}>Date</option>
+              <option value="Deficiency_field" ${itemData.type === 'Deficiency_field' ? 'selected' : ''}>Deficiency Field</option>
             </select>
           </div>
         </div>
@@ -237,7 +249,46 @@ export default class extends Controller {
         </div>
       </div>
 
-      <!-- Options Section (for Choice, Deficiency, Pass/Fail and Radio fields) -->
+      <!-- Campos específicos para Deficiency y Deficiency_field -->
+      ${isDeficiencyType ? `
+        <div class="deficiency-fields border-t border-white/10 pt-4 mt-4">
+          <div class="mb-4">
+            <div class="flex items-center space-x-2 mb-3">
+              <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              <span class="text-orange-300 font-semibold text-sm">Deficiency Fields</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label for="${fieldIdBase}_item" class="block text-white font-semibold text-sm">Item</label>
+                <input type="text" 
+                       id="${fieldIdBase}_item" 
+                       value="${itemData.Item || ''}" 
+                       data-field-attribute="item"
+                       class="w-full bg-orange-500/10 border border-orange-500/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" 
+                       placeholder="Enter item description">
+              </div>
+              <div class="space-y-2">
+                <label for="${fieldIdBase}_riser" class="block text-white font-semibold text-sm">Riser</label>
+                <input type="text" 
+                       id="${fieldIdBase}_riser" 
+                       value="${itemData.Riser || ''}" 
+                       data-field-attribute="riser"
+                       class="w-full bg-orange-500/10 border border-orange-500/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" 
+                       placeholder="Enter riser information">
+              </div>
+            </div>
+            <div class="mt-3 p-3 bg-orange-500/5 border border-orange-500/10 rounded-lg">
+              <p class="text-orange-200 text-xs">
+                <strong>Note:</strong> Fields D and C are automatically included in the JSON structure and will be filled in the form completion view.
+              </p>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Options Section (for Choice and Deficiency fields) -->
       <div class="options-container ${hasOptions ? '' : 'hidden'}" data-field-attribute="options-container">
         <div class="border-t border-white/10 pt-4 mt-4">
           <div class="flex items-center justify-between mb-3">
@@ -386,10 +437,19 @@ export default class extends Controller {
         // Actualizar visibilidad del contenedor de opciones
         this.updateOptionsContainerVisibility(itemEl, newType);
 
+        // Forzar re-render para mostrar/ocultar campos específicos de Deficiency
+        this.renderCurrentPage();
+
         console.log(`Tipo de campo "${itemInAllItems.name}" cambiado a "${newType}"`);
       } else if (attributeName === "option-value") {
         // Manejar cambio en opciones
         this.updateOptionsFromDOM(itemEl, itemInAllItems);
+      } else if (attributeName === "item") {
+        // Manejar cambio en campo Item de Deficiency
+        itemInAllItems.Item = changedInput.value;
+      } else if (attributeName === "riser") {
+        // Manejar cambio en campo Riser de Deficiency
+        itemInAllItems.Riser = changedInput.value;
       } else {
         itemInAllItems[attributeName] = changedInput.value;
       }
@@ -421,8 +481,12 @@ export default class extends Controller {
       delete itemData.options;
     }
 
-    if (oldType === "Deficiency") {
+    if (["Deficiency", "Deficiency_field"].includes(oldType)) {
       delete itemData.comment_value;
+      delete itemData.Item;
+      delete itemData.Riser;
+      delete itemData.D;
+      delete itemData.C;
     }
 
     // Agregar campos específicos del nuevo tipo
@@ -433,8 +497,12 @@ export default class extends Controller {
       itemData.options = this.getDefaultOptionsForType(newType);
     }
 
-    if (newType === "Deficiency") {
+    if (["Deficiency", "Deficiency_field"].includes(newType)) {
       itemData.comment_value = "";
+      itemData.Item = "";
+      itemData.Riser = "";
+      itemData.D = ""; // Campo oculto para llenar en otra vista
+      itemData.C = ""; // Campo oculto para llenar en otra vista
     }
 
     console.log(`Type change applied: ${oldType} -> ${newType}`, itemData);
@@ -694,25 +762,30 @@ export default class extends Controller {
   }
 
   // Método para crear un campo por defecto tipo Deficiency
-  createDefaultField() {
-    const fieldName = `Deficiency Field ${this.fieldCounter}`;
+ // Método para crear un campo por defecto tipo Deficiency
+ createDefaultField() {
+  const fieldName = `Deficiency Field ${this.fieldCounter}`;
 
-    return {
-      id: fieldName,
-      name: fieldName,
-      original_name: fieldName,
-      type: "Deficiency",
-      value: "",
-      options: ["Minor", "Major", "Critical"], // Opciones por defecto para Deficiency
-      comment_value: "", // Agregar comment_value para Deficiency
-      human_label: fieldName,
-      label_name: fieldName,
-      section_name: "",
-      page_number: "1",
-      column_width: "3",
-      required: false,
-    };
-  }
+  return {
+    id: fieldName,
+    name: fieldName,
+    original_name: fieldName,
+    type: "Deficiency",
+    value: "",
+    options: ["Minor", "Major", "Critical"], // Opciones por defecto para Deficiency
+    comment_value: "", // Agregar comment_value para Deficiency
+    Item: "", // Campo para Item
+    Riser: "", // Campo para Riser
+    D: "", // Campo oculto para llenar en otra vista
+    C: "", // Campo oculto para llenar en otra vista
+    human_label: fieldName,
+    label_name: fieldName,
+    section_name: "",
+    page_number: "1",
+    column_width: "3",
+    required: false,
+  };
+}
 
   // Método para hacer scroll al nuevo campo
   scrollToNewField() {
