@@ -36,6 +36,44 @@ export default class extends Controller {
             inputElement.value = field.value || "";
           }
         }
+
+        // Manejar campos específicos de Deficiency
+        if (field.type === "Deficiency") {
+          // Cargar valor del select
+          const selectElement = formElements[`form_fill[${field.name}_select]`];
+          if (selectElement) {
+            selectElement.value = field.value || "";
+          }
+
+          // Cargar valor del comentario
+          const commentElement = formElements[`form_fill[${field.name}_comment]`];
+          if (commentElement) {
+            commentElement.value = field.comment_value || "";
+          }
+
+          // Cargar valor del Item
+          const itemElement = formElements[`form_fill[${field.name}_item]`];
+          if (itemElement) {
+            itemElement.value = field.Item || "";
+          }
+
+          // Cargar valor del Riser
+          const riserElement = formElements[`form_fill[${field.name}_riser]`];
+          if (riserElement) {
+            riserElement.value = field.Riser || "";
+          }
+
+          // Cargar valores de checkboxes C y D
+          const cElement = formElements[`${field.name}_c`];
+          if (cElement) {
+            cElement.checked = field.C === "Yes" || field.C === true;
+          }
+
+          const dElement = formElements[`${field.name}_d`];
+          if (dElement) {
+            dElement.checked = field.D === "Yes" || field.D === true;
+          }
+        }
       }
     });
   }
@@ -134,14 +172,22 @@ export default class extends Controller {
           
           return updatedField;
         } else if (field.type === "Deficiency") {
-          // Manejar campos Deficiency con select y comment
+          // Manejar campos Deficiency con todos sus subcampos
           const selectValue = formData.get(`form_fill[${field.name}_select]`);
           const commentValue = formData.get(`form_fill[${field.name}_comment]`);
+          const itemValue = formData.get(`form_fill[${field.name}_item]`);
+          const riserValue = formData.get(`form_fill[${field.name}_riser]`);
+          const cValue = formData.has(`${field.name}_c`) ? "Yes" : "";
+          const dValue = formData.has(`${field.name}_d`) ? "Yes" : "";
           
           return {
             ...field,
             value: selectValue || field.value || "",
-            comment_value: commentValue || field.comment_value || ""
+            comment_value: commentValue || field.comment_value || "",
+            Item: itemValue || field.Item || "",
+            Riser: riserValue || field.Riser || "",
+            C: cValue || field.C || "",
+            D: dValue || field.D || ""
           };
         } else if (newRawValue === null) {
           newValue = field.value || "";

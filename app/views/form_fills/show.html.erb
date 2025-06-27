@@ -318,25 +318,76 @@
                             <% elsif field['type'] == "Deficiency" %>
                               <div class="space-y-4">
                                 <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <!-- Campo Item (texto) -->
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                  </svg>
+                                  <%= form.text_field "#{field['name']}_item",
+                                    id: "#{field_id}_item",
+                                    value: field['Item'] || '',
+                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                    placeholder: "Item..." %>
+                                </div>
+                                <!-- Campo Riser Number (número) -->
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                                  </svg>
+                                  <%= form.number_field "#{field['name']}_riser",
+                                    id: "#{field_id}_riser",
+                                    value: field['Riser'] || '',
+                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                    placeholder: "Riser Number..." %>
+                                </div>
+                                <!-- Checkboxes C y D -->
+                                <div class="grid grid-cols-2 gap-4">
+                                  <!-- Checkbox C -->
+                                  <div class="relative inline-block w-full checkbox-button">
+                                    <%= check_box_tag "#{field['name']}_c", 'Yes', field['C'] == 'Yes', 
+                                      { id: "#{field_id}_c", class: "hidden peer" } %>
+                                    <label for="<%= "#{field_id}_c" %>" 
+                                      class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
+                                              bg-gradient-to-br from-blue-100 to-blue-200 border-2 border-blue-600 text-blue-900 
+                                              hover:from-blue-200 hover:to-blue-400 hover:border-blue-700 hover:-translate-y-0.5 hover:shadow-lg
+                                              peer-checked:from-blue-600 peer-checked:to-blue-700 peer-checked:border-blue-900 peer-checked:text-white peer-checked:shadow-xl">
+                                      C
+                                    </label>
+                                  </div>
+                                  <!-- Checkbox D -->
+                                  <div class="relative inline-block w-full checkbox-button">
+                                    <%= check_box_tag "#{field['name']}_d", 'Yes', field['D'] == 'Yes', 
+                                      { id: "#{field_id}_d", class: "hidden peer" } %>
+                                    <label for="<%= "#{field_id}_d" %>" 
+                                    class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
+                                            bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-600 text-green-900 
+                                            hover:from-green-200 hover:to-green-400 hover:border-green-700 hover:-translate-y-0.5 hover:shadow-lg
+                                            peer-checked:from-green-600 peer-checked:to-green-700 peer-checked:border-green-900 peer-checked:text-white peer-checked:shadow-xl">
+                                      D
+                                    </label>
+                                  </div>
+                                </div>
+                                                                <!-- Select dropdown para opciones -->
                                 <div class="relative">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
                                   </svg>
                                   <%= form.select "#{field['name']}_select",
-                                      options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
-                                      { include_blank: 'Seleccione una opción' },
-                                      id: "#{field_id}_select",
-                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+                                    options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
+                                    { include_blank: 'Seleccione una opción' },
+                                    id: "#{field_id}_select",
+                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
                                 </div>
+                                <!-- Campo de comentarios -->
                                 <div class="relative">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                   </svg>
                                   <%= form.text_field "#{field['name']}_comment",
-                                      id: "#{field_id}_comment",
-                                      value: field['comment_value'] || '',
-                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
-                                      placeholder: "Ingrese comentarios adicionales..." %>
+                                    id: "#{field_id}_comment",
+                                    value: field['comment_value'] || '',
+                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                    placeholder: "Ingrese comentarios adicionales..." %>
                                 </div>
                               </div>
                             <% elsif field['type'] == "Photo" %>
