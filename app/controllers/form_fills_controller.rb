@@ -249,11 +249,20 @@ class FormFillsController < ApplicationController
       # Parsear los datos del formulario
       form_fields = JSON.parse(@form_fill.form_structure)
 
-      # Llenar el PDF con los datos del formulario
+      # Procesar deficiencias antes de llenar el PDF
+      Rails.logger.info 'Procesando deficiencias...'
+      deficiency_processor = DeficiencyProcessorService.new(form_fields)
+      processed_form_fields = deficiency_processor.process_deficiencies
+
+      Rails.logger.info "Deficiencias procesadas. Total campos: #{processed_form_fields.length}"
+
+      # Llenar el PDF con los datos procesados del formulario
       pdf_service = PdfFormsParserService.new(template_pdf_path)
       filled_pdf_filename = "#{@form_fill.name.parameterize}.pdf"
       filled_pdf_path = File.join(temp_dir, filled_pdf_filename)
-      pdf_service.fill_form(filled_pdf_path, form_fields)
+
+      # Usar los campos procesados en lugar de los originales
+      pdf_service.fill_form(filled_pdf_path, processed_form_fields)
 
       # Adjuntar el PDF rellenado a través de Active Storage
       @form_fill.filled_pdf.attach(
