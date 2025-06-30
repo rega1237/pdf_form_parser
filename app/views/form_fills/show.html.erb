@@ -194,8 +194,62 @@
     .icon-rotate.rotated {
       transform: rotate(180deg);
     }
+
+    /* Validation message animation */
+    .validation-message {
+      animation: slideInFromRight 0.3s ease-out;
+    }
+
+    @keyframes slideInFromRight {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Required field indicator */
+    .text-red-400 {
+      color: #f87171;
+    }
+
+    /* Disabled button styles */
+    .opacity-50 {
+      opacity: 0.5;
+    }
+
+    .cursor-not-allowed {
+      cursor: not-allowed;
+    }
+
+    /* Required field validation states */
+    .field-invalid {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+    }
+
+    .field-valid {
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+    }
+
+    /* Enhanced button states for validation feedback */
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    button:disabled:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
   </style>
 <% end %>
+
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900" data-controller="notification" data-action="showNotification@window->notification#showNotification">
   <div class="container mx-auto px-4 py-6 lg:py-12">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
@@ -204,7 +258,7 @@
           <%= @form_fill.name %>
         </h1>
         <p class="text-blue-200 text-base md:text-lg">
-          Complete todos los campos requeridos para enviar la inspección
+          Complete all required fields to submit the inspection
         </p>
       </div>
       <%= link_to inspections_path, class: "inline-flex hidden items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl" do %>
@@ -215,6 +269,7 @@
       <% end %>
     </div>
   </div>
+
   <div class="max-w-6xl mx-auto">
     <div data-controller="field-toggle">
       <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, 
@@ -225,25 +280,27 @@
             local: true, 
             class: "space-y-8" do |form| %>
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
+
         <% if @form_fields.blank? %>
           <div class="bg-red-50 border-2 border-red-200 rounded-3xl p-8 animate-slide-up shadow-lg">
             <div class="flex items-center mb-4">
               <svg class="w-8 h-8 text-red-500 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              <h3 class="text-red-600 font-bold text-xl">Formulario sin campos</h3>
+              <h3 class="text-red-600 font-bold text-xl">Form without fields</h3>
             </div>
-            <p class="text-red-700 text-lg">No hay campos disponibles en este formulario o la estructura no pudo ser procesada correctamente.</p>
+            <p class="text-red-700 text-lg">No fields available in this form or the structure could not be processed correctly.</p>
           </div>
         <% else %>
           <% valid_fields = @form_fields.reject { |f| f['page_number'].to_i == 0 } %>
           <% pages = valid_fields.group_by { |f| f['page_number'].to_i }.sort_by { |page_num, _| page_num } %>
           <% total_pages = pages.length %>
+
           <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl p-6 border-2 border-blue-500 animate-fade-in shadow-lg hidden">
             <div class="flex items-center justify-between mb-4">
-              <span class="text-white font-bold text-lg">Progreso del Formulario</span>
+              <span class="text-white font-bold text-lg">Form Progress</span>
               <span class="text-blue-300 text-base font-semibold" id="page-indicator">
-                Página 1 de <%= total_pages %>
+                Page 1 of <%= total_pages %>
               </span>
             </div>
             <div class="w-full bg-slate-700 rounded-full h-3">
@@ -252,6 +309,7 @@
                    id="progress-bar"></div>
             </div>
           </div>
+
           <div class="relative">
             <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
               <div class="page-content relative <%= page_index == 0 ? 'animate-slide-up' : 'hidden' %>" 
@@ -260,10 +318,11 @@
                 <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-blue-400 shadow-2xl">
                   <div class="mb-10">
                     <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3">
-                      Página <%= page_num %>
+                      Page <%= page_num %>
                     </h2>
                     <div class="w-20 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
                   </div>
+
                   <% fields_on_page.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
                     <div class="mb-10 last:mb-0">
                       <div class="mb-8">
@@ -278,6 +337,7 @@
                           </h3>
                         </div>
                       </div>
+
                       <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
                         <% 
                           # Separar campos por tipo de visibilidad
@@ -285,6 +345,7 @@
                           visible_fields = fields_in_section.select { |field| always_visible_types.include?(field['type']) }
                           hidden_fields = fields_in_section.reject { |field| always_visible_types.include?(field['type']) }
                         %>
+
                         <!-- CAMPOS SIEMPRE VISIBLES -->
                         <% visible_fields.each_with_index do |field, index| %>
                           <% next unless field.is_a?(Hash) && field.key?('name') %>
@@ -301,12 +362,20 @@
                                          when 9 then 'md:col-span-9'
                                          else 'md:col-span-1'
                                          end %>
-                          <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>">
+
+                          <div class="<%= column_span %> space-y-4" 
+                               data-field-type="<%= field['type'] %>"
+                               data-required="<%= field['required'] == true ? 'true' : 'false' %>"
+                               data-field-name="<%= field['name'] %>">
                             <% field_id = "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}" %>
+
                             <!-- CAMPO PASS/FAIL -->
                             <% if field['type'] == "Pass/Fail" %>
                               <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= form.label field['name'], 
+                                    raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), 
+                                    for: field_id, 
+                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
                                 <div class="choice-button-group" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
                                   <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="Pass">Pass</button>
@@ -314,10 +383,14 @@
                                   <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
                                 </div>
                               </div>
-                              <!-- CAMPO PHOTO -->
+
+                            <!-- CAMPO PHOTO -->
                             <% elsif field['type'] == "Photo" %>
                               <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= form.label field['name'], 
+                                    raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), 
+                                    for: field_id, 
+                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <%= form.file_field field['name'],
                                     id: field_id,
                                     accept: "image/*",
@@ -334,9 +407,9 @@
                                     </svg>
                                     <span class="text-lg">
                                       <% if field['photo_attachment_id'].present? %>
-                                        Cambiar Foto
+                                        Change Photo
                                       <% else %>
-                                        Tomar Foto
+                                        Take Photo
                                       <% end %>
                                     </span>
                                   </button>
@@ -347,9 +420,9 @@
                                       <div class="flex items-center justify-between mb-3">
                                         <span class="text-white font-semibold text-sm">
                                           <% if field['photo_attachment_id'].present? %>
-                                            Foto guardada:
+                                            Saved photo:
                                           <% else %>
-                                            Foto capturada:
+                                            Captured photo:
                                           <% end %>
                                         </span>
                                         <div class="flex space-x-2">
@@ -375,17 +448,17 @@
                                           <%= image_tag rails_blob_path(existing_photo), 
                                               data: { photo_capture_target: "image" },
                                               class: "w-full object-cover rounded-xl border border-slate-600",
-                                              alt: "Foto de #{field['label_name'].presence || field['name']}" %>
+                                              alt: "Photo of #{field['label_name'].presence || field['name']}" %>
                                         <% else %>
                                           <img data-photo-capture-target="image" 
                                                class="w-full object-cover rounded-xl border border-slate-600" 
-                                               alt="Foto capturada"
+                                               alt="Captured photo"
                                                src="">
                                         <% end %>
                                       <% else %>
                                         <img data-photo-capture-target="image" 
                                              class="w-full object-cover rounded-xl border border-slate-600" 
-                                             alt="Foto capturada"
+                                             alt="Captured photo"
                                              src="">
                                       <% end %>
                                       <% if field['photo_attachment_id'].present? %>
@@ -397,7 +470,7 @@
                                               </svg>
                                               <%= field['label_name'].presence || field['name'] %>
                                             </span>
-                                            <span class="text-green-400">Guardada</span>
+                                            <span class="text-green-400">Saved</span>
                                           </div>
                                         </div>
                                       <% end %>
@@ -410,10 +483,15 @@
                                   </div>
                                 <% end %>
                               </div>
-                              <!-- CAMPO DEFICIENCY -->
+
+                            <!-- CAMPO DEFICIENCY -->
                             <% elsif field['type'] == "Deficiency" %>
                               <div class="space-y-4">
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <%= form.label field['name'], 
+                                    raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), 
+                                    for: field_id, 
+                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                
                                 <!-- Campo Item (texto) -->
                                 <div class="relative hidden">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -425,6 +503,7 @@
                                     class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
                                     placeholder: "Item..." %>
                                 </div>
+
                                 <!-- Campo Riser Number (número) -->
                                 <div class="relative">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -433,9 +512,11 @@
                                   <%= form.number_field "#{field['name']}_riser",
                                     id: "#{field_id}_riser",
                                     value: field['Riser'] || '',
+                                    required: field['required'] == true,
                                     class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
                                     placeholder: "Riser Number..." %>
                                 </div>
+
                                 <!-- Checkboxes C y D -->
                                 <div class="grid grid-cols-2 gap-4">
                                   <!-- Checkbox C -->
@@ -463,6 +544,7 @@
                                     </label>
                                   </div>
                                 </div>
+
                                 <!-- Select dropdown para opciones -->
                                 <div class="relative">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -470,10 +552,12 @@
                                   </svg>
                                   <%= form.select "#{field['name']}_select",
                                     options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
-                                    { include_blank: 'Seleccione una opción' },
+                                    { include_blank: 'Select an option' },
                                     id: "#{field_id}_select",
+                                    required: field['required'] == true,
                                     class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
                                 </div>
+
                                 <!-- Campo de comentarios -->
                                 <div class="relative">
                                   <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -483,12 +567,13 @@
                                     id: "#{field_id}_comment",
                                     value: field['comment_value'] || '',
                                     class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
-                                    placeholder: "Ingrese comentarios adicionales..." %>
+                                    placeholder: "Enter additional comments..." %>
                                 </div>
                               </div>
                             <% end %>
                           </div>
                         <% end %>
+
                         <!-- BOTÓN TOGGLE PARA MOSTRAR CAMPOS ADICIONALES -->
                         <% if hidden_fields.any? %>
                           <div class="md:col-span-9 mt-8">
@@ -499,9 +584,10 @@
                               <svg data-field-toggle-target="toggleIcon" class="w-6 h-6 icon-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                               </svg>
-                              <span data-field-toggle-target="toggleText">Show Aditional Fields (<%= hidden_fields.length %>)</span>
+                              <span data-field-toggle-target="toggleText">Show Additional Fields (<%= hidden_fields.length %>)</span>
                             </button>
                           </div>
+
                           <!-- CAMPOS ADICIONALES (Inicialmente ocultos) -->
                           <div class="md:col-span-9 additional-fields" data-field-toggle-target="additionalFields">
                             <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end mt-6">
@@ -520,25 +606,34 @@
                                                when 9 then 'md:col-span-9'
                                                else 'md:col-span-1'
                                                end %>
-                                <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>">
+
+                                <div class="<%= column_span %> space-y-4" 
+                                     data-field-type="<%= field['type'] %>"
+                                     data-required="<%= field['required'] == true ? 'true' : 'false' %>"
+                                     data-field-name="<%= field['name'] %>">
                                   <% field_id = "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}_additional" %>
+
                                   <!-- CAMPO BUTTON -->
                                   <% if field['type'] == "Button" %>
                                     <div class="relative inline-block w-full checkbox-button">
                                       <%= check_box_tag "form_fill[#{field['name']}]", 'Yes', field['value'] == 'Yes', 
-                                        { id: field_id, class: "hidden peer" } %>
+                                        { id: field_id, class: "hidden peer", required: field['required'] == true } %>
                                       <label for="<%= field_id %>" 
                                            class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
                                                   bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 
                                                   hover:from-red-200 hover:to-red-400 hover:border-red-700 hover:-translate-y-0.5 hover:shadow-lg
                                                   peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">
-                                        <%= (field['label_name'].presence || field['name']) %>
+                                        <%= raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}") %>
                                       </label>
                                     </div>
-                                    <!-- CAMPO RADIO -->
+
+                                  <!-- CAMPO RADIO -->
                                   <% elsif field['type'] == "Radio" %>
                                     <div>
-                                      <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                      <%= form.label field['name'], 
+                                          raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), 
+                                          for: field_id, 
+                                          class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                       <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
                                       <div class="radio-button-group space-y-3" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
                                         <% field['options'].each_with_index do |option, option_index| %>
@@ -559,10 +654,14 @@
                                         <% end %>
                                       </div>
                                     </div>
-                                    <!-- CAMPO TEXT -->
+
+                                  <!-- CAMPO TEXT -->
                                   <% elsif field['type'] == "Text" %>
                                     <div>
-                                      <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                      <%= form.label field['name'], 
+                                          raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), 
+                                          for: field_id, 
+                                          class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                       <div class="relative">
                                         <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
@@ -570,14 +669,17 @@
                                         <%= form.text_field field['name'],
                                             id: field_id,
                                             value: field['value'],
+                                            required: field['required'] == true,
                                             class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
-                                            placeholder: "Ingrese #{(field['label_name'].presence || field['name'])}" %>
+                                            placeholder: "Enter #{(field['label_name'].presence || field['name'])}" %>
                                       </div>
                                     </div>
-                                    <!-- CAMPO DATE -->
+
+                                  <!-- CAMPO DATE -->
                                   <% elsif field['type'] == "Date" %>
                                     <div>
-                                      <%= form.label field['name'], (field['label_name'].presence || field['name']), 
+                                      <%= form.label field['name'], 
+                                          raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), 
                                           for: field_id, 
                                           class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                       <div class="relative">
@@ -588,25 +690,32 @@
                                             id: field_id, 
                                             value: field['value'].presence || Date.current.strftime("%Y-%m-%d"),
                                             data: { controller: "date-fix" }, 
+                                            required: field['required'] == true,
                                             class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
                                       </div>
                                     </div>
-                                    <!-- CAMPO CHOICE -->
+
+                                  <!-- CAMPO CHOICE -->
                                   <% elsif (field['type'] == "Choice") && field['options'].is_a?(Array) %>
                                     <div>
-                                      <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                      <%= form.label field['name'], 
+                                          raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), 
+                                          for: field_id, 
+                                          class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                       <div class="relative">
                                         <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
                                         </svg>
                                         <%= form.select field['name'],
                                             options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
-                                            { include_blank: 'Seleccione una opción' },
+                                            { include_blank: 'Select an option' },
                                             id: field_id,
+                                            required: field['required'] == true,
                                             class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
                                       </div>
                                     </div>
-                                    <!-- CAMPO NO COMPATIBLE -->
+
+                                  <!-- CAMPO NO COMPATIBLE -->
                                   <% else %>
                                     <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 shadow-lg">
                                       <div class="flex items-start space-x-3">
@@ -614,9 +723,11 @@
                                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                                         </svg>
                                         <div>
-                                          <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= (field['label_name'].presence || field['name']) %></h4>
-                                          <p class="text-amber-700 text-sm mb-2">Tipo: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
-                                          <p class="text-amber-700 text-sm">Este tipo de campo aún no es compatible con la interfaz web</p>
+                                          <h4 class="text-amber-800 font-bold mb-2 text-lg">
+                                            <%= raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}") %>
+                                          </h4>
+                                          <p class="text-amber-700 text-sm mb-2">Type: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
+                                          <p class="text-amber-700 text-sm">This field type is not yet compatible with the web interface</p>
                                         </div>
                                       </div>
                                     </div>
@@ -632,6 +743,7 @@
                 </div>
               </div>
             <% end %>
+
             <!-- Botones de navegación -->
             <button type="button" 
                   id="backPageBtn" 
@@ -643,6 +755,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
               </svg>
             </button>
+
             <button type="button" 
                   id="nextPageBtn" 
                   data-action="click->pagination#nextPage click->form-fill#saveDraft" 
@@ -652,9 +765,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
             </button>
+
             <div class="hidden bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-blue-400 animate-fade-in shadow-2xl mt-8">
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center space-y-6 sm:space-y-0 sm:space-x-6">
-                <%= form.submit "Enviar Formulario", 
+                <%= form.submit "Submit Form", 
                   id: "submitFormBtn", 
                   data: { pagination_target: "submitFormBtn" }, 
                   class: "hidden items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 md:py-4 md:px-8 rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer shadow-lg text-base md:text-lg" %>
@@ -663,6 +777,7 @@
           </div>
         <% end %>
       <% end %>
+
       <!-- Sección de acciones del formulario -->
       <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
         <div class="flex items-start space-x-4 mb-6">
@@ -672,8 +787,8 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-white font-bold text-xl mb-2">Acciones del Formulario</h3>
-            <p class="text-blue-300 text-base mb-4">Genere y administre su PDF de inspección final</p>
+            <h3 class="text-white font-bold text-xl mb-2">Form Actions</h3>
+            <p class="text-blue-300 text-base mb-4">Generate and manage your final inspection PDF</p>
           </div>
         </div>
         <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
@@ -685,17 +800,17 @@
             <svg class="w-5 h-5 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
             </svg>
-            Guardar Borrador
+            Save Draft
           </button>
-          <%= button_to 'Generar PDF', 
+          <%= button_to 'Generate PDF', 
               submit_form_form_fill_path(@form_fill), 
               method: :post, 
               class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", 
-              data: { confirm: "¿Está seguro de que desea generar y enviar el formulario PDF?" } %>
+              data: { confirm: "Are you sure you want to generate and submit the PDF form?" } %>
           <% if @form_fill.filled_pdf.attached? %>
             <div class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg">
               <a href="<%= rails_blob_path(@form_fill.filled_pdf, disposition: 'inline') %>" target="_blank" class="text-white hover:text-white text-lg">
-                Ver PDF
+                View PDF
               </a>
             </div>
           <% end %>
@@ -703,6 +818,7 @@
       </div>
     </div>
   </div>
+
   <% if Rails.env.development? %>
     <script>
       function debugPhotoFields() {
@@ -736,7 +852,7 @@
         }
       }
 
-      // Hacer función disponible en consola para debugging
+      // Make function available in console for debugging
       window.debugPhotoFields = debugPhotoFields;
     </script>
   <% end %>
