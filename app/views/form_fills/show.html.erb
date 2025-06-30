@@ -126,6 +126,74 @@
         transform: scale(0.9);
       }
     }
+
+    .additional-fields {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transform: translateY(-10px);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .additional-fields.show {
+      max-height: 2000px;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toggle-button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .toggle-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .toggle-button:hover::before {
+      left: 100%;
+    }
+
+    .toggle-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .toggle-button.expanded {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .field-appear {
+      animation: fieldAppear 0.6s ease-out forwards;
+    }
+
+    @keyframes fieldAppear {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .icon-rotate {
+      transition: transform 0.3s ease;
+    }
+
+    .icon-rotate.rotated {
+      transform: rotate(180deg);
+    }
   </style>
 <% end %>
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900" data-controller="notification" data-action="showNotification@window->notification#showNotification">
@@ -144,16 +212,18 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
         </svg>
         <span class="text-base lg:text-lg">Back to inspections</span>
-      <% end %>
-    </div>
-    <div class="max-w-6xl mx-auto">
+      </div>
+    <% end %>
+  </div>
+  <div class="max-w-6xl mx-auto">
+    <div data-controller="field-toggle">
       <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, 
-          data: { controller: "pagination form-fill", turbo: false, 
-                  "form-fill-form-structure-value": @form_fill.form_structure, 
-                  "form-fill-form-fields-value": @form_fields.to_json }, 
-          id: "form-fill-main-form",
-          local: true, 
-          class: "space-y-8" do |form| %>
+            data: { controller: "pagination form-fill", turbo: false, 
+                    "form-fill-form-structure-value": @form_fill.form_structure, 
+                    "form-fill-form-fields-value": @form_fields.to_json }, 
+            id: "form-fill-main-form",
+            local: true, 
+            class: "space-y-8" do |form| %>
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
         <% if @form_fields.blank? %>
           <div class="bg-red-50 border-2 border-red-200 rounded-3xl p-8 animate-slide-up shadow-lg">
@@ -173,7 +243,7 @@
             <div class="flex items-center justify-between mb-4">
               <span class="text-white font-bold text-lg">Progreso del Formulario</span>
               <span class="text-blue-300 text-base font-semibold" id="page-indicator">
-                Página 1 de --
+                Página 1 de <%= total_pages %>
               </span>
             </div>
             <div class="w-full bg-slate-700 rounded-full h-3">
@@ -209,7 +279,14 @@
                         </div>
                       </div>
                       <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
-                        <% fields_in_section.each_with_index do |field, index| %>
+                        <% 
+                          # Separar campos por tipo de visibilidad
+                          always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency']
+                          visible_fields = fields_in_section.select { |field| always_visible_types.include?(field['type']) }
+                          hidden_fields = fields_in_section.reject { |field| always_visible_types.include?(field['type']) }
+                        %>
+                        <!-- CAMPOS SIEMPRE VISIBLES -->
+                        <% visible_fields.each_with_index do |field, index| %>
                           <% next unless field.is_a?(Hash) && field.key?('name') %>
                           <% next if field['name'].blank? %>
                           <% column_width_int = field['column_width'].to_i %>
@@ -224,21 +301,10 @@
                                          when 9 then 'md:col-span-9'
                                          else 'md:col-span-1'
                                          end %>
-                          <div class="<%= column_span %> space-y-4">
+                          <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>">
                             <% field_id = "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}" %>
-                            <% if field['type'] == "Button" %>
-                              <div class="relative inline-block w-full checkbox-button">
-                                <%= check_box_tag "form_fill[#{field['name']}]", 'Yes', field['value'] == 'Yes', 
-                                  { id: field_id, class: "hidden peer" } %>
-                                <label for="<%= field_id %>" 
-                                     class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
-                                            bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 
-                                            hover:from-red-200 hover:to-red-400 hover:border-red-700 hover:-translate-y-0.5 hover:shadow-lg
-                                            peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">
-                                  <%= (field['label_name'].presence || field['name']) %>
-                                </label>
-                              </div>
-                            <% elsif field['type'] == "Pass/Fail" %>
+                            <!-- CAMPO PASS/FAIL -->
+                            <% if field['type'] == "Pass/Fail" %>
                               <div>
                                 <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
                                 <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
@@ -248,148 +314,7 @@
                                   <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
                                 </div>
                               </div>
-                            <% elsif field['type'] == "Radio" %>
-                              <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
-                                <div class="radio-button-group space-y-3" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
-                                  <% field['options'].each_with_index do |option, option_index| %>
-                                    <% option_value = option.is_a?(Array) ? option.last : option %>
-                                    <% option_label = option.is_a?(Array) ? option.first : option %>
-                                    <% is_selected = field['value'] == option_value %>
-                                    <button type="button" 
-                                    class="radio-choice-button w-full flex items-center justify-start px-6 py-4 text-base lg:text-lg font-semibold rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br <%= is_selected ? 'from-blue-600 to-blue-700 border-2 border-blue-900 text-white shadow-xl' : 'from-slate-100 to-slate-200 border-2 border-slate-400 text-slate-900 hover:from-slate-200 hover:to-slate-300 hover:border-slate-500 hover:-translate-y-0.5 hover:shadow-lg' %>"
-                                    data-choice-buttons-target="button" 
-                                    data-action="click->choice-buttons#select" 
-                                      data-value="<%= option_value %>"
-                                      data-selected="<%= is_selected ? 'true' : 'false' %>">
-                                      <div class="radio-indicator w-5 h-5 rounded-full border-2 border-current mr-4 flex items-center justify-center flex-shrink-0">
-                                        <div class="w-2.5 h-2.5 rounded-full bg-current transition-opacity duration-200 <%= is_selected ? 'opacity-100' : 'opacity-0' %>"></div>
-                                      </div>
-                                      <span class="flex-1 text-left"><%= option_label %></span>
-                                    </button>
-                                  <% end %>
-                                </div>
-                              </div>
-                            <% elsif field['type'] == "Text" %>
-                              <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                <div class="relative">
-                                  <svg class="hidden absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                  </svg>
-                                  <%= form.text_field field['name'],
-                                      id: field_id,
-                                      value: field['value'],
-                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
-                                      placeholder: "     Ingrese #{(field['label_name'].presence || field['name'])}" %>
-                                </div>
-                              </div>
-                            <% elsif field['type'] == "Date" %>
-                              <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']), 
-                                    for: field_id, 
-                                    class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                <div class="relative">
-                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                  </svg>
-                                  <%= form.date_field field['name'], 
-                                      id: field_id, 
-                                      value: field['value'].presence || Date.current.strftime("%Y-%m-%d"),
-                                      data: { controller: "date-fix" }, 
-                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
-                                </div>
-                              </div>
-                            <% elsif (field['type'] == "Choice") && field['options'].is_a?(Array) %>
-                              <div>
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                <div class="relative">
-                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
-                                  </svg>
-                                  <%= form.select field['name'],
-                                      options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
-                                      { include_blank: 'Seleccione una opción' },
-                                      id: field_id,
-                                      class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
-                                </div>
-                              </div>
-                            <% elsif field['type'] == "Deficiency" %>
-                              <div class="space-y-4">
-                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-                                <!-- Campo Item (texto) -->
-                                <div class="relative">
-                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                  </svg>
-                                  <%= form.text_field "#{field['name']}_item",
-                                    id: "#{field_id}_item",
-                                    value: field['Item'] || '',
-                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
-                                    placeholder: "Item..." %>
-                                </div>
-                                <!-- Campo Riser Number (número) -->
-                                <div class="relative">
-                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
-                                  </svg>
-                                  <%= form.number_field "#{field['name']}_riser",
-                                    id: "#{field_id}_riser",
-                                    value: field['Riser'] || '',
-                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
-                                    placeholder: "Riser Number..." %>
-                                </div>
-                                <!-- Checkboxes C y D -->
-                                <div class="grid grid-cols-2 gap-4">
-                                  <!-- Checkbox C -->
-                                  <div class="relative inline-block w-full checkbox-button">
-                                    <%= check_box_tag "#{field['name']}_c", 'Yes', field['C'] == 'Yes', 
-                                      { id: "#{field_id}_c", class: "hidden peer" } %>
-                                    <label for="<%= "#{field_id}_c" %>" 
-                                      class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
-                                              bg-gradient-to-br from-blue-100 to-blue-200 border-2 border-blue-600 text-blue-900 
-                                              hover:from-blue-200 hover:to-blue-400 hover:border-blue-700 hover:-translate-y-0.5 hover:shadow-lg
-                                              peer-checked:from-blue-600 peer-checked:to-blue-700 peer-checked:border-blue-900 peer-checked:text-white peer-checked:shadow-xl">
-                                      C
-                                    </label>
-                                  </div>
-                                  <!-- Checkbox D -->
-                                  <div class="relative inline-block w-full checkbox-button">
-                                    <%= check_box_tag "#{field['name']}_d", 'Yes', field['D'] == 'Yes', 
-                                      { id: "#{field_id}_d", class: "hidden peer" } %>
-                                    <label for="<%= "#{field_id}_d" %>" 
-                                    class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
-                                            bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-600 text-green-900 
-                                            hover:from-green-200 hover:to-green-400 hover:border-green-700 hover:-translate-y-0.5 hover:shadow-lg
-                                            peer-checked:from-green-600 peer-checked:to-green-700 peer-checked:border-green-900 peer-checked:text-white peer-checked:shadow-xl">
-                                      D
-                                    </label>
-                                  </div>
-                                </div>
-                                                                <!-- Select dropdown para opciones -->
-                                <div class="relative">
-                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
-                                  </svg>
-                                  <%= form.select "#{field['name']}_select",
-                                    options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
-                                    { include_blank: 'Seleccione una opción' },
-                                    id: "#{field_id}_select",
-                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
-                                </div>
-                                <!-- Campo de comentarios -->
-                                <div class="relative">
-                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                  </svg>
-                                  <%= form.text_field "#{field['name']}_comment",
-                                    id: "#{field_id}_comment",
-                                    value: field['comment_value'] || '',
-                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
-                                    placeholder: "Ingrese comentarios adicionales..." %>
-                                </div>
-                              </div>
+                              <!-- CAMPO PHOTO -->
                             <% elsif field['type'] == "Photo" %>
                               <div>
                                 <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
@@ -485,20 +410,220 @@
                                   </div>
                                 <% end %>
                               </div>
-                            <% else %>
-                              <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 shadow-lg">
-                                <div class="flex items-start space-x-3">
-                                  <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                              <!-- CAMPO DEFICIENCY -->
+                            <% elsif field['type'] == "Deficiency" %>
+                              <div class="space-y-4">
+                                <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                <!-- Campo Item (texto) -->
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                                   </svg>
-                                  <div>
-                                    <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= (field['label_name'].presence || field['name']) %></h4>
-                                    <p class="text-amber-700 text-sm mb-2">Tipo: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
-                                    <p class="text-amber-700 text-sm">Este tipo de campo aún no es compatible con la interfaz web</p>
+                                  <%= form.text_field "#{field['name']}_item",
+                                    id: "#{field_id}_item",
+                                    value: field['Item'] || '',
+                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                    placeholder: "Item..." %>
+                                </div>
+                                <!-- Campo Riser Number (número) -->
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                                  </svg>
+                                  <%= form.number_field "#{field['name']}_riser",
+                                    id: "#{field_id}_riser",
+                                    value: field['Riser'] || '',
+                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                    placeholder: "Riser Number..." %>
+                                </div>
+                                <!-- Checkboxes C y D -->
+                                <div class="grid grid-cols-2 gap-4">
+                                  <!-- Checkbox C -->
+                                  <div class="relative inline-block w-full checkbox-button">
+                                    <%= check_box_tag "#{field['name']}_c", 'Yes', field['C'] == 'Yes', 
+                                      { id: "#{field_id}_c", class: "hidden peer" } %>
+                                    <label for="<%= "#{field_id}_c" %>" 
+                                      class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
+                                              bg-gradient-to-br from-blue-100 to-blue-200 border-2 border-blue-600 text-blue-900 
+                                              hover:from-blue-200 hover:to-blue-400 hover:border-blue-700 hover:-translate-y-0.5 hover:shadow-lg
+                                              peer-checked:from-blue-600 peer-checked:to-blue-700 peer-checked:border-blue-900 peer-checked:text-white peer-checked:shadow-xl">
+                                      C
+                                    </label>
                                   </div>
+                                  <!-- Checkbox D -->
+                                  <div class="relative inline-block w-full checkbox-button">
+                                    <%= check_box_tag "#{field['name']}_d", 'Yes', field['D'] == 'Yes', 
+                                      { id: "#{field_id}_d", class: "hidden peer" } %>
+                                    <label for="<%= "#{field_id}_d" %>" 
+                                    class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
+                                            bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-600 text-green-900 
+                                            hover:from-green-200 hover:to-green-400 hover:border-green-700 hover:-translate-y-0.5 hover:shadow-lg
+                                            peer-checked:from-green-600 peer-checked:to-green-700 peer-checked:border-green-900 peer-checked:text-white peer-checked:shadow-xl">
+                                      D
+                                    </label>
+                                  </div>
+                                </div>
+                                <!-- Select dropdown para opciones -->
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                  </svg>
+                                  <%= form.select "#{field['name']}_select",
+                                    options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
+                                    { include_blank: 'Seleccione una opción' },
+                                    id: "#{field_id}_select",
+                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+                                </div>
+                                <!-- Campo de comentarios -->
+                                <div class="relative">
+                                  <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                  </svg>
+                                  <%= form.text_field "#{field['name']}_comment",
+                                    id: "#{field_id}_comment",
+                                    value: field['comment_value'] || '',
+                                    class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                    placeholder: "Ingrese comentarios adicionales..." %>
                                 </div>
                               </div>
                             <% end %>
+                          </div>
+                        <% end %>
+                        <!-- BOTÓN TOGGLE PARA MOSTRAR CAMPOS ADICIONALES -->
+                        <% if hidden_fields.any? %>
+                          <div class="md:col-span-9 mt-8">
+                            <button type="button" 
+                                    data-action="click->field-toggle#toggleFields"
+                              data-field-toggle-target="toggleButton"
+                              class="toggle-button w-full py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-lg flex items-center justify-center space-x-3">
+                              <svg data-field-toggle-target="toggleIcon" class="w-6 h-6 icon-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                              </svg>
+                              <span data-field-toggle-target="toggleText">Show Aditional Fields (<%= hidden_fields.length %>)</span>
+                            </button>
+                          </div>
+                          <!-- CAMPOS ADICIONALES (Inicialmente ocultos) -->
+                          <div class="md:col-span-9 additional-fields" data-field-toggle-target="additionalFields">
+                            <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end mt-6">
+                              <% hidden_fields.each_with_index do |field, index| %>
+                                <% next unless field.is_a?(Hash) && field.key?('name') %>
+                                <% next if field['name'].blank? %>
+                                <% column_width_int = field['column_width'].to_i %>
+                                <% column_span = case column_width_int
+                                               when 2 then 'md:col-span-2'
+                                               when 3 then 'md:col-span-3'
+                                               when 4 then 'md:col-span-4'
+                                               when 5 then 'md:col-span-5'
+                                               when 6 then 'md:col-span-6'
+                                               when 7 then 'md:col-span-7'
+                                               when 8 then 'md:col-span-8'
+                                               when 9 then 'md:col-span-9'
+                                               else 'md:col-span-1'
+                                               end %>
+                                <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>">
+                                  <% field_id = "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}_additional" %>
+                                  <!-- CAMPO BUTTON -->
+                                  <% if field['type'] == "Button" %>
+                                    <div class="relative inline-block w-full checkbox-button">
+                                      <%= check_box_tag "form_fill[#{field['name']}]", 'Yes', field['value'] == 'Yes', 
+                                        { id: field_id, class: "hidden peer" } %>
+                                      <label for="<%= field_id %>" 
+                                           class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md
+                                                  bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 
+                                                  hover:from-red-200 hover:to-red-400 hover:border-red-700 hover:-translate-y-0.5 hover:shadow-lg
+                                                  peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">
+                                        <%= (field['label_name'].presence || field['name']) %>
+                                      </label>
+                                    </div>
+                                    <!-- CAMPO RADIO -->
+                                  <% elsif field['type'] == "Radio" %>
+                                    <div>
+                                      <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                      <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
+                                      <div class="radio-button-group space-y-3" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
+                                        <% field['options'].each_with_index do |option, option_index| %>
+                                          <% option_value = option.is_a?(Array) ? option.last : option %>
+                                          <% option_label = option.is_a?(Array) ? option.first : option %>
+                                          <% is_selected = field['value'] == option_value %>
+                                          <button type="button" 
+                                          class="radio-choice-button w-full flex items-center justify-start px-6 py-4 text-base lg:text-lg font-semibold rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br <%= is_selected ? 'from-blue-600 to-blue-700 border-2 border-blue-900 text-white shadow-xl' : 'from-slate-100 to-slate-200 border-2 border-slate-400 text-slate-900 hover:from-slate-200 hover:to-slate-300 hover:border-slate-500 hover:-translate-y-0.5 hover:shadow-lg' %>"
+                                          data-choice-buttons-target="button" 
+                                          data-action="click->choice-buttons#select" 
+                                            data-value="<%= option_value %>"
+                                            data-selected="<%= is_selected ? 'true' : 'false' %>">
+                                            <div class="radio-indicator w-5 h-5 rounded-full border-2 border-current mr-4 flex items-center justify-center flex-shrink-0">
+                                              <div class="w-2.5 h-2.5 rounded-full bg-current transition-opacity duration-200 <%= is_selected ? 'opacity-100' : 'opacity-0' %>"></div>
+                                            </div>
+                                            <span class="flex-1 text-left"><%= option_label %></span>
+                                          </button>
+                                        <% end %>
+                                      </div>
+                                    </div>
+                                    <!-- CAMPO TEXT -->
+                                  <% elsif field['type'] == "Text" %>
+                                    <div>
+                                      <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                      <div class="relative">
+                                        <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                        </svg>
+                                        <%= form.text_field field['name'],
+                                            id: field_id,
+                                            value: field['value'],
+                                            class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20",
+                                            placeholder: "Ingrese #{(field['label_name'].presence || field['name'])}" %>
+                                      </div>
+                                    </div>
+                                    <!-- CAMPO DATE -->
+                                  <% elsif field['type'] == "Date" %>
+                                    <div>
+                                      <%= form.label field['name'], (field['label_name'].presence || field['name']), 
+                                          for: field_id, 
+                                          class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                      <div class="relative">
+                                        <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        <%= form.date_field field['name'], 
+                                            id: field_id, 
+                                            value: field['value'].presence || Date.current.strftime("%Y-%m-%d"),
+                                            data: { controller: "date-fix" }, 
+                                            class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+                                      </div>
+                                    </div>
+                                    <!-- CAMPO CHOICE -->
+                                  <% elsif (field['type'] == "Choice") && field['options'].is_a?(Array) %>
+                                    <div>
+                                      <%= form.label field['name'], (field['label_name'].presence || field['name']), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+                                      <div class="relative">
+                                        <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                        </svg>
+                                        <%= form.select field['name'],
+                                            options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']),
+                                            { include_blank: 'Seleccione una opción' },
+                                            id: field_id,
+                                            class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+                                      </div>
+                                    </div>
+                                    <!-- CAMPO NO COMPATIBLE -->
+                                  <% else %>
+                                    <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 shadow-lg">
+                                      <div class="flex items-start space-x-3">
+                                        <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                        </svg>
+                                        <div>
+                                          <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= (field['label_name'].presence || field['name']) %></h4>
+                                          <p class="text-amber-700 text-sm mb-2">Tipo: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
+                                          <p class="text-amber-700 text-sm">Este tipo de campo aún no es compatible con la interfaz web</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  <% end %>
+                                </div>
+                              <% end %>
+                            </div>
                           </div>
                         <% end %>
                       </div>
@@ -507,6 +632,7 @@
                 </div>
               </div>
             <% end %>
+            <!-- Botones de navegación -->
             <button type="button" 
                   id="backPageBtn" 
                   data-action="click->pagination#backPage" 
@@ -537,6 +663,7 @@
           </div>
         <% end %>
       <% end %>
+      <!-- Sección de acciones del formulario -->
       <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
         <div class="flex items-start space-x-4 mb-6">
           <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg">

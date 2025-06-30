@@ -22,6 +22,7 @@ export default class extends Controller {
       this.showCurrentPage();
       this.updateButtonStates();
       this.updateProgress();
+      this.notifyPageChange();
     }
   }
 
@@ -31,6 +32,7 @@ export default class extends Controller {
       this.showCurrentPage();
       this.updateButtonStates();
       this.updateProgress();
+      this.notifyPageChange();
     }
   }
 
@@ -72,5 +74,15 @@ export default class extends Controller {
       pageIndicator.textContent =
         "Página " + (this.currentPage + 1) + " de " + this.totalPages;
     }
+  }
+
+  notifyPageChange() {
+    // Disparar evento personalizado
+    const event = new CustomEvent('pageChanged', {
+      bubbles: true,
+      detail: { source: 'pagination' }
+    });
+    
+    this.element.dispatchEvent(event);
   }
 }
