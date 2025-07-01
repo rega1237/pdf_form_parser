@@ -17,10 +17,7 @@ export default class extends Controller {
       if (field.name) {
         const inputElement = formElements[`form_fill[${field.name}]`];
         if (inputElement) {
-          // Verificar si es un input de tipo file (Photo fields)
           if (inputElement.type === "file") {
-            // NO intentar asignar valor a inputs de tipo file
-            // Si hay photo_attachment_id, mostrar la foto existente
             if (field.photo_attachment_id) {
               this.displayExistingPhoto(inputElement, field);
             }
@@ -37,38 +34,27 @@ export default class extends Controller {
           }
         }
 
-        // Manejar campos específicos de Deficiency
         if (field.type === "Deficiency") {
-          // Cargar valor del select
           const selectElement = formElements[`form_fill[${field.name}_select]`];
           if (selectElement) {
             selectElement.value = field.value || "";
           }
-
-          // Cargar valor del comentario
           const commentElement = formElements[`form_fill[${field.name}_comment]`];
           if (commentElement) {
             commentElement.value = field.comment_value || "";
           }
-
-          // Cargar valor del Item
           const itemElement = formElements[`form_fill[${field.name}_item]`];
           if (itemElement) {
             itemElement.value = field.Item || "";
           }
-
-          // Cargar valor del Riser
           const riserElement = formElements[`form_fill[${field.name}_riser]`];
           if (riserElement) {
             riserElement.value = field.Riser || "";
           }
-
-          // Cargar valores de checkboxes C y D
           const cElement = formElements[`${field.name}_c`];
           if (cElement) {
             cElement.checked = field.C === "Yes" || field.C === true;
           }
-
           const dElement = formElements[`${field.name}_d`];
           if (dElement) {
             dElement.checked = field.D === "Yes" || field.D === true;
@@ -78,44 +64,26 @@ export default class extends Controller {
     });
   }
 
-  // Método para mostrar foto existente
   displayExistingPhoto(fileInput, fieldData) {
     const fieldId = fileInput.id;
     const previewContainer = document.getElementById(`photo-preview-${fieldId}`);
     
     if (previewContainer && fieldData.photo_attachment_id) {
       const imageElement = previewContainer.querySelector('[data-photo-capture-target="image"]');
-      
-      // Si la imagen ya tiene src desde el servidor (renderizada en ERB), mantenerla
       if (imageElement && imageElement.src && imageElement.src !== window.location.href) {
-        // La imagen ya está cargada desde el servidor
         previewContainer.classList.remove('hidden');
-        console.log(`Existing photo displayed for field: ${fieldData.name}`);
-        
-        // Buscar el controlador photo-capture y notificarle que hay una foto cargada
-        const photoCaptureElement = fileInput.closest('[data-controller*="photo-capture"]');
-        if (photoCaptureElement) {
-          // La imagen ya está visible, no necesitamos hacer nada más
-          // El controlador photo-capture mantendrá el estado actual
-        }
       } else {
-        // Fallback: obtener URL del servidor si no está renderizada
         this.fetchPhotoUrl(fieldData.name, fieldData.photo_attachment_id)
           .then(photoUrl => {
             if (photoUrl && imageElement) {
               imageElement.src = photoUrl;
               previewContainer.classList.remove('hidden');
-              console.log(`Photo URL loaded for field: ${fieldData.name}`);
             }
-          })
-          .catch(error => {
-            console.error('Error loading existing photo:', error);
           });
       }
     }
   }
 
-  // Método para obtener URL de foto del servidor
   async fetchPhotoUrl(fieldName, attachmentId) {
     try {
       const formId = this.element.action.split('/').pop().split('?')[0];
@@ -125,12 +93,8 @@ export default class extends Controller {
           'Content-Type': 'application/json',
           'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
         },
-        body: JSON.stringify({
-          field_name: fieldName,
-          attachment_id: attachmentId
-        })
+        body: JSON.stringify({ field_name: fieldName, attachment_id: attachmentId })
       });
-      
       const data = await response.json();
       return data.photo_url;
     } catch (error) {
@@ -141,9 +105,7 @@ export default class extends Controller {
 
   serializeForm() {
     const formData = new FormData(this.element);
-    const formFields = JSON.parse(
-      this.element.dataset.formFillFormFieldsValue || "[]"
-    );
+    const formFields = JSON.parse(this.element.dataset.formFillFormFieldsValue || "[]");
     let updatedStructure = [];
 
     if (Array.isArray(formFields)) {
@@ -151,28 +113,9 @@ export default class extends Controller {
         const newRawValue = formData.get(`form_fill[${field.name}]`);
         let newValue = newRawValue;
 
-        if (field.type === "Button") {
-          newValue = formData.has(`form_fill[${field.name}]`)
-            ? (field.options && field.options.length > 1 ? field.options[1] : true)
-            : (field.options && field.options.length > 0 ? field.options[0] : false);
-        } else if (field.type === "Photo") {
-          // Para campos Photo, mantener el valor actual y photo_attachment_id
-          // El archivo se maneja separadamente por FormData
-          const updatedField = { ...field };
-          
-          // Si hay un archivo nuevo, se procesará en el servidor
-          // Si no hay archivo nuevo, mantener el attachment_id existente
-          if (!newRawValue || newRawValue.size === 0) {
-            // No hay archivo nuevo, mantener datos existentes
-            updatedField.value = field.value || "";
-          } else {
-            // Hay archivo nuevo, se procesará en el servidor
-            updatedField.value = ""; // El servidor actualizará esto
-          }
-          
-          return updatedField;
+        if (field.type === "Photo") {
+          return { ...field };
         } else if (field.type === "Deficiency") {
-          // Manejar campos Deficiency con todos sus subcampos
           const selectValue = formData.get(`form_fill[${field.name}_select]`);
           const commentValue = formData.get(`form_fill[${field.name}_comment]`);
           const itemValue = formData.get(`form_fill[${field.name}_item]`);
@@ -180,15 +123,7 @@ export default class extends Controller {
           const cValue = formData.has(`${field.name}_c`) ? "Yes" : "";
           const dValue = formData.has(`${field.name}_d`) ? "Yes" : "";
           
-          return {
-            ...field,
-            value: selectValue || field.value || "",
-            comment_value: commentValue || field.comment_value || "",
-            Item: itemValue || field.Item || "",
-            Riser: riserValue || field.Riser || "",
-            C: cValue || field.C || "",
-            D: dValue || field.D || ""
-          };
+          return { ...field, value: selectValue || field.value || "", comment_value: commentValue || field.comment_value || "", Item: itemValue || field.Item || "", Riser: riserValue || field.Riser || "", C: cValue || field.C || "", D: dValue || field.D || "" };
         } else if (newRawValue === null) {
           newValue = field.value || "";
         }
@@ -202,15 +137,11 @@ export default class extends Controller {
   saveDraft(event) {
     if (event) event.preventDefault();
     
-    const formStructureHiddenInput = document.getElementById(
-      "form_fill_form_structure"
-    );
+    const formStructureHiddenInput = document.getElementById("form_fill_form_structure");
     if (!formStructureHiddenInput) {
       console.error("Hidden form_structure input not found");
       return;
     }
-    
-    // Actualizar la estructura antes de enviar
     formStructureHiddenInput.value = this.serializeForm();
 
     const formData = new FormData(this.element);
@@ -224,49 +155,55 @@ export default class extends Controller {
       body: formData,
     })
       .then((response) => response.json().then(data => ({ status: response.status, ok: response.ok, data: data })))
-      .then(({ status, ok, data }) => {
+      .then(({ ok, data }) => {
         if (ok) {
-          this.dispatchNotification(
-            "success",
-            data.message || "Draft saved successfully."
-          );
-          
-          // Recargar los valores del formulario para reflejar cambios del servidor
-          // (como nuevos photo_attachment_ids)
+          this.dispatchNotification("success", data.message || "Draft saved successfully.");
           this.reloadFormStructure();
         } else {
-          this.dispatchNotification(
-            "error",
-            data.message || "Could not save draft."
-          );
-          console.error("Error saving draft:", data);
+          this.dispatchNotification("error", data.message || "Could not save draft.");
         }
       })
-      .catch((error) => {
+      .catch(() => {
         this.dispatchNotification("error", "Network error when saving draft.");
-        console.error("Error saving draft:", error);
       });
   }
 
-  // Método para recargar la estructura del formulario después de guardar
+  /**
+   * Cambia la acción y el MÉTODO del formulario para enviarlo a la ruta de generación de PDF.
+   */
+  submitToPdf(event) {
+    event.stopPropagation();
+    
+    const form = this.element;
+    const confirmMessage = event.currentTarget.dataset.confirm;
+
+    if (confirm(confirmMessage)) {
+      const formFillId = form.action.match(/\/form_fills\/(\d+)/)[1];
+      const pdfUrl = `/form_fills/${formFillId}/submit_form`;
+
+      // SOLUCIÓN: Buscar el campo oculto `_method` y cambiar su valor a `post`.
+      const methodInput = form.querySelector('input[name="_method"]');
+      if (methodInput) {
+        methodInput.value = 'post';
+      }
+
+      form.action = pdfUrl;
+      form.requestSubmit();
+    }
+  }
+
   async reloadFormStructure() {
     try {
       const formId = this.element.action.split('/').pop().split('?')[0];
       const response = await fetch(`/form_fills/${formId}/structure`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
-        }
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content }
       });
       
       if (response.ok) {
         const data = await response.json();
-        // Actualizar los datasets con la nueva estructura
         this.element.dataset.formFillFormStructureValue = data.form_structure;
         this.element.dataset.formFillFormFieldsValue = JSON.stringify(data.form_fields);
-        
-        // Recargar valores (especialmente útil para mostrar nuevas fotos)
         this.loadFormValues();
       }
     } catch (error) {
