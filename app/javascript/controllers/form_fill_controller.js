@@ -169,7 +169,8 @@ export default class extends Controller {
   }
 
   /**
-   * Cambia la acción y el MÉTODO del formulario para enviarlo a la ruta de generación de PDF.
+   * Cambia la acción y el MÉTODO del formulario y ACTUALIZA el token CSRF
+   * antes de enviarlo a la ruta de generación de PDF.
    */
   submitToPdf(event) {
     event.stopPropagation();
@@ -181,7 +182,15 @@ export default class extends Controller {
       const formFillId = form.action.match(/\/form_fills\/(\d+)/)[1];
       const pdfUrl = `/form_fills/${formFillId}/submit_form`;
 
-      // SOLUCIÓN: Buscar el campo oculto `_method` y cambiar su valor a `post`.
+      // 1. Busca el token CSRF fresco en la meta etiqueta del <head>.
+      const freshToken = document.querySelector('meta[name="csrf-token"]').content;
+      // 2. Busca el campo oculto del token DENTRO del formulario.
+      const tokenInput = form.querySelector('input[name="authenticity_token"]');
+      // 3. Actualiza el valor del campo del formulario con el token fresco.
+      if (tokenInput) {
+        tokenInput.value = freshToken;
+      }
+
       const methodInput = form.querySelector('input[name="_method"]');
       if (methodInput) {
         methodInput.value = 'post';
