@@ -1,7 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-  // Se elimina "submitFormBtn" de los targets
   static targets = [
     "pageContent",
     "backPageBtn",
@@ -15,19 +14,17 @@ export default class extends Controller {
     this.showCurrentPage();
     this.updateProgress();
     this.setupFieldValidation();
-    
+
     this.hasUserInteracted = false;
     this.validationTimeout = null;
-    
-    // Validación inicial para establecer el estado correcto del botón
+
     setTimeout(() => {
       this.validateCurrentPageForButtonState();
     }, 100);
   }
 
   setupFieldValidation() {
-    // Agrega event listeners a todos los inputs para validación en tiempo real
-    this.pageContentTargets.forEach((page, pageIndex) => {
+    this.pageContentTargets.forEach((page) => {
       const inputs = page.querySelectorAll('input, select, textarea');
       inputs.forEach(input => {
         input.addEventListener('focus', () => { this.hasUserInteracted = true; });
@@ -70,7 +67,7 @@ export default class extends Controller {
     
     return isValid;
   }
-  
+
   validateCurrentPageForButtonState() {
     const currentPageElement = this.pageContentTargets[this.currentPage];
     if (!currentPageElement) return true;
@@ -91,10 +88,6 @@ export default class extends Controller {
     return Array.from(pageElement.querySelectorAll('[data-required="true"]'));
   }
 
-  getFieldName(fieldContainer) {
-    return fieldContainer.dataset.fieldName || '';
-  }
-
   getFieldValue(fieldContainer) {
     const fieldType = fieldContainer.dataset.fieldType;
     
@@ -108,7 +101,7 @@ export default class extends Controller {
         const fileInput = fieldContainer.querySelector('input[type="file"]');
         const previewContainer = fieldContainer.querySelector('[data-photo-capture-target="preview"]');
         const hasExistingPhoto = previewContainer && !previewContainer.classList.contains('hidden');
-        return (fileInput && fileInput.files.length > 0) || hasExistingPhoto ? 'photo' : '';
+        return (fileInput && fileInput.files.length > 0) || hasExistingPhoto ? 'photo_present' : '';
       
       case 'Deficiency':
         const riserInput = fieldContainer.querySelector('input[type="number"]');
@@ -129,7 +122,7 @@ export default class extends Controller {
     if (this.currentPage < this.totalPages - 1) {
       this.nextPageBtnTarget.disabled = !isValid;
       if (!isValid && this.hasUserInteracted) {
-        this.showValidationMessage(emptyRequiredFields);
+        this.showValidationMessage();
       } else {
         this.hideValidationMessage();
       }
@@ -142,14 +135,14 @@ export default class extends Controller {
     }
   }
 
-  showValidationMessage(emptyRequiredFields) {
+  showValidationMessage() {
     this.hideValidationMessage();
     const message = document.createElement('div');
     message.id = 'validation-message';
-    message.className = 'validation-message fixed top-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm';
+    message.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm';
     message.innerHTML = `<div class="font-semibold">Please fill all required fields to continue.</div>`;
     document.body.appendChild(message);
-    setTimeout(() => this.hideValidationMessage(), 5000);
+    setTimeout(() => this.hideValidationMessage(), 3000);
   }
 
   hideValidationMessage() {
@@ -159,14 +152,41 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * MÉTODO MODIFICADO: Contiene la nueva lógica de salto de página.
+   */
   nextPage() {
     this.hasUserInteracted = true;
     if (!this.validateCurrentPage()) {
       return;
     }
 
+    // --- NUEVA LÓGICA DE SALTO ---
+    let pageIncrement = 1; // Por defecto, avanza 1 página.
+    const currentPageElement = this.pageContentTargets[this.currentPage];
+    
+    // Buscamos si en la página actual existe el campo que dispara el salto.
+    const skipTriggerElement = currentPageElement.querySelector('[data-pagination-skip-trigger="true"]');
+
+    if (skipTriggerElement) {
+      // Si existe, buscamos su contenedor principal para obtener el tipo y el valor.
+      const fieldContainer = skipTriggerElement.closest('[data-field-type="Pass/Fail"]');
+      if (fieldContainer) {
+        const value = this.getFieldValue(fieldContainer);
+        // Si el valor es "Pass" o "N/A", cambiamos el incremento a 3.
+        if (value === 'Pass' || value === 'N/A') {
+          pageIncrement = 3;
+        }
+      }
+    }
+    // --- FIN DE LA NUEVA LÓGICA ---
+
+    // Nos aseguramos de poder avanzar.
     if (this.currentPage < this.totalPages - 1) {
-      this.currentPage++;
+      // Usamos el pageIncrement y nos aseguramos de no pasarnos de la última página.
+      this.currentPage = Math.min(this.currentPage + pageIncrement, this.totalPages - 1);
+      
+      // Actualizamos la vista.
       this.showCurrentPage();
       this.updateButtonStates();
       this.updateProgress();

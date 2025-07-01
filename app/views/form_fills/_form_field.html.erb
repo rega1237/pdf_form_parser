@@ -9,7 +9,7 @@
 <%# --- Lógica de renderizado de campos --- %>
 
 <% if field['type'] == "Pass/Fail" %>
-  <div>
+  <div data-pagination-skip-trigger="true">
     <%= form.label field['name'],
         raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"),
         for: field_id,
