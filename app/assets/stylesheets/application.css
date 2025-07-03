@@ -13,9 +13,7 @@
    COMPONENTS - CHECKBOX BUTTON
    ============================================================================= */
 
-.checkbox-button
-  input[type="checkbox"]:checked
-  + .checkbox-button-label::before {
+.checkbox-button input[type="checkbox"]:checked+.checkbox-button-label::before {
   content: "✓";
   margin-right: 8px;
   font-size: 18px;
@@ -126,9 +124,12 @@
   min-width: 2.5rem;
   height: 2.5rem;
   padding: 0.5rem 0.75rem;
-  color: rgb(148, 163, 184); /* text-slate-400 */
-  background-color: rgba(255, 255, 255, 0.05); /* bg-white/5 */
-  border: 1px solid rgba(255, 255, 255, 0.1); /* border-white/10 */
+  color: rgb(148, 163, 184);
+  /* text-slate-400 */
+  background-color: rgba(255, 255, 255, 0.05);
+  /* bg-white/5 */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* border-white/10 */
   border-radius: 0.5rem;
   text-decoration: none;
   font-weight: 500;
@@ -137,23 +138,24 @@
 
 .pagination .page-link:hover {
   color: rgb(255, 255, 255);
-  background-color: rgba(255, 255, 255, 0.1); /* bg-white/10 */
+  background-color: rgba(255, 255, 255, 0.1);
+  /* bg-white/10 */
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
 
 .pagination .page-item.active .page-link {
   color: rgb(255, 255, 255);
-  background: linear-gradient(
-    to right,
-    rgb(79, 70, 229),
-    rgb(99, 102, 241)
-  ); /* bg-gradient-to-r from-indigo-600 to-indigo-700 */
+  background: linear-gradient(to right,
+      rgb(79, 70, 229),
+      rgb(99, 102, 241));
+  /* bg-gradient-to-r from-indigo-600 to-indigo-700 */
   border-color: rgb(79, 70, 229);
 }
 
 .pagination .page-item.disabled .page-link {
-  color: rgb(100, 116, 139); /* text-slate-500 */
+  color: rgb(100, 116, 139);
+  /* text-slate-500 */
   background-color: rgba(255, 255, 255, 0.02);
   border-color: rgba(255, 255, 255, 0.05);
   cursor: not-allowed;
@@ -199,6 +201,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -209,6 +212,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -311,9 +315,7 @@
    }*/
 
 /* Better visual hierarchy */
-[data-inspection-modal-target="intervalSelection"]
-  .interval-category-btn
-  span:last-of-type {
+[data-inspection-modal-target="intervalSelection"] .interval-category-btn span:last-of-type {
   opacity: 0.8;
 }
 
@@ -382,6 +384,7 @@ animate-scale-in {
    ============================================================================= */
 
 @keyframes pulse {
+
   0%,
   100% {
     transform: scale(1);
@@ -401,6 +404,7 @@ animate-scale-in {
    ============================================================================= */
 
 @keyframes bounceSubtle {
+
   0%,
   100% {
     transform: translateY(0);
@@ -413,4 +417,46 @@ animate-scale-in {
 
 .animate-bounce-subtle {
   animation: bounceSubtle 2s infinite;
+}
+
+
+/* =============================================================================
+   CUSTOM GRID COLUMN CLASSES
+   ============================================================================= */
+@media (min-width: 768px) {
+  .custom-col-span-1 {
+    grid-column: span 1 / span 1;
+  }
+
+  .custom-col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+
+  .custom-col-span-3 {
+    grid-column: span 3 / span 3;
+  }
+
+  .custom-col-span-4 {
+    grid-column: span 4 / span 4;
+  }
+
+  .custom-col-span-5 {
+    grid-column: span 5 / span 5;
+  }
+
+  .custom-col-span-6 {
+    grid-column: span 6 / span 6;
+  }
+
+  .custom-col-span-7 {
+    grid-column: span 7 / span 7;
+  }
+
+  .custom-col-span-8 {
+    grid-column: span 8 / span 8;
+  }
+
+  .custom-col-span-9 {
+    grid-column: span 9 / span 9;
+  }
 }

@@ -79,7 +79,6 @@
                     <div class="mb-10 last:mb-0">
                       <div class="flex items-center mb-8"><div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center mr-4 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div><h3 class="text-white font-bold text-xl lg:text-2xl"><%= section_name.humanize %></h3></div>
                       
-                      <%# Contenedor de la parrilla de 9 columnas %>
                       <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
                         <%
                           always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency']
@@ -87,21 +86,16 @@
                           hidden_fields = fields_in_section.reject { |field| always_visible_types.include?(field['type']) || field['required'] == true }
                         %>
                         
-                        <%# --- Renderiza los campos visibles con el ancho de columna correcto --- %>
                         <% visible_fields.each_with_index do |field, index| %>
                           <%
                             column_width_int = field['column_width'].to_i
-                            column_span = case column_width_int
-                                          when 2..9 then "md:col-span-#{column_width_int}"
-                                          else 'md:col-span-3' # Valor por defecto si no está definido o es inválido
-                                          end
+                            column_span = column_width_int.in?(1..9) ? "custom-col-span-#{column_width_int}" : 'custom-col-span-3'
                           %>
                           <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>" data-required="<%= field['required'] == true ? 'true' : 'false' %>" data-field-name="<%= field['name'] %>">
                             <%= render partial: 'form_fills/form_field', locals: { form: form, field: field, field_id: "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}" } %>
                           </div>
                         <% end %>
 
-                        <%# --- Renderiza los campos ocultos (si los hay) --- %>
                         <% if hidden_fields.any? %>
                           <div class="md:col-span-9 mt-8">
                             <button type="button" data-action="click->field-toggle#toggleFields" data-field-toggle-target="toggleButton" class="toggle-button w-full py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-lg flex items-center justify-center space-x-3">
@@ -114,10 +108,7 @@
                               <% hidden_fields.each_with_index do |field, index| %>
                                 <%
                                   column_width_int = field['column_width'].to_i
-                                  column_span = case column_width_int
-                                                when 2..9 then "md:col-span-#{column_width_int}"
-                                                else 'md:col-span-3'
-                                                end
+                                  column_span = column_width_int.in?(1..9) ? "custom-col-span-#{column_width_int}" : 'custom-col-span-3'
                                 %>
                                 <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>" data-required="<%= field['required'] == true ? 'true' : 'false' %>" data-field-name="<%= field['name'] %>">
                                   <%= render partial: 'form_fills/form_field', locals: { form: form, field: field, field_id: "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}_additional" } %>
@@ -133,12 +124,10 @@
               </div>
             <% end %>
             
-            <%# --- BOTONES DE NAVEGACIÓN "OREJITAS" --- %>
             <button type="button" data-action="click->pagination#backPage" data-pagination-target="backPageBtn" class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out left-[-25px] md:left-[-30px] bg-slate-600 hover:bg-slate-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:transform-none"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
             <button type="button" data-action="click->pagination#nextPage click->form-fill#saveDraft" data-pagination-target="nextPageBtn" class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out right-[-25px] md:right-[-30px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:transform-none"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
           </div>
           
-          <%# --- BLOQUE DE ACCIONES FINALES --- %>
           <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
             <div class="flex items-start space-x-4 mb-6"><div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div><h3 class="text-white font-bold text-xl mb-2">Form Actions</h3><p class="text-blue-300 text-base mb-4">Save your progress or generate the final PDF</p></div></div>
             <div class="flex flex-wrap items-center gap-4">
