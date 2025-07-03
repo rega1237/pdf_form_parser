@@ -36,29 +36,17 @@ export default class extends Controller {
 
         if (field.type === "Deficiency") {
           const selectElement = formElements[`form_fill[${field.name}_select]`];
-          if (selectElement) {
-            selectElement.value = field.value || "";
-          }
+          if (selectElement) { selectElement.value = field.value || ""; }
           const commentElement = formElements[`form_fill[${field.name}_comment]`];
-          if (commentElement) {
-            commentElement.value = field.comment_value || "";
-          }
+          if (commentElement) { commentElement.value = field.comment_value || ""; }
           const itemElement = formElements[`form_fill[${field.name}_item]`];
-          if (itemElement) {
-            itemElement.value = field.Item || "";
-          }
+          if (itemElement) { itemElement.value = field.Item || ""; }
           const riserElement = formElements[`form_fill[${field.name}_riser]`];
-          if (riserElement) {
-            riserElement.value = field.Riser || "";
-          }
+          if (riserElement) { riserElement.value = field.Riser || ""; }
           const cElement = formElements[`${field.name}_c`];
-          if (cElement) {
-            cElement.checked = field.C === "Yes" || field.C === true;
-          }
+          if (cElement) { cElement.checked = field.C === "Yes" || field.C === true; }
           const dElement = formElements[`${field.name}_d`];
-          if (dElement) {
-            dElement.checked = field.D === "Yes" || field.D === true;
-          }
+          if (dElement) { dElement.checked = field.D === "Yes" || field.D === true; }
         }
       }
     });
@@ -89,10 +77,7 @@ export default class extends Controller {
       const formId = this.element.action.split('/').pop().split('?')[0];
       const response = await fetch(`/form_fills/${formId}/photo_url`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
-        },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfToken },
         body: JSON.stringify({ field_name: fieldName, attachment_id: attachmentId })
       });
       const data = await response.json();
@@ -102,59 +87,50 @@ export default class extends Controller {
       return null;
     }
   }
-
+  
+  get csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').content;
+  }
+  
   serializeForm() {
     const formData = new FormData(this.element);
     const formFields = JSON.parse(this.element.dataset.formFillFormFieldsValue || "[]");
-    let updatedStructure = [];
-
-    if (Array.isArray(formFields)) {
-      updatedStructure = formFields.map((field) => {
-        const newRawValue = formData.get(`form_fill[${field.name}]`);
-        let newValue = newRawValue;
-
-        if (field.type === "Photo") {
-          return { ...field };
-        } else if (field.type === "Deficiency") {
-          const selectValue = formData.get(`form_fill[${field.name}_select]`);
-          const commentValue = formData.get(`form_fill[${field.name}_comment]`);
-          const itemValue = formData.get(`form_fill[${field.name}_item]`);
-          const riserValue = formData.get(`form_fill[${field.name}_riser]`);
-          const cValue = formData.has(`${field.name}_c`) ? "Yes" : "";
-          const dValue = formData.has(`${field.name}_d`) ? "Yes" : "";
-          
-          return { ...field, value: selectValue || field.value || "", comment_value: commentValue || field.comment_value || "", Item: itemValue || field.Item || "", Riser: riserValue || field.Riser || "", C: cValue || field.C || "", D: dValue || field.D || "" };
-        } else if (newRawValue === null) {
-          newValue = field.value || "";
+    
+    return JSON.stringify(formFields.map(field => {
+        if (field.type === "Photo") return field;
+        
+        if (field.type === "Deficiency") {
+          return {
+            ...field,
+            value: formData.get(`form_fill[${field.name}_select]`) || '',
+            comment_value: formData.get(`form_fill[${field.name}_comment]`) || '',
+            Item: formData.get(`form_fill[${field.name}_item]`) || '',
+            Riser: formData.get(`form_fill[${field.name}_riser]`) || '',
+            C: formData.has(`${field.name}_c`) ? "Yes" : "",
+            D: formData.has(`${field.name}_d`) ? "Yes" : ""
+          };
         }
         
-        return { ...field, value: newValue };
-      });
-    }
-    return JSON.stringify(updatedStructure);
+        return { ...field, value: formData.get(`form_fill[${field.name}]`) || field.value || "" };
+    }));
   }
 
-  saveDraft(event) {
+  async saveDraft(event) {
     if (event) event.preventDefault();
     
     const formStructureHiddenInput = document.getElementById("form_fill_form_structure");
-    if (!formStructureHiddenInput) {
-      console.error("Hidden form_structure input not found");
-      return;
+    if (formStructureHiddenInput) {
+      formStructureHiddenInput.value = this.serializeForm();
     }
-    formStructureHiddenInput.value = this.serializeForm();
-
+    
     const formData = new FormData(this.element);
 
     fetch(this.element.action, {
       method: "PATCH",
-      headers: {
-        "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
-        Accept: "application/json",
-      },
+      headers: { "X-CSRF-Token": this.csrfToken, Accept: "application/json" },
       body: formData,
     })
-      .then((response) => response.json().then(data => ({ status: response.status, ok: response.ok, data: data })))
+      .then(response => response.json().then(data => ({ ok: response.ok, data })))
       .then(({ ok, data }) => {
         if (ok) {
           this.dispatchNotification("success", data.message || "Draft saved successfully.");
@@ -163,42 +139,39 @@ export default class extends Controller {
           this.dispatchNotification("error", data.message || "Could not save draft.");
         }
       })
-      .catch(() => {
-        this.dispatchNotification("error", "Network error when saving draft.");
-      });
+      .catch(() => this.dispatchNotification("error", "Network error when saving draft."));
   }
 
-  /**
-   * Cambia la acción y el MÉTODO del formulario y ACTUALIZA el token CSRF
-   * antes de enviarlo a la ruta de generación de PDF.
-   */
-  submitToPdf(event) {
+  async submitToPdf(event) {
     event.stopPropagation();
     
-    const form = this.element;
     const confirmMessage = event.currentTarget.dataset.confirm;
+    if (!confirm(confirmMessage)) return;
 
-    if (confirm(confirmMessage)) {
-      const formFillId = form.action.match(/\/form_fills\/(\d+)/)[1];
-      const pdfUrl = `/form_fills/${formFillId}/submit_form`;
-
-      // 1. Busca el token CSRF fresco en la meta etiqueta del <head>.
-      const freshToken = document.querySelector('meta[name="csrf-token"]').content;
-      // 2. Busca el campo oculto del token DENTRO del formulario.
-      const tokenInput = form.querySelector('input[name="authenticity_token"]');
-      // 3. Actualiza el valor del campo del formulario con el token fresco.
-      if (tokenInput) {
-        tokenInput.value = freshToken;
-      }
-
-      const methodInput = form.querySelector('input[name="_method"]');
-      if (methodInput) {
-        methodInput.value = 'post';
-      }
-
-      form.action = pdfUrl;
-      form.requestSubmit();
+    const formStructureHiddenInput = document.getElementById("form_fill_form_structure");
+    if (formStructureHiddenInput) {
+      formStructureHiddenInput.value = this.serializeForm();
     }
+
+    const dynamicForm = document.createElement('form');
+    dynamicForm.method = 'post';
+    dynamicForm.action = this.element.action.replace(/(\/form_fills\/\d+).*/, "$1/submit_form");
+    
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'authenticity_token';
+    csrfInput.value = this.csrfToken;
+    dynamicForm.appendChild(csrfInput);
+
+    const structureInput = document.createElement('input');
+    structureInput.type = 'hidden';
+    structureInput.name = 'form_fill[form_structure]';
+    structureInput.value = formStructureHiddenInput.value;
+    dynamicForm.appendChild(structureInput);
+
+    document.body.appendChild(dynamicForm);
+    dynamicForm.submit();
+    document.body.removeChild(dynamicForm);
   }
 
   async reloadFormStructure() {
@@ -206,7 +179,7 @@ export default class extends Controller {
       const formId = this.element.action.split('/').pop().split('?')[0];
       const response = await fetch(`/form_fills/${formId}/structure`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content }
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfToken }
       });
       
       if (response.ok) {
@@ -221,9 +194,10 @@ export default class extends Controller {
   }
 
   dispatchNotification(type, message) {
-    this.dispatch("showNotification", {
-      detail: { type, message },
-      prefix: "",
+    const event = new CustomEvent("show-notification", {
+      bubbles: true,
+      detail: { type, message }
     });
+    window.dispatchEvent(event);
   }
 }
