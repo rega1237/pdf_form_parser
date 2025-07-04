@@ -6,7 +6,7 @@ class InspectionsController < ApplicationController
 
   # GET /inspections
   def index
-    @inspections = Inspection.includes(:property, :form_fill, property: :customer)
+    @inspections = Inspection.includes(:property, :form_fills, property: :customer)
                              .order(date: :desc)
 
     # Filtros opcionales
@@ -30,19 +30,21 @@ class InspectionsController < ApplicationController
     @property = @inspection.property
     @customer = @property.customer
     @form_template = @inspection.form_template
-    @form_fill = @inspection.form_fill
+
+    # Buscar el formulario principal específico
+    @form_fill = @inspection.form_fills.find_by(form_template_id: @inspection.form_template_id)
   end
 
   # GET /inspections/new
   def new
     @inspection = Inspection.new
-  
+
     # Pre-cargar si viene de una propiedad específica
     if params[:property_id].present?
       @property = Property.find(params[:property_id])
       @inspection.property_id = params[:property_id]
       @selected_customer = @property.customer
-      
+
       # Pre-cargar las propiedades del cliente seleccionado
       @properties = @selected_customer.properties.order(:property_name)
     else
@@ -54,27 +56,50 @@ class InspectionsController < ApplicationController
 
   # POST /inspections
   def create
-    form_template = get_form_template(inspection_params) # busca el form template que corresponda
     @inspection = Inspection.new(inspection_params)
-    @inspection.form_template_id = form_template&.id
+    main_form_template = get_form_template(inspection_params)
+    @inspection.form_template_id = main_form_template&.id
 
-    return unless @inspection.save
+    ActiveRecord::Base.transaction do
+      @inspection.save! # Usamos save! para que lance una excepción si falla
 
-    property = Property.find(inspection_params[:property_id])
-    system_category = inspection_params[:system_category]
-    interval_category = inspection_params[:interval_category]
+      property = @inspection.property
+      system_category = inspection_params[:system_category]
+      interval_category = inspection_params[:interval_category]
 
-    form_fill_name = "#{property.property_name} - #{system_category} - #{interval_category}"
+      # 1. Crear el FormFill principal
+      if main_form_template
+        form_fill_name = "#{property.property_name} - #{system_category} - #{interval_category}"
+        FormFill.create!(
+          name: form_fill_name,
+          form_template: main_form_template,
+          inspection: @inspection,
+          form_structure: main_form_template.form_structure
+        )
+      end
 
-    form_fill = FormFill.new(name: form_fill_name, form_template_id: form_template&.id, inspection_id: @inspection.id,
-                             form_structure: form_template&.form_structure)
-
-    if form_fill.save
-      redirect_to @inspection, notice: 'Inspección creada exitosamente.'
-    else
-      @selected_customer = @inspection.property&.customer
-      render :new, status: :unprocessable_entity
+      # 2. Crear el FormFill para "Deficiencies"
+      deficiencies_template = FormTemplate.find_by(name: 'Deficiencies')
+      if deficiencies_template
+        deficiencies_form_name = "#{property.property_name} - Deficiencies"
+        FormFill.create!(
+          name: deficiencies_form_name,
+          form_template: deficiencies_template,
+          inspection: @inspection,
+          form_structure: deficiencies_template.form_structure
+        )
+      else
+        Rails.logger.warn("ADVERTENCIA: No se encontró la plantilla de formulario 'Deficiencies'. No se creó el formulario de deficiencias.")
+      end
     end
+
+    redirect_to @inspection, notice: 'Inspección creada exitosamente con sus dos formularios.'
+  rescue ActiveRecord::RecordInvalid => e
+    # Si algo falla dentro de la transacción, se hace un rollback automático
+    @selected_customer = @inspection.property&.customer
+    # Asignamos el error para mostrarlo en la vista
+    @inspection.errors.add(:base, "Error al crear la inspección o sus formularios: #{e.message}")
+    render :new, status: :unprocessable_entity
   end
 
   # PATCH/PUT /inspections/1
@@ -140,7 +165,7 @@ class InspectionsController < ApplicationController
   end
 
   # GET /properties/:property_id/inspections
-# GET /properties/:property_id/inspections
+  # GET /properties/:property_id/inspections
   def by_property
     @property = Property.find(params[:property_id])
     @customer = @property.customer
