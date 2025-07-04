@@ -104,6 +104,9 @@
           </thead>
           <tbody class="divide-y divide-white/5">
             <% @inspections.each do |inspection| %>
+
+            <% main_form_fill = inspection.form_fills.find { |ff| ff.form_template_id == inspection.form_template_id } %>
+
               <tr class="hover:bg-white/5 transition-colors duration-200">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div class="flex space-x-3">
@@ -118,13 +121,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                       </svg>
                     <% end %>
-                    <%= link_to form_fill_path(inspection.form_fill), class: 'text-yellow-400 hover:text-yellow-300 transition-colors duration-200' do %>
-                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-                        <path d="M8,12V14H16V12H8M8,16V18H13V16H8Z"/>
-                      </svg>
-                    <% end %>
-                    <%= link_to inspection, method: :delete, confirm: 'Are you sure?', 
+                    <%= link_to form_fill_path(main_form_fill), class: 'text-yellow-400 hover:text-yellow-300 transition-colors duration-200' do %>
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                          <path d="M8,12V14H16V12H8M8,16V18H13V16H8Z"/>
+                        </svg>
+                      <% end %>
+                    <%= link_to inspection, data: { turbo_method: :delete, turbo_confirm: 'Are you sure?' }, 
                         class: 'text-red-400 hover:text-red-300 transition-colors duration-200' do %>
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -155,7 +158,7 @@
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  <%= inspection.form_fill&.name || 'No Form Associated' %>
+                  <%= main_form_fill&.name || 'No Form Associated' %>
                 </td>
               </tr>
             <% end %>
