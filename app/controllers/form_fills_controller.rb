@@ -228,60 +228,64 @@ class FormFillsController < ApplicationController
   end
 
   def submit_form
-    @form_fill = FormFill.find(params[:id])
-    @form_template = @form_fill.form_template
+    @main_form_fill = FormFill.find(params[:id])
+    @inspection = @main_form_fill.inspection
 
-    # Verificar que el template tiene un archivo adjunto
-    unless @form_template.original_file.attached?
-      flash[:error] = 'No se encontró el archivo PDF del template.'
-      redirect_to form_fill_path(@form_fill) and return
+    # 1. Encontrar el formulario de deficiencias asociado a la misma inspección
+    deficiencies_template = FormTemplate.find_by(name: 'Deficiencies')
+    @deficiencies_form_fill = @inspection.form_fills.find_by(form_template: deficiencies_template)
+
+    unless @inspection && @main_form_fill.form_template.original_file.attached?
+      return redirect_to @main_form_fill, alert: 'El template del PDF principal no se encuentra.'
+    end
+
+    if @deficiencies_form_fill && !@deficiencies_form_fill.form_template.original_file.attached?
+      return redirect_to @main_form_fill, alert: 'El template del PDF de deficiencias no se encuentra.'
     end
 
     begin
-      # Crear directorio temporal para trabajar con los archivos
-      temp_dir = Rails.root.join('tmp', 'pdf_forms')
-      FileUtils.mkdir_p(temp_dir) unless File.directory?(temp_dir)
+      main_form_fields = JSON.parse(@main_form_fill.form_structure)
+      deficiencies_with_data = main_form_fields.select do |f|
+        f['type'] == 'Deficiency' && (f['value'].present? || f['comment_value'].present?)
+      end
 
-      # Descargar el PDF desde Active Storage
-      template_pdf_path = File.join(temp_dir, "template_#{@form_template.id}.pdf")
-      File.binwrite(template_pdf_path, @form_template.original_file.download)
-
-      # Parsear los datos del formulario
-      form_fields = JSON.parse(@form_fill.form_structure)
-
-      # Procesar deficiencias antes de llenar el PDF
-      Rails.logger.info 'Procesando deficiencias...'
-      deficiency_processor = DeficiencyProcessorService.new(form_fields)
-      processed_form_fields = deficiency_processor.process_deficiencies
-
-      Rails.logger.info "Deficiencias procesadas. Total campos: #{processed_form_fields.length}"
-
-      # Llenar el PDF con los datos procesados del formulario
-      pdf_service = PdfFormsParserService.new(template_pdf_path)
-      filled_pdf_filename = "#{@form_fill.name.parameterize}.pdf"
-      filled_pdf_path = File.join(temp_dir, filled_pdf_filename)
-
-      # Usar los campos procesados en lugar de los originales
-      pdf_service.fill_form(filled_pdf_path, processed_form_fields)
-
-      # Adjuntar el PDF rellenado a través de Active Storage
-      @form_fill.filled_pdf.attach(
-        io: File.open(filled_pdf_path),
-        filename: filled_pdf_filename,
-        content_type: 'application/pdf'
+      # 2. Procesar el formulario principal
+      # Se envían todas las deficiencias, pero solo los campos de destino del formulario principal
+      main_processor = DeficiencyProcessorService.new(
+        deficiencies_data: deficiencies_with_data,
+        target_fields: main_form_fields.select { |f| f['type'] == 'Deficiency_field' }
       )
+      main_result = main_processor.process
 
-      # Limpiar archivos temporales
-      FileUtils.rm_f(template_pdf_path)
-      FileUtils.rm_f(filled_pdf_path)
+      # Actualizar los campos del formulario principal con los resultados
+      update_form_fields(main_form_fields, main_result[:processed_fields])
 
-      flash[:success] = 'Formulario enviado y PDF generado correctamente.'
-      redirect_to form_fill_path(@form_fill)
+      # Generar el PDF principal
+      generate_pdf_for(@main_form_fill, main_form_fields)
+
+      # 3. Procesar el formulario de deficiencias si hay sobrantes y si existe el form_fill
+      if main_result[:unprocessed_deficiencies].any? && @deficiencies_form_fill
+        Rails.logger.info "#{main_result[:unprocessed_deficiencies].count} deficiencias sobrantes para procesar en el formulario secundario."
+
+        deficiencies_form_fields = JSON.parse(@deficiencies_form_fill.form_structure)
+
+        # Se envían solo las deficiencias sobrantes y los campos de destino del formulario de deficiencias
+        deficiencies_processor = DeficiencyProcessorService.new(
+          deficiencies_data: main_result[:unprocessed_deficiencies],
+          target_fields: deficiencies_form_fields.select { |f| f['type'] == 'Deficiency_field' }
+        )
+        deficiencies_result = deficiencies_processor.process
+
+        update_form_fields(deficiencies_form_fields, deficiencies_result[:processed_fields])
+        generate_pdf_for(@deficiencies_form_fill, deficiencies_form_fields)
+      end
+
+      redirect_to @main_form_fill, notice: 'PDFs generados exitosamente.'
+    rescue JSON::ParserError => e
+      redirect_to @main_form_fill, alert: "Error procesando la estructura del formulario: #{e.message}"
     rescue StandardError => e
-      Rails.logger.error "Error al procesar el formulario PDF: #{e.message}"
-      Rails.logger.error e.backtrace.join("\n")
-      flash[:error] = "Error al procesar el formulario: #{e.message}"
-      redirect_to form_fill_path(@form_fill)
+      Rails.logger.error "Error en submit_form: #{e.message}\n#{e.backtrace.join("\n")}"
+      redirect_to @main_form_fill, alert: 'Ocurrió un error inesperado al generar los PDFs.'
     end
   end
 
@@ -433,6 +437,32 @@ class FormFillsController < ApplicationController
       deficiency_keys.each { |key| update_params.delete(key) }
     rescue JSON::ParserError => e
       Rails.logger.error "Error processing deficiency fields: #{e.message}"
+    end
+  end
+
+  def generate_pdf_for(form_fill, processed_fields)
+    template_path = "tmp/template_#{form_fill.form_template.id}.pdf"
+    File.binwrite(template_path, form_fill.form_template.original_file.download)
+
+    pdf_service = PdfFormsParserService.new(template_path)
+    output_filename = "#{form_fill.name.parameterize}.pdf"
+    output_path = "tmp/#{output_filename}"
+
+    pdf_service.fill_form(output_path, processed_fields)
+
+    form_fill.filled_pdf.attach(
+      io: File.open(output_path),
+      filename: output_filename,
+      content_type: 'application/pdf'
+    )
+
+    FileUtils.rm_f([template_path, output_path])
+  end
+
+  def update_form_fields(original_fields, processed_fields)
+    processed_map = processed_fields.index_by { |f| f['name'] }
+    original_fields.each do |field|
+      field['value'] = processed_map[field['name']]['value'] if processed_map[field['name']]
     end
   end
 end

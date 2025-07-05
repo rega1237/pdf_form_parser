@@ -133,7 +133,38 @@
             <div class="flex flex-wrap items-center gap-4">
               <button type="button" data-controller="external-form-action" data-action="click->external-form-action#triggerSaveDraft" data-external-form-action-form-id-value="form-fill-main-form" class="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg"><svg class="w-5 h-5 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path></svg>Save Draft</button>
               <%= button_tag 'Generate PDF', type: 'button', class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { action: "click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." } %>
-              <% if @form_fill.filled_pdf.attached? %><a href="<%= rails_blob_path(@form_fill.filled_pdf, disposition: 'inline') %>" target="_blank" class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">View PDF</a><% end %>
+                <%# --- Botón para el PDF Principal --- %>
+              <% if @form_fill.filled_pdf.attached? %>
+                <a href="<%= rails_blob_path(@form_fill.filled_pdf, disposition: 'inline') %>" 
+                  target="_blank" 
+                  class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
+                  <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                  Ver PDF Principal
+                </a>
+              <% end %>
+
+              <%# --- Lógica para encontrar y mostrar el PDF de Deficiencias --- %>
+              <%
+                # 1. Asegurarnos de que la inspección existe
+                if @form_fill.inspection
+                  # 2. Buscar la plantilla de deficiencias
+                  deficiencies_template = FormTemplate.find_by(name: 'Deficiencies')
+                  if deficiencies_template
+                    # 3. Encontrar el form_fill de deficiencias asociado a la misma inspección
+                    @deficiencies_form_fill = @form_fill.inspection.form_fills.find_by(form_template: deficiencies_template)
+                  end
+                end
+              %>
+
+              <%# --- Botón para el PDF de Deficiencias (solo si existe y tiene archivo) --- %>
+              <% if @deficiencies_form_fill&.filled_pdf&.attached? %>
+                <a href="<%= rails_blob_path(@deficiencies_form_fill.filled_pdf, disposition: 'inline') %>" 
+                  target="_blank" 
+                  class="inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
+                  <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+                  Ver PDF de Deficiencias
+                </a>
+              <% end %>
             </div>
           </div>
         <% end %>
