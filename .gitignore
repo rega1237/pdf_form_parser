@@ -29,3 +29,6 @@ app/assets/forms
 .erb-lint.yml
 .prettierrc.json
 .vscode/settings.json
+
+/app/assets/builds/*
+!/app/assets/builds/.keep

@@ -112,4 +112,19 @@ module ApplicationHelper
       'text-slate-300'
     end
   end
+
+  def radio_choice_button_classes(is_selected)
+    # Clases que siempre están presentes
+    static_classes = "radio-choice-button w-full flex items-center justify-start px-6 py-4 text-base lg:text-lg font-semibold rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br"
+
+    # Clases que cambian según el estado
+    dynamic_classes = if is_selected
+      "from-blue-600 to-blue-700 border-2 border-blue-900 text-white shadow-xl"
+    else
+      "from-slate-100 to-slate-200 border-2 border-slate-400 text-slate-900 hover:from-slate-200 hover:to-slate-300 hover:border-slate-500 hover:-translate-y-0.5 hover:shadow-lg"
+    end
+
+    # Unimos ambas partes y las devolvemos como un solo string
+    "#{static_classes} #{dynamic_classes}"
+  end
 end
