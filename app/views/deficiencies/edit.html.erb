@@ -1,0 +1,74 @@
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  </style>
+<% end %>
+
+<% content_for :title, "Editar Deficiencia" %>
+
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    
+    <!-- Header con navegación -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div class="mb-4 sm:mb-0">
+        <div class="flex items-center mb-2">
+          <div class="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mr-3">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+          </div>
+          <h1 class="text-2xl lg:text-3xl font-bold text-white">Edit deficiency</h1>
+        </div>
+        <p class="text-slate-300 text-sm lg:text-base">
+          Modify the data of: <span class="text-amber-400 font-semibold"><%= @deficiency.name %></span>
+        </p>
+      </div>
+      
+      <!-- Botones de navegación -->
+      <div class="flex flex-col sm:flex-row gap-3">
+        <%= link_to settings_path, 
+            class: "inline-flex items-center bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-xl transition-colors duration-200 text-sm lg:text-base" do %>
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Back to settings
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        
+        <!-- Información de la deficiencia actual -->
+        <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 mb-6 border border-white/10">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center mr-3">
+              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold text-sm">Editando deficiencia</h3>
+              <p class="text-slate-300 text-xs">ID: <%= @deficiency.id %> • Creada: <%= @deficiency.created_at.strftime("%d/%m/%Y") %></p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Formulario -->
+        <%= render "form", deficiency: @deficiency %>
+        
+      </div>
+    </div>
+  </div>
+</div>

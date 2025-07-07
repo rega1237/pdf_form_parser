@@ -1,0 +1,77 @@
+<%= form_with(model: interval_category, local: true, class: "contents") do |form| %>
+  <% if interval_category.errors.any? %>
+    <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-6 animate-slide-up">
+      <div class="flex items-center mb-3">
+        <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-red-400 font-semibold">
+          <%= pluralize(interval_category.errors.count, "error") %> prevented this interval from being saved:
+        </h3>
+      </div>
+      <ul class="list-disc list-inside space-y-1">
+        <% interval_category.errors.each do |error| %>
+          <li class="text-red-300 text-sm"><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="space-y-6">
+    <!-- Name Field -->
+    <div class="animate-fade-in">
+      <%= form.label :name, "Interval Name", 
+          class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
+      
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        
+        <%= form.text_field :name,
+            class: ["w-full bg-white/5 border rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200",
+                   interval_category.errors[:name].any? ? "border-red-500/50 focus:ring-red-500" : "border-white/20 focus:ring-indigo-500"],
+            placeholder: "e.g., Weekly, Monthly, Quarterly, Annually" %>
+      </div>
+      
+      <% if interval_category.errors[:name].any? %>
+        <div class="mt-2 flex items-center text-red-400 text-sm">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"/>
+          </svg>
+          <%= interval_category.errors[:name].first %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Informational section -->
+    <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in">
+      <div class="flex items-start space-x-3">
+        <div class="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center mt-1">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-white font-semibold mb-2">Tips for creating intervals</h3>
+          <ul class="text-slate-300 text-sm space-y-1">
+            <li>• Use clear time-based naming (Daily, Weekly, Monthly)</li>
+            <li>• Consider inspection frequency requirements</li>
+            <li>• Keep names consistent and standardized</li>
+            <li>• Think about compliance and regulatory needs</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex flex-col sm:flex-row gap-3 pt-4">
+      <%= form.submit class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900" %>
+      
+      <%= link_to "Cancel", settings_path, 
+          class: "bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 text-center focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900" %>
+    </div>
+  </div>
+<% end %>

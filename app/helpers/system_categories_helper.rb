@@ -1,0 +1,2 @@
+module SystemCategoriesHelper
+end

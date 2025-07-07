@@ -1,0 +1,57 @@
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  </style>
+<% end %>
+
+<% content_for :title, "New Interval" %>
+
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    
+    <!-- Header with navigation -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div class="mb-4 sm:mb-0">
+        <div class="flex items-center mb-2">
+          <div class="w-10 h-10 bg-gradient-to-r from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center mr-3">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h1 class="text-2xl lg:text-3xl font-bold text-white">New Interval</h1>
+        </div>
+        <p class="text-slate-300 text-sm lg:text-base">
+          Create a new inspection interval in the system
+        </p>
+      </div>
+      
+      <!-- Navigation button -->
+      <%= link_to interval_categories_path, 
+          class: "inline-flex items-center bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-xl transition-colors duration-200 text-sm lg:text-base" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Back to Intervals
+      <% end %>
+    </div>
+
+    <!-- Main content -->
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+        
+        <!-- Form -->
+        <%= render "form", interval_category: @interval_category %>
+        
+      </div>
+    </div>
+  </div>
+</div>
