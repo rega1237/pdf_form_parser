@@ -25,7 +25,7 @@ class DeficienciesController < ApplicationController
 
     respond_to do |format|
       if @deficiency.save
-        format.html { redirect_to @deficiency, notice: "Deficiency was successfully created." }
+        format.html { redirect_to settings_path, notice: "Deficiency was successfully created." }
         format.json { render :show, status: :created, location: @deficiency }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -38,7 +38,7 @@ class DeficienciesController < ApplicationController
   def update
     respond_to do |format|
       if @deficiency.update(deficiency_params)
-        format.html { redirect_to @deficiency, notice: "Deficiency was successfully updated." }
+        format.html { redirect_to settings_path, notice: "Deficiency was successfully updated." }
         format.json { render :show, status: :ok, location: @deficiency }
       else
         format.html { render :edit, status: :unprocessable_entity }

@@ -25,7 +25,7 @@ class SystemCategoriesController < ApplicationController
 
     respond_to do |format|
       if @system_category.save
-        format.html { redirect_to @system_category, notice: 'System category was successfully created.' }
+        format.html { redirect_to settings_path, notice: 'System category was successfully created.' }
         format.json { render :show, status: :created, location: @system_category }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -38,7 +38,7 @@ class SystemCategoriesController < ApplicationController
   def update
     respond_to do |format|
       if @system_category.update(system_category_params)
-        format.html { redirect_to @system_category, notice: 'System category was successfully updated.' }
+        format.html { redirect_to settings_path, notice: 'System category was successfully updated.' }
         format.json { render :show, status: :ok, location: @system_category }
       else
         format.html { render :edit, status: :unprocessable_entity }
@@ -53,7 +53,7 @@ class SystemCategoriesController < ApplicationController
 
     respond_to do |format|
       format.html do
-        redirect_to system_categories_path, status: :see_other, notice: 'System category was successfully destroyed.'
+        redirect_to settings_path, status: :see_other, notice: 'System category was successfully destroyed.'
       end
       format.json { head :no_content }
     end
