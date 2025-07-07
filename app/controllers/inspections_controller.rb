@@ -3,6 +3,9 @@ class InspectionsController < ApplicationController
   before_action :set_inspection, only: %i[show edit update destroy]
   before_action :load_form_data, only: %i[new create edit update]
   before_action :set_intervals, only: %i[new create edit update]
+  before_action :load_form_data, only: %i[new create edit update]
+  before_action :set_intervals, only: %i[new create edit update]
+  before_action :set_system_categories, only: %i[new create edit update]
 
   # GET /inspections
   def index
@@ -39,16 +42,12 @@ class InspectionsController < ApplicationController
   def new
     @inspection = Inspection.new
 
-    # Pre-cargar si viene de una propiedad específica
     if params[:property_id].present?
       @property = Property.find(params[:property_id])
       @inspection.property_id = params[:property_id]
       @selected_customer = @property.customer
-
-      # Pre-cargar las propiedades del cliente seleccionado
       @properties = @selected_customer.properties.order(:property_name)
     else
-      # Si no viene de una propiedad específica, inicializar arrays vacíos
       @properties = []
       @selected_customer = nil
     end
@@ -61,13 +60,12 @@ class InspectionsController < ApplicationController
     @inspection.form_template_id = main_form_template&.id
 
     ActiveRecord::Base.transaction do
-      @inspection.save! # Usamos save! para que lance una excepción si falla
+      @inspection.save!
 
       property = @inspection.property
       system_category = inspection_params[:system_category]
       interval_category = inspection_params[:interval_category]
 
-      # 1. Crear el FormFill principal
       if main_form_template
         form_fill_name = "#{property.property_name} - #{system_category} - #{interval_category}"
         FormFill.create!(
@@ -78,7 +76,6 @@ class InspectionsController < ApplicationController
         )
       end
 
-      # 2. Crear el FormFill para "Deficiencies"
       deficiencies_template = FormTemplate.find_by(name: 'Deficiencies')
       if deficiencies_template
         deficiencies_form_name = "#{property.property_name} - Deficiencies"
@@ -95,9 +92,7 @@ class InspectionsController < ApplicationController
 
     redirect_to @inspection, notice: 'Inspección creada exitosamente con sus dos formularios.'
   rescue ActiveRecord::RecordInvalid => e
-    # Si algo falla dentro de la transacción, se hace un rollback automático
     @selected_customer = @inspection.property&.customer
-    # Asignamos el error para mostrarlo en la vista
     @inspection.errors.add(:base, "Error al crear la inspección o sus formularios: #{e.message}")
     render :new, status: :unprocessable_entity
   end
@@ -200,6 +195,10 @@ class InspectionsController < ApplicationController
     @inspection = Inspection.find(params[:id])
   end
 
+  def set_system_categories
+    @system_categories = SystemCategory.all
+  end
+
   def set_intervals
     @intervals = IntervalCategory.all
   end
@@ -212,24 +211,18 @@ class InspectionsController < ApplicationController
   def load_form_data
     @customers = Customer.order(:name)
     @form_templates = FormTemplate.order(:name)
-
-    # Si ya se definieron en el método new, no los sobreescribir
     @properties = [] unless defined?(@properties) && @properties.present?
-
     @selected_customer = nil unless defined?(@selected_customer)
 
     if params[:property_id].present? && @selected_customer.nil?
-      # Caso 1: Viene desde vista de propiedad
       @property = Property.find(params[:property_id])
       @selected_customer = @property.customer
       @properties = @selected_customer.properties.order(:property_name)
     elsif params[:inspection] && params[:inspection][:property_id].present?
-      # Caso 2: Formulario enviado con property_id
       property = Property.find(params[:inspection][:property_id])
       @properties = property.customer.properties.order(:property_name)
       @selected_customer = property.customer
     elsif @inspection&.property
-      # Caso 3: Edición de inspección existente
       @selected_customer = @inspection.property.customer
       @properties = @selected_customer.properties.order(:property_name)
     end
