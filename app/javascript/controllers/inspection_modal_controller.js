@@ -174,7 +174,6 @@ export default class extends Controller {
     this.backToForm();
   }
 
-  // MODIFICADO: Esta es la función clave
   updateDisplayValues() {
     // Actualizar System Category Display
     const systemValue = this.systemCategoryInputTarget.value;
