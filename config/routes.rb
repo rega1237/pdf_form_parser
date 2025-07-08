@@ -1,6 +1,13 @@
 Rails.application.routes.draw do
   resources :system_categories
-  devise_for :users
+  devise_for :users, skip: [:registrations]
+
+  devise_scope :user do
+    get 'users/edit', to: 'devise/registrations#edit', as: 'edit_user_registration'
+    patch 'users', to: 'devise/registrations#update', as: 'user_registration'
+    put 'users', to: 'devise/registrations#update'
+    delete 'users', to: 'devise/registrations#destroy', as: 'destroy_user_registration'
+  end
 
   # Customers routes
   resources :customers, only: %i[index show new create edit update]
@@ -52,6 +59,10 @@ Rails.application.routes.draw do
   resources :interval_categories
 
   get 'settings', to: 'company_settings#index'
+
+  namespace :admin do
+    resources :users, only: %i[create destroy]
+  end
 
   # Health check route
   get 'up' => 'rails/health#show', as: :rails_health_check
