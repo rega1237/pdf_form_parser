@@ -251,18 +251,16 @@ class FormFillsController < ApplicationController
       end
 
       # 2. Procesar el formulario principal
-      # Se envían todas las deficiencias, pero solo los campos de destino del formulario principal
       main_processor = DeficiencyProcessorService.new(
         deficiencies_data: deficiencies_with_data,
         target_fields: main_form_fields.select { |f| f['type'] == 'Deficiency_field' }
       )
       main_result = main_processor.process
 
-      # Actualizar los campos del formulario principal con los resultados
       update_form_fields(main_form_fields, main_result[:processed_fields])
 
-      # Generar el PDF principal
-      generate_pdf_for(@main_form_fill, main_form_fields)
+      main_pdf_path = generate_pdf_for(@main_form_fill, main_form_fields)
+      deficiencies_pdf_path = nil
 
       # 3. Procesar el formulario de deficiencias si hay sobrantes y si existe el form_fill
       if main_result[:unprocessed_deficiencies].any? && @deficiencies_form_fill
@@ -270,7 +268,6 @@ class FormFillsController < ApplicationController
 
         deficiencies_form_fields = JSON.parse(@deficiencies_form_fill.form_structure)
 
-        # Se envían solo las deficiencias sobrantes y los campos de destino del formulario de deficiencias
         deficiencies_processor = DeficiencyProcessorService.new(
           deficiencies_data: main_result[:unprocessed_deficiencies],
           target_fields: deficiencies_form_fields.select { |f| f['type'] == 'Deficiency_field' }
@@ -278,7 +275,33 @@ class FormFillsController < ApplicationController
         deficiencies_result = deficiencies_processor.process
 
         update_form_fields(deficiencies_form_fields, deficiencies_result[:processed_fields])
-        generate_pdf_for(@deficiencies_form_fill, deficiencies_form_fields)
+        deficiencies_pdf_path = generate_pdf_for(@deficiencies_form_fill, deficiencies_form_fields)
+      end
+
+      # 4. Unir los PDFs si ambos fueron generados
+      if main_pdf_path && deficiencies_pdf_path
+        merger = PdfMergingService.new(main_pdf_path, deficiencies_pdf_path)
+        combined_pdf = merger.merge
+
+        combined_pdf_path = "tmp/combined_#{@inspection.id}.pdf"
+        combined_pdf.save(combined_pdf_path)
+
+        # Adjuntar el PDF combinado al form_fill principal
+        @main_form_fill.filled_pdf.attach(
+          io: File.open(combined_pdf_path),
+          filename: "#{@inspection.customer_name}_#{@inspection.system_category}_#{@inspection.interval_category}_#{@inspection.id}.pdf",
+          content_type: 'application/pdf'
+        )
+        # Limpiar los archivos temporales
+        FileUtils.rm_f([main_pdf_path, deficiencies_pdf_path, combined_pdf_path])
+      elsif main_pdf_path
+        # Si solo se generó el PDF principal, lo adjuntamos
+        @main_form_fill.filled_pdf.attach(
+          io: File.open(main_pdf_path),
+          filename: "#{@main_form_fill.name.parameterize}.pdf",
+          content_type: 'application/pdf'
+        )
+        FileUtils.rm_f(main_pdf_path)
       end
 
       redirect_to @main_form_fill, notice: 'PDFs generados exitosamente.'
@@ -451,13 +474,8 @@ class FormFillsController < ApplicationController
 
     pdf_service.fill_form(output_path, processed_fields)
 
-    form_fill.filled_pdf.attach(
-      io: File.open(output_path),
-      filename: output_filename,
-      content_type: 'application/pdf'
-    )
-
-    FileUtils.rm_f([template_path, output_path])
+    FileUtils.rm_f(template_path)
+    output_path # Devolvemos la ruta del PDF generado en lugar de adjuntarlo
   end
 
   def update_form_fields(original_fields, processed_fields)
