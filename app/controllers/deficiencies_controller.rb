@@ -52,7 +52,7 @@ class DeficienciesController < ApplicationController
     @deficiency.destroy!
 
     respond_to do |format|
-      format.html { redirect_to deficiencies_path, status: :see_other, notice: "Deficiency was successfully destroyed." }
+      format.html { redirect_to settings_path, status: :see_other, notice: "Deficiency was successfully destroyed." }
       format.json { head :no_content }
     end
   end
