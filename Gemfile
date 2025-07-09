@@ -47,6 +47,9 @@ gem "activestorage"
 # File processing gems
 gem "pdf-forms" # For reading PDF forms
 
+# Merge pdf
+gem "combine_pdf"
+
 # File upload and validation
 gem "marcel" # MIME type detection
 
