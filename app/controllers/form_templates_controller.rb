@@ -3,6 +3,7 @@ require_dependency Rails.root.join('app/services/pdf_forms_parser_service.rb').t
 class FormTemplatesController < ApplicationController
   before_action :set_form_template, only: %i[show update destroy form_builder edit form_builder_update]
   before_action :set_interval_categories, only: %i[new edit create update]
+  before_action :set_system_categories, only: %i[new edit create update]
 
   # GET /form_templates
   def index
@@ -33,34 +34,34 @@ class FormTemplatesController < ApplicationController
         file_type: uploaded_file.content_type,
         system_category: form_template_params[:system_category]
       )
-      
+
       # Adjuntar el archivo usando Active Storage
       @form_template.original_file.attach(uploaded_file)
-      
+
       # Asignar las categorías de intervalo
       if params[:form_template][:interval_category_ids].present?
         @form_template.interval_category_ids = params[:form_template][:interval_category_ids]
       end
-      
+
       if @form_template.original_file.attached?
         # Descargar el archivo temporalmente para analizarlo
         temp_file = Tempfile.new([uploaded_file.original_filename.parameterize.truncate(50, omission: ''), '.pdf'],
-                                Rails.root.join('tmp'))
+                                 Rails.root.join('tmp'))
         temp_file_path = temp_file.path
-        
+
         # Guardar el archivo temporalmente
         File.binwrite(temp_file_path, uploaded_file.read)
-        
+
         determined_file_type = uploaded_file.content_type
 
         if determined_file_type == 'application/pdf'
           parser = PdfFormsParserService.new(temp_file_path)
           form_structure = parser.parse
         elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-              'application/msword'].include?(determined_file_type)
+               'application/msword'].include?(determined_file_type)
           Rails.logger.info 'DOCX/DOC parsing not yet implemented.'
         elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-              'application/vnd.ms-excel'].include?(determined_file_type)
+               'application/vnd.ms-excel'].include?(determined_file_type)
           Rails.logger.info 'XLS/XLSX parsing not yet implemented.'
         else
           Rails.logger.warn "Unsupported file type: #{determined_file_type}"
@@ -69,7 +70,7 @@ class FormTemplatesController < ApplicationController
         # Limpiar el archivo temporal
         temp_file.close
         temp_file.unlink
-        
+
         # Actualizar la estructura del formulario
         @form_template.form_structure = form_structure.to_json
       else
@@ -103,31 +104,31 @@ class FormTemplatesController < ApplicationController
       # Actualizar los metadatos del archivo
       @form_template.original_filename = uploaded_file.original_filename
       @form_template.file_type = uploaded_file.content_type
-      
+
       # Adjuntar el nuevo archivo (esto reemplazará el anterior automáticamente)
       @form_template.original_file.attach(uploaded_file)
-      
+
       if @form_template.original_file.attached?
         # Descargar el archivo temporalmente para analizarlo
         temp_file = Tempfile.new([uploaded_file.original_filename.parameterize.truncate(50, omission: ''), '.pdf'],
-                                Rails.root.join('tmp'))
+                                 Rails.root.join('tmp'))
         temp_file_path = temp_file.path
-        
+
         # Guardar el archivo temporalmente
         # Reiniciar el puntero del archivo antes de leer
         uploaded_file.rewind
         File.binwrite(temp_file_path, uploaded_file.read)
-        
+
         determined_file_type = uploaded_file.content_type
 
         if determined_file_type == 'application/pdf'
           parser = PdfFormsParserService.new(temp_file_path)
           form_structure = parser.parse
         elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-              'application/msword'].include?(determined_file_type)
+               'application/msword'].include?(determined_file_type)
           Rails.logger.info 'DOCX/DOC parsing not yet implemented.'
         elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-              'application/vnd.ms-excel'].include?(determined_file_type)
+               'application/vnd.ms-excel'].include?(determined_file_type)
           Rails.logger.info 'XLS/XLSX parsing not yet implemented.'
         else
           Rails.logger.warn "Unsupported file type: #{determined_file_type}"
@@ -136,11 +137,9 @@ class FormTemplatesController < ApplicationController
         # Limpiar el archivo temporal
         temp_file.close
         temp_file.unlink
-        
+
         # Actualizar la estructura del formulario solo si se parseó correctamente
-        if form_structure.present?
-          @form_template.form_structure = form_structure.to_json
-        end
+        @form_template.form_structure = form_structure.to_json if form_structure.present?
       else
         flash[:alert] = 'Failed to attach file.'
         render :edit, status: :unprocessable_entity
@@ -150,7 +149,7 @@ class FormTemplatesController < ApplicationController
 
     # Actualizar otros parámetros (siempre, independientemente de si hay archivo o no)
     update_params = form_template_params.except(:original_file)
-    
+
     # Asignar las categorías de intervalo si están presentes
     if params[:form_template][:interval_category_ids].present?
       @form_template.interval_category_ids = params[:form_template][:interval_category_ids]
@@ -171,13 +170,13 @@ class FormTemplatesController < ApplicationController
       begin
         # Parsear los datos del frontend directamente
         new_order = JSON.parse(form_template_params[:form_structure_order])
-        
+
         # Validación básica: que sea un array válido
         if new_order.is_a?(Array)
           # Actualizar la estructura del formulario directamente
           if @form_template.update(form_structure: new_order.to_json)
-            Rails.logger.info "Form structure updated successfully"
-            redirect_to form_builder_form_template_path(@form_template), 
+            Rails.logger.info 'Form structure updated successfully'
+            redirect_to form_builder_form_template_path(@form_template),
                         notice: 'Form structure updated successfully.'
           else
             Rails.logger.error "Failed to update form template: #{@form_template.errors.full_messages}"
@@ -189,7 +188,6 @@ class FormTemplatesController < ApplicationController
           flash[:alert] = 'Invalid form structure format.'
           render :form_builder, status: :unprocessable_entity
         end
-        
       rescue JSON::ParserError => e
         Rails.logger.error "JSON parsing error in form_builder_update: #{e.message}"
         flash[:alert] = 'Invalid JSON format received. Please try again.'
@@ -201,7 +199,7 @@ class FormTemplatesController < ApplicationController
         render :form_builder, status: :unprocessable_entity
       end
     else
-      Rails.logger.error "No form_structure_order received in params"
+      Rails.logger.error 'No form_structure_order received in params'
       flash[:alert] = 'No form structure data received.'
       render :form_builder, status: :unprocessable_entity
     end
@@ -220,9 +218,13 @@ class FormTemplatesController < ApplicationController
   def set_form_template
     @form_template = FormTemplate.find(params[:id])
   end
-  
+
   def set_interval_categories
     @interval_categories = IntervalCategory.all
+  end
+
+  def set_system_categories
+    @system_categories = SystemCategory.all
   end
 
   # Only allow a list of trusted parameters through.

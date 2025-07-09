@@ -66,6 +66,7 @@
                   <%= link_to "Inspections forms", form_fills_path, class: "hidden text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                   <%= link_to "Customers", customers_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                   <%= link_to "Inspections", inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                  <%= link_to "Settings", settings_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                 </nav>
                 <!-- User Profile Desktop -->
                 <% if current_user %>
@@ -147,6 +148,7 @@
                 <%= link_to "Inspections forms", form_fills_path, class: "hidden text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                 <%= link_to "Customers", customers_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                 <%= link_to "Inspections", inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                <%= link_to "Settings", settings_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                 <!-- Logout Link -->
                 <div class="pt-2 mt-2 border-t border-white/10">
                   <%= link_to destroy_user_session_path, method: :delete, 

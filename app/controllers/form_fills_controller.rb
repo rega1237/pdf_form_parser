@@ -5,6 +5,7 @@ class FormFillsController < ApplicationController
 
   def show
     @form_fill = FormFill.find(params[:id])
+    @deficiencies = Deficiency.order(:name).all
     @form_template = @form_fill.form_template
     if @form_fill.form_structure.present?
       begin

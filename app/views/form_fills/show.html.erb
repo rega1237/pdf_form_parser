@@ -81,7 +81,7 @@
           <% valid_fields = @form_fields.reject { |f| f['page_number'].to_i == 0 } %>
           <% pages = valid_fields.group_by { |f| f['page_number'].to_i }.sort_by { |page_num, _| page_num } %>
 
-          <div class="relative">
+          <div class="relative z-10">
             <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
               <div class="page-content <%= page_index == 0 ? '' : 'hidden' %>" data-pagination-target="pageContent">
                 <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-blue-400 shadow-2xl">

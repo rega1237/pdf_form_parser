@@ -44,12 +44,6 @@ gem "thruster", require: false
 gem "activestorage"
 # gem "image_processing", "~> 1.2"
 
-# PDF processing gems
-gem "prawn"
-gem "hexapdf"
-gem "combine_pdf"
-gem 'pdf-reader'
-
 # File processing gems
 gem "pdf-forms" # For reading PDF forms
 
