@@ -50,6 +50,9 @@ gem "pdf-forms" # For reading PDF forms
 # Merge pdf
 gem "combine_pdf"
 
+# Agregar pagina con fotos
+gem 'prawn'
+
 # File upload and validation
 gem "marcel" # MIME type detection
 
