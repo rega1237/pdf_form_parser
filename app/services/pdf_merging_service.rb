@@ -17,52 +17,86 @@ class PdfMergingService
     main_pdf
   end
 
-  # Añade imágenes a un objeto PDF, organizándolas en una cuadrícula.
-  def self.add_images_to_pdf(pdf_object, images, images_per_page: 20)
-    # 1. Agrupamos las imágenes en lotes (En este caso 20)
-    images.each_slice(images_per_page) do |image_batch|
-      # 2. Creamos una nueva página de PDF en memoria para cada lote de imágenes.
-      image_page_data = Prawn::Document.new(page_size: 'LETTER', margin: 30) do |pdf|
+  def self.add_images_to_pdf(pdf_object, images)
+    grouped_photos = group_and_process_photos(images)
+    return pdf_object if grouped_photos.empty?
+
+    all_photos_pdf_data = Prawn::Document.new(page_size: 'LETTER', margin: 30) do |pdf|
+      # 1. Añadir el título principal al comienzo.
+      pdf.text 'Deficiency with photos', size: 18, style: :bold, align: :center
+      pdf.move_down 25
+
+      grouped_photos.each_with_index do |(section_name, photos_in_section), section_index|
+        # Asegurarse de que haya espacio para el título de la sección, si no, empezar en una nueva página.
+        pdf.start_new_page if pdf.cursor < 50
+
+        pdf.move_down 20 if section_index > 0
+
+        # 2. Agregar el titulo Section".
+        pdf.text "Section: #{section_name}", size: 14, style: :bold, align: :left
+        pdf.stroke_horizontal_rule
+        pdf.move_down 10
+
         # --- Lógica de la Cuadrícula ---
         num_columns = 4
-        num_rows = 5 # 4 columnas * 5 filas = 20 imágenes
+        padding = 10
+        label_height = 15
+        cell_width = (pdf.bounds.width - (padding * (num_columns - 1))) / num_columns
+        cell_height = cell_width + label_height
 
-        # Calculamos el espacio disponible y el tamaño de cada celda para la imagen.
-        padding = 5 # Espacio entre imágenes
-        available_width = pdf.bounds.width
-        available_height = pdf.bounds.height
+        photos_in_section.each_slice(num_columns) do |row_of_photos|
+          # Controlar el salto de página si la fila no cabe.
+          pdf.start_new_page if pdf.cursor < cell_height
 
-        cell_width = (available_width - (padding * (num_columns - 1))) / num_columns
-        cell_height = (available_height - (padding * (num_rows - 1))) / num_rows
+          pdf.bounding_box([0, pdf.cursor], width: pdf.bounds.width, height: cell_height) do
+            row_of_photos.each_with_index do |photo_data, col_index|
+              image_blob_data = photo_data[:image].download
+              sio = StringIO.new(image_blob_data)
+              x_position = col_index * (cell_width + padding)
 
-        # 3. Iteramos sobre el lote actual de imágenes y las colocamos en la cuadrícula.
-        image_batch.each_with_index do |image, index|
-          image_data = image.download
-          sio = StringIO.new(image_data)
+              pdf.bounding_box([x_position, pdf.bounds.top], width: cell_width, height: cell_height - label_height) do
+                pdf.image(sio, fit: [pdf.bounds.width, pdf.bounds.height], position: :center, vposition: :center)
+              end
 
-          # Calculamos la fila y columna para la imagen actual.
-          row = index / num_columns
-          col = index % num_columns
-
-          # Calculamos la posición (x, y) de la esquina superior izquierda de la celda.
-          # El origen de Prawn (0,0) está en la esquina inferior izquierda.
-          x = col * (cell_width + padding)
-          y = pdf.bounds.top - (row * (cell_height + padding))
-
-          # Dibujamos la imagen dentro del cuadro delimitador de la celda.
-          pdf.bounding_box([x, y], width: cell_width, height: cell_height) do
-            pdf.image(sio, fit: [pdf.bounds.width, pdf.bounds.height], position: :center, vposition: :center)
+              pdf.bounding_box([x_position, pdf.bounds.top - (cell_height - label_height)], width: cell_width,
+                                                                                            height: label_height) do
+                pdf.text photo_data[:clean_name], size: 7, align: :center, valign: :center, overflow: :shrink_to_fit
+              end
+            rescue StandardError => e
+              Rails.logger.error "No se pudo procesar la imagen #{photo_data[:image].filename}: #{e.message}"
+              next
+            end
           end
-        rescue StandardError => e
-          Rails.logger.error "No se pudo procesar la imagen #{image.filename}: #{e.message}"
-          next # Si una imagen falla, continuamos con la siguiente.
+          pdf.move_down padding
         end
-      end.render # Renderizamos la página de Prawn a datos de PDF en memoria.
+      end
+    end.render
 
-      # 4. Unimos la página recién creada (con su cuadrícula de imágenes) al PDF principal.
-      pdf_object << CombinePDF.parse(image_page_data)
+    pdf_object << CombinePDF.parse(all_photos_pdf_data)
+    pdf_object
+  end
+
+  # Método auxiliar para la lógica de agrupación.
+  def self.group_and_process_photos(images)
+    grouped = {}
+
+    images.each do |image|
+      filename = image.filename.base.to_s
+      match = filename.match(/^inspection_\d+_(.+)__(.+)_[a-f0-9]{8,}/)
+
+      if match
+        section_raw = match[1]
+        name_raw = match[2]
+
+        section_name = section_raw.gsub('_', ' ').strip.capitalize
+        clean_name = name_raw.gsub('_', ' ').strip.sub(/(\d) (\d)/, '\1.\2')
+
+        (grouped[section_name] ||= []) << { image: image, clean_name: clean_name.capitalize }
+      else
+        (grouped['Uncategorized Photos'] ||= []) << { image: image, clean_name: image.filename.base.to_s }
+      end
     end
 
-    pdf_object
+    grouped
   end
 end
