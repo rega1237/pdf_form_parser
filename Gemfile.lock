@@ -227,6 +227,7 @@ GEM
     parser (3.3.8.0)
       ast (~> 2.4.1)
       racc
+    pdf-core (0.10.0)
     pdf-forms (1.5.2)
       cliver (~> 0.3.2)
       rexml (~> 3.2, >= 3.2.6)
@@ -234,6 +235,10 @@ GEM
     pg (1.5.9)
     pp (0.6.2)
       prettyprint
+    prawn (2.5.0)
+      matrix (~> 0.4)
+      pdf-core (~> 0.10.0)
+      ttfunk (~> 1.8)
     prettyprint (0.2.0)
     prism (1.4.0)
     propshaft (1.1.0)
@@ -379,6 +384,8 @@ GEM
     thruster (0.1.13-x86_64-darwin)
     thruster (0.1.13-x86_64-linux)
     timeout (0.4.3)
+    ttfunk (1.8.0)
+      bigdecimal (~> 3.1)
     turbo-rails (2.0.13)
       actionpack (>= 7.1.0)
       railties (>= 7.1.0)
@@ -432,6 +439,7 @@ DEPENDENCIES
   marcel
   pdf-forms
   pg (~> 1.1)
+  prawn
   propshaft
   puma (>= 5.0)
   rails (~> 8.0.2)

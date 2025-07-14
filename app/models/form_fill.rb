@@ -5,12 +5,18 @@ class FormFill < ApplicationRecord
   has_many_attached :photos # Agregar para manejar múltiples fotos
 
   # Método para generar ID único de photo attachment
-  def generate_unique_photo_attachment_id(field_name)
-    return nil if field_name.blank? || inspection.blank?
+  def generate_unique_photo_attachment_id(field_section)
+    return nil if field_section.blank? || inspection.blank?
 
-    # Formato: inspection_123_field_name_abc123
+    # 1. Reemplaza el '|' por '__' para la separacion del section y no ocurran errores luego
+    safe_section_name = field_section.gsub('|', '__')
+
+    # 2. Continúa con la sanitización normal
+    parameterized_name = safe_section_name.parameterize.underscore
+
+    # 3. Genera el nombre final
     random_suffix = SecureRandom.hex(4)
-    "inspection_#{inspection.id}_#{field_name.parameterize.underscore}_#{random_suffix}"
+    "inspection_#{inspection.id}_#{parameterized_name}_#{random_suffix}"
   end
 
   # Método para adjuntar foto a un campo específico
@@ -18,22 +24,29 @@ class FormFill < ApplicationRecord
     return { success: false, error: 'Campo o archivo vacío' } if field_name.blank? || photo_file.blank?
 
     begin
-      # Generar ID único
-      unique_attachment_id = generate_unique_photo_attachment_id(field_name)
+      # 1. Parsear la estructura para encontrar el section_name
+      structure = JSON.parse(form_structure)
+      field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
+
+      # Usar el section_name si existe, de lo contrario, usar el field_name como fallback
+      field_section = field_data&.dig('section_name').presence || field_name
+
+      # 2. Generar el ID único usando el section_name
+      unique_attachment_id = generate_unique_photo_attachment_id(field_section)
       return { success: false, error: 'No se pudo generar ID único' } if unique_attachment_id.blank?
 
-      # Remover foto existente si existe
+      # Remover foto existente si la hay
       existing_photo = get_photo_for_field(field_name)
       existing_photo&.purge
 
-      # Adjuntar nueva foto
+      # 3. Adjuntar la nueva foto con el nombre de archivo basado en el section_name
       photos.attach(
         io: photo_file,
         filename: "#{unique_attachment_id}.jpg",
         content_type: photo_file.content_type || 'image/jpeg'
       )
 
-      # Actualizar form_structure SOLO con el attachment_id (NO el URL)
+      # 4. Actualizar la estructura del formulario con el ID del adjunto
       success = update_photo_attachment_id_in_structure(field_name, unique_attachment_id)
 
       if success
@@ -42,21 +55,13 @@ class FormFill < ApplicationRecord
       else
         { success: false, error: 'Error al actualizar estructura del formulario' }
       end
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure: #{e.message}"
+      { success: false, error: 'Error al parsear la estructura del formulario' }
     rescue StandardError => e
       Rails.logger.error "Error attaching photo for field #{field_name}: #{e.message}"
       { success: false, error: e.message }
     end
-  end
-
-  # Método para obtener foto por nombre de campo
-  def get_photo_for_field(field_name)
-    return nil if field_name.blank? || inspection.blank?
-
-    # Buscar por el patrón del attachment_id único
-    pattern = "inspection_#{inspection.id}_#{field_name.parameterize.underscore}_"
-
-    # photos es una colección de attachments de Active Storage
-    photos.find { |photo| photo.filename.to_s.include?(pattern) }
   end
 
   # Método para actualizar photo_attachment_id en form_structure
@@ -87,11 +92,20 @@ class FormFill < ApplicationRecord
   end
 
   # Método para obtener URL de foto por campo
-  def get_photo_url_for_field(field_name)
-    photo = get_photo_for_field(field_name)
-    if photo&.attached?
-      Rails.application.routes.url_helpers.rails_blob_path(photo, only_path: true)
-    else
+  def get_photo_for_field(field_name)
+    return nil if field_name.blank? || form_structure.blank?
+
+    begin
+      structure = JSON.parse(form_structure)
+      field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
+
+      # Obtenemos el ID del adjunto directamente desde la estructura
+      attachment_id = field_data['photo_attachment_id'] if field_data
+      return nil if attachment_id.blank?
+
+      # Buscamos la foto por el nombre de archivo, que es el ID único que guardamos
+      photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
+    rescue JSON::ParserError
       nil
     end
   end
