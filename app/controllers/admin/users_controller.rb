@@ -17,7 +17,7 @@ class Admin::UsersController < ApplicationController
     if @user.save
       redirect_to settings_path, notice: 'User was successfully created.'
     else
-      render :new, status: :unprocessable_entity
+      redirect_to settings_path, status: :unprocessable_entity
     end
   end
 
@@ -48,6 +48,6 @@ class Admin::UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:email, :name, :password, :password_confirmation)
+    params.require(:user).permit(:email, :name, :password, :password_confirmation, :role_id)
   end
 end
