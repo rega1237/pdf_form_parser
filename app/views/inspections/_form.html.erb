@@ -1,7 +1,4 @@
-<%# app/views/inspections/_form.html.erb %>
-
 <%= form_with(model: @inspection, local: true, class: "p-6 md:p-8 bg-slate-800/90 rounded-2xl border border-white/10 backdrop-blur-sm shadow-2xl max-w-4xl mx-auto") do |f| %>
-
   <%# --- Bloque de Errores --- %>
   <% if f.object.errors.any? %>
     <div id="error_explanation" class="bg-red-500/10 border border-red-500/30 text-red-200 px-4 py-3 rounded-lg mb-6" role="alert">
@@ -13,43 +10,40 @@
       </ul>
     </div>
   <% end %>
-
   <div class="grid md:grid-cols-2 gap-6">
-
     <%# --- Selección de Cliente y Propiedad --- %>
-    <div
-      class="md:col-span-2 space-y-6 p-6 bg-slate-900/50 rounded-xl border border-white/10"
-      data-controller="customer-properties"
-    >
-      <div>
-        <label for="customer_selector" class="block text-sm font-medium text-slate-300 mb-2">Customer</label>
-        <%= select_tag :customer_id,
-              options_from_collection_for_select(@customers, :id, :name, @selected_customer&.id),
-              prompt: "Select a customer",
-              class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors",
-              data: { action: "change->customer-properties#loadProperties", customer_properties_target: "customerSelect" },
-              id: "customer_selector"
-        %>
+    <% if policy(inspection).create? %>
+      <div
+        class="md:col-span-2 space-y-6 p-6 bg-slate-900/50 rounded-xl border border-white/10"
+        data-controller="customer-properties"
+      >
+        <div>
+          <label for="customer_selector" class="block text-sm font-medium text-slate-300 mb-2">Customer</label>
+          <%= select_tag :customer_id,
+                options_from_collection_for_select(@customers, :id, :name, @selected_customer&.id),
+                prompt: "Select a customer",
+                class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors",
+                data: { action: "change->customer-properties#loadProperties", customer_properties_target: "customerSelect" },
+                id: "customer_selector"
+          %>
+        </div>
+        <div>
+          <%= f.label :property_id, class: "block text-sm font-medium text-slate-300 mb-2" %>
+          <%= f.select :property_id,
+                options_from_collection_for_select(@properties, :id, :property_name, @inspection.property_id),
+                { prompt: "Select a property" },
+                class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors",
+                data: { customer_properties_target: "propertySelect" },
+                required: true
+          %>
+        </div>
       </div>
-
-      <div>
-        <%= f.label :property_id, class: "block text-sm font-medium text-slate-300 mb-2" %>
-        <%= f.select :property_id,
-              options_from_collection_for_select(@properties, :id, :property_name, @inspection.property_id),
-              { prompt: "Select a property" },
-              class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors",
-              data: { customer_properties_target: "propertySelect" },
-              required: true
-        %>
-      </div>
-    </div>
-
+    <% end %>
     <%# --- Fecha de Inspección --- %>
     <div class="space-y-2">
       <%= f.label :date, class: "block text-sm font-medium text-slate-300" %>
       <%= f.date_field :date, value: f.object.date || Date.current, class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white" %>
     </div>
-
     <%# --- Estado de Inspección --- %>
     <div class="space-y-2">
       <%= f.label :status, class: "block text-sm font-medium text-slate-300" %>
@@ -59,21 +53,26 @@
             class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
       %>
     </div>
-
+    <%# --- Selector de Técnico (NUEVO CAMPO) --- %>
+    <div class="space-y-2">
+      <%= f.label :user_id, "Assign to Technician", class: "block text-sm font-medium text-slate-300" %>
+      <%= f.collection_select :user_id, @technicians, :id, :display_name, 
+            { prompt: "Select a technician" }, 
+            { class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors" } 
+      %>
+    </div>
     <%# --- Renderizado del Modal Dinámico --- %>
     <div class="md:col-span-2 p-6 bg-slate-900/50 rounded-xl border border-white/10">
       <h3 class="text-lg font-semibold text-white mb-4">Inspection Type</h3>
       <%# Pasamos las variables necesarias al partial del modal %>
       <%= render 'inspections/inspection_modal', f: f, system_categories: @system_categories, intervals: @intervals %>
     </div>
-
     <%# --- Notas --- %>
     <div class="md:col-span-2 space-y-2">
-       <%= f.label :notes, class: "block text-sm font-medium text-slate-300" %>
-       <%= f.text_area :notes, rows: 4, class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors", placeholder: "Add any relevant notes for the inspection..." %>
+      <%= f.label :notes, class: "block text-sm font-medium text-slate-300" %>
+      <%= f.text_area :notes, rows: 4, class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors", placeholder: "Add any relevant notes for the inspection..." %>
     </div>
   </div>
-
   <%# --- Botones de Acción --- %>
   <div class="flex items-center justify-end pt-8 mt-8 border-t border-white/10">
     <%= link_to 'Cancel', inspections_path, class: "text-white font-medium py-2.5 px-6 rounded-lg mr-4 hover:bg-white/10 transition-colors" %>
