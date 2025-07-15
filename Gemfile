@@ -53,6 +53,9 @@ gem "combine_pdf"
 # Agregar pagina con fotos
 gem 'prawn'
 
+# Gem para authorization
+gem 'pundit'
+
 # File upload and validation
 gem "marcel" # MIME type detection
 
@@ -73,6 +76,8 @@ group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
 
+  # htmlbeautifier
+  gem 'htmlbeautifier', require: false
   gem 'erb_lint', require: false
   gem 'rubocop', require: false # erb-lint lo usa
 end
