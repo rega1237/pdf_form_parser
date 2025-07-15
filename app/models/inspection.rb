@@ -1,6 +1,7 @@
 class Inspection < ApplicationRecord
   belongs_to :property
   belongs_to :form_template
+  belongs_to :user
   has_many :form_fills, dependent: :destroy
 
   # Delegamos el acceso al customer a través de property
