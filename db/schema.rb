@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_08_200341) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_14_203733) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -104,11 +104,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_08_200341) do
     t.bigint "form_template_id", null: false
     t.string "system_category"
     t.string "interval_category"
+    t.bigint "user_id", null: false
     t.index ["date"], name: "index_inspections_on_date"
     t.index ["form_template_id"], name: "index_inspections_on_form_template_id"
     t.index ["property_id", "date"], name: "index_inspections_on_property_id_and_date"
     t.index ["property_id"], name: "index_inspections_on_property_id"
     t.index ["status"], name: "index_inspections_on_status"
+    t.index ["user_id"], name: "index_inspections_on_user_id"
   end
 
   create_table "interval_categories", force: :cascade do |t|
@@ -131,6 +133,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_08_200341) do
     t.index ["customer_id"], name: "index_properties_on_customer_id"
   end
 
+  create_table "roles", force: :cascade do |t|
+    t.string "level"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "system_categories", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -148,8 +156,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_08_200341) do
     t.string "name"
     t.string "user_level"
     t.string "status"
+    t.bigint "role_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["role_id"], name: "index_users_on_role_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -160,5 +170,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_08_200341) do
   add_foreign_key "form_templates_interval_categories", "interval_categories"
   add_foreign_key "inspections", "form_templates"
   add_foreign_key "inspections", "properties"
+  add_foreign_key "inspections", "users"
   add_foreign_key "properties", "customers"
+  add_foreign_key "users", "roles"
 end

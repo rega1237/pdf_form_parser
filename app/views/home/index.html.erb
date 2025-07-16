@@ -11,21 +11,23 @@
   <!-- Grid de botones principales -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto md:items-stretch">
     <!-- Ver Plantillas -->
-    <div class="group animate-slide-up md:h-full" style="animation-delay: 0.1s;">
-      <%= link_to form_templates_path, class: "block bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-indigo-400/20 transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/25 md:h-full md:flex md:items-center" do %>
-        <div class="text-center md:w-full">
-          <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
-            <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
+    <% if policy(FormTemplate).index? %>
+      <div class="group animate-slide-up md:h-full" style="animation-delay: 0.1s;">
+        <%= link_to form_templates_path, class: "block bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-indigo-400/20 transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/25 md:h-full md:flex md:items-center" do %>
+          <div class="text-center md:w-full">
+            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
+              <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+            </div>
+            <h3 class="text-white font-bold text-lg lg:text-xl mb-2">Library</h3>
+            <p class="text-indigo-100 text-sm lg:text-base opacity-90 leading-relaxed">
+              Create and manage inspection templates
+            </p>
           </div>
-          <h3 class="text-white font-bold text-lg lg:text-xl mb-2">Library</h3>
-          <p class="text-indigo-100 text-sm lg:text-base opacity-90 leading-relaxed">
-            Create and manage inspection templates
-          </p>
-        </div>
-      <% end %>
-    </div>
+        <% end %>
+      </div>
+    <%end%>
     <!-- Llenar Formularios -->
     <div class="hidden group animate-slide-up md:h-full" style="animation-delay: 0.2s;">
       <%= link_to form_fills_path, class: "block bg-gradient-to-br from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-emerald-400/20 transition-all duration-300 hover:scale-105 hover:shadow-emerald-500/25 md:h-full md:flex md:items-center" do %>
@@ -44,19 +46,21 @@
     </div>
     <!-- Ver Clientes -->
     <div class="group animate-slide-up md:h-full" style="animation-delay: 0.3s;">
-      <%= link_to customers_path, class: "block bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-blue-400/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/25 md:h-full md:flex md:items-center" do %>
-        <div class="text-center md:w-full">
-          <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
-            <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
+      <% if policy(Customer).index? %>
+        <%= link_to customers_path, class: "block bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-blue-400/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/25 md:h-full md:flex md:items-center" do %>
+          <div class="text-center md:w-full">
+            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300">
+              <svg class="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+            </div>
+            <h3 class="text-white font-bold text-lg lg:text-xl mb-2">Customers</h3>
+            <p class="text-blue-100 text-sm lg:text-base opacity-90 leading-relaxed">
+              Manage customer information
+            </p>
           </div>
-          <h3 class="text-white font-bold text-lg lg:text-xl mb-2">Customers</h3>
-          <p class="text-blue-100 text-sm lg:text-base opacity-90 leading-relaxed">
-            Manage customer information
-          </p>
-        </div>
-      <% end %>
+        <% end %>
+      <%end%>
     </div>
     <!-- Ver Inspecciones -->
     <div class="group animate-slide-up md:h-full" style="animation-delay: 0.4s;">

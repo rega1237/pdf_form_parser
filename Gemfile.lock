@@ -138,6 +138,7 @@ GEM
       raabro (~> 1.4)
     globalid (1.2.1)
       activesupport (>= 6.1)
+    htmlbeautifier (1.4.3)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     importmap-rails (2.1.0)
@@ -252,6 +253,8 @@ GEM
     public_suffix (6.0.2)
     puma (6.6.0)
       nio4r (~> 2.0)
+    pundit (2.5.0)
+      activesupport (>= 3.0.0)
     raabro (1.4.0)
     racc (1.8.1)
     rack (3.1.15)
@@ -432,6 +435,7 @@ DEPENDENCIES
   debug
   devise (~> 4.9)
   erb_lint
+  htmlbeautifier
   importmap-rails
   jbuilder
   kamal
@@ -442,6 +446,7 @@ DEPENDENCIES
   prawn
   propshaft
   puma (>= 5.0)
+  pundit
   rails (~> 8.0.2)
   rubocop
   rubocop-rails-omakase

@@ -7,21 +7,26 @@ class FormTemplatesController < ApplicationController
 
   # GET /form_templates
   def index
-    @form_templates = FormTemplate.all
+    @form_templates = policy_scope(FormTemplate)
   end
 
   def show
+    authorize @form_template
     @form_template = FormTemplate.find(params[:id])
   end
 
   # GET /form_templates/:id/form_builder
-  def form_builder; end
+  def form_builder
+    authorize @form_template
+  end
 
   def new
+    authorize FormTemplate
     @form_template = FormTemplate.new
   end
 
   def create
+    autorize FormTemplate
     uploaded_file = form_template_params[:original_file]
     form_structure = {}
 
@@ -92,10 +97,13 @@ class FormTemplatesController < ApplicationController
     end
   end
 
-  def edit; end
+  def edit
+    authorize @form_template
+  end
 
   # PATCH/PUT /form_templates/1
   def update
+    authorize @form_template
     uploaded_file = form_template_params[:original_file]
     form_structure = {}
 
@@ -207,6 +215,7 @@ class FormTemplatesController < ApplicationController
 
   # DELETE /form_templates/1
   def destroy
+    authorize @form_template
     # Active Storage se encargará de eliminar los archivos adjuntos
     @form_template.destroy
     redirect_to form_templates_path, notice: 'Form template deleted successfully.', status: :see_other

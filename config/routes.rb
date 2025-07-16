@@ -57,6 +57,7 @@ Rails.application.routes.draw do
 
   resources :deficiencies
   resources :interval_categories
+  resources :roles
 
   get 'settings', to: 'company_settings#index'
 

@@ -2,17 +2,20 @@ class CustomersController < ApplicationController
   before_action :set_customer, only: %i[show edit update]
 
   def index
-    @customers = Customer.all
+    @customers = policy_scope(Customer)
   end
 
   def show
+    authorize @customer
   end
 
   def new
+    authorize Customer
     @customer = Customer.new
   end
 
   def create
+    authorize Customer
     @customer = Customer.new(customer_params)
     if @customer.save
       redirect_to @customer, notice: 'Customer was successfully created.'
@@ -22,9 +25,11 @@ class CustomersController < ApplicationController
   end
 
   def edit
+    authorize @customer
   end
 
   def update
+    authorize @customer
     if @customer.update(customer_params)
       redirect_to @customer, notice: 'Customer was successfully updated.'
     else

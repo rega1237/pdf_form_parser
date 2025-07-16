@@ -4,13 +4,15 @@ class InspectionsController < ApplicationController
   before_action :load_form_data, only: %i[new create edit update]
   before_action :set_intervals, only: %i[new create edit update]
   before_action :load_form_data, only: %i[new create edit update]
+  before_action :load_technicians, only: %i[new create edit update]
   before_action :set_intervals, only: %i[new create edit update]
   before_action :set_system_categories, only: %i[new create edit update]
 
   # GET /inspections
   def index
-    @inspections = Inspection.includes(:property, :form_fills, property: :customer)
-                             .order(date: :desc)
+    @inspections = policy_scope(Inspection)
+                   .includes(:property, :form_fills, :user, property: :customer)
+                   .order(date: :desc)
 
     # Filtros opcionales
     @inspections = @inspections.where(status: params[:status]) if params[:status].present?
@@ -30,6 +32,7 @@ class InspectionsController < ApplicationController
 
   # GET /inspections/1
   def show
+    authorize @inspection
     @property = @inspection.property
     @customer = @property.customer
     @form_template = @inspection.form_template
@@ -41,6 +44,8 @@ class InspectionsController < ApplicationController
   # GET /inspections/new
   def new
     @inspection = Inspection.new
+
+    authorize @inspection
 
     if params[:property_id].present?
       @property = Property.find(params[:property_id])
@@ -56,6 +61,9 @@ class InspectionsController < ApplicationController
   # POST /inspections
   def create
     @inspection = Inspection.new(inspection_params)
+
+    authorize @inspection
+
     main_form_template = get_form_template(inspection_params)
     @inspection.form_template_id = main_form_template&.id
 
@@ -109,6 +117,7 @@ class InspectionsController < ApplicationController
 
   # DELETE /inspections/1
   def destroy
+    authorize @inspection
     @inspection.destroy
     redirect_to inspections_url, notice: 'Inspección eliminada exitosamente.'
   end
@@ -205,7 +214,7 @@ class InspectionsController < ApplicationController
 
   def inspection_params
     params.require(:inspection).permit(:date, :property_id, :notes, :status,
-                                       :system_category, :interval_category)
+                                       :system_category, :interval_category, :user_id)
   end
 
   def load_form_data
@@ -226,6 +235,11 @@ class InspectionsController < ApplicationController
       @selected_customer = @inspection.property.customer
       @properties = @selected_customer.properties.order(:property_name)
     end
+  end
+
+  def load_technicians
+    technician_role = Role.find_by(level: 'Technician')
+    @technicians = technician_role ? technician_role.users.order(:email) : User.none
   end
 
   def get_form_template(params)

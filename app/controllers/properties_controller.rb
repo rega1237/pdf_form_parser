@@ -2,7 +2,6 @@ class PropertiesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_property, only: %i[show edit update destroy]
 
-  def show; end
   def new
     @customer = Customer.find(params[:customer_id])
     @property = @customer.properties.build
