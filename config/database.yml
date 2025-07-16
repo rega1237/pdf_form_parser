@@ -81,9 +81,13 @@ test:
 production:
   primary: &primary_production
     <<: *default
+    adapter: postgresql
+    encoding: unicode
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     database: form_processor_production
     username: form_processor
     password: <%= ENV["FORM_PROCESSOR_DATABASE_PASSWORD"] %>
+    host: localhost
   cache:
     <<: *primary_production
     database: form_processor_production_cache
