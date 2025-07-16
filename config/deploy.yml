@@ -7,8 +7,8 @@ image: rega1237/form_processor
 # Deploy to these servers.
 servers:
   web:
-    - 138.197.122.213
-  port: 80:3000
+    hosts:
+      - 138.197.122.213
   # job:
   #   hosts:
   #     - 192.168.0.1
@@ -22,7 +22,8 @@ proxy:
   # Comentamos la configuración de SSL y host porque no tenemos un dominio
   # ssl: true
   # host: app.example.com
-  #port: 80
+  # Port mapping is handled automatically by Kamal
+  # External port 80 will map to container port 3000
 
 # Credentials for your image host.
 registry:
@@ -65,12 +66,10 @@ aliases:
   logs: app logs -f
   dbc: app exec --interactive --reuse "bin/rails dbconsole"
 
-
 # Use a persistent storage volume for sqlite database files and local Active Storage files.
 # Recommended to change this to a mounted volume path that is backed up off server.
 volumes:
   - "form_processor_storage:/rails/storage"
-
 
 # Bridge fingerprinted assets, like JS and CSS, between versions to avoid
 # hitting 404 on in-flight requests. Combines all files from new and old
