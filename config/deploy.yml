@@ -19,8 +19,7 @@ servers:
 #
 # Note: If using Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
 proxy:
-  # Comentamos la configuración de SSL y host porque no tenemos un dominio
-  # ssl: true
+  ssl: false
   # host: app.example.com
   # Port mapping is handled automatically by Kamal
   # External port 80 will map to container port 3000
