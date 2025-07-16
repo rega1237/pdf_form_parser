@@ -33,4 +33,4 @@ app/assets/forms
 /app/assets/builds/*
 !/app/assets/builds/.keep
 
-.kamal/.env.prod
+.kamal/.env.prod.kamal/secrets
