@@ -20,3 +20,16 @@ interval_categories = [
 interval_categories.each do |name|
   IntervalCategory.find_or_create_by(name: name)
 end
+
+# Crear rol de Admin si no existe
+admin_role = Role.find_or_create_by(level: "Admin")
+
+# Crear usuario administrador si no existe
+admin_user = User.find_or_create_by(email: "rega1237@gmail.com") do |user|
+  user.password = "rega1237"
+  user.password_confirmation = "rega1237"
+  user.role = admin_role
+  user.name = "Admin User"
+end
+
+puts "Usuario administrador creado: #{admin_user.email}" if admin_user.persisted?
