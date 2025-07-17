@@ -43,7 +43,7 @@ system_categories.each do |name|
   unless system_category.thumbnail.attached?
     # Convertir el nombre a formato de archivo (espacios por guiones bajos, minúsculas)
     image_filename = "#{name.gsub(' ', '_')}.png"
-    image_path = Rails.root.join("app", "assets", "images", "system_category" image_filename)
+    image_path = Rails.root.join("app", "assets", "images", "system_category", image_filename)
     
     if File.exist?(image_path)
       system_category.thumbnail.attach(
