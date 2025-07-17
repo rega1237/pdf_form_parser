@@ -22,7 +22,7 @@ class FormTemplatePolicy < ApplicationPolicy
   end
 
   def destroy?
-    uuser && user.role&.level == 'Admin'
+    user && user.role&.level == 'Admin'
   end
   
   def form_builder?
