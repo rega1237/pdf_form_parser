@@ -26,7 +26,7 @@ class FormTemplatesController < ApplicationController
   end
 
   def create
-    autorize FormTemplate
+    authorize FormTemplate
     uploaded_file = form_template_params[:original_file]
     form_structure = {}
 
