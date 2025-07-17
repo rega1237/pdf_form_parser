@@ -175,7 +175,7 @@ class InspectionsController < ApplicationController
     @customer = @property.customer
 
     # Cargar inspecciones con paginación
-    @inspections = @property.inspections.includes(:form_fill)
+    @inspections = @property.inspections.includes(:form_fills)
                             .order(date: :desc)
                             .page(params[:page])
                             .per(10) # 10 inspecciones por página
