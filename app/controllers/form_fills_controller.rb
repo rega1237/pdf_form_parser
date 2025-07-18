@@ -89,6 +89,7 @@ class FormFillsController < ApplicationController
       else
         success_message = 'Draft saved successfully.'
         success_message += " #{photo_results[:uploaded]} photo(s) uploaded." if photo_results[:uploaded] > 0
+        success_message += " #{photo_results[:skipped]} photo(s) skipped (already saved)." if photo_results[:skipped] > 0
 
         render json: { success: true, message: success_message }, status: :ok
       end
@@ -348,12 +349,19 @@ class FormFillsController < ApplicationController
     end
   end
 
-  # Método para procesar subidas de fotos
+  # Método para procesar subidas de fotos (solo fotos nuevas)
   def process_photo_uploads(photo_params)
-    results = { uploaded: 0, errors: [] }
+    results = { uploaded: 0, errors: [], skipped: 0 }
 
     photo_params.each do |field_name, photo_file|
       next if photo_file.blank?
+
+      # Verificar si ya existe una foto para este campo
+      if photo_already_exists_for_field?(field_name, photo_file)
+        results[:skipped] += 1
+        Rails.logger.info "Skipping photo upload for field #{field_name} - already exists"
+        next
+      end
 
       result = @form_fill.attach_photo_for_field(field_name, photo_file)
 
@@ -367,6 +375,30 @@ class FormFillsController < ApplicationController
     end
 
     results
+  end
+
+  # Método para verificar si ya existe una foto para un campo
+  def photo_already_exists_for_field?(field_name, new_photo_file)
+    return false unless @form_fill.form_structure.present?
+
+    begin
+      structure = JSON.parse(@form_fill.form_structure)
+      field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
+      
+      # Si el campo tiene photo_attachment_id, significa que ya tiene una foto guardada
+      has_existing_photo = field_data&.dig('photo_attachment_id').present?
+      
+      if has_existing_photo
+        # Verificar que la foto realmente existe en Active Storage
+        existing_photo = @form_fill.get_photo_for_field(field_name)
+        return existing_photo.present?
+      end
+      
+      false
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error checking existing photo for field #{field_name}: #{e.message}"
+      false
+    end
   end
 
   def process_deficiency_fields(update_params)
