@@ -5,6 +5,12 @@ class GeneratePdfJob < ApplicationJob
     main_form_fill = FormFill.find(form_fill_id)
     inspection = main_form_fill.inspection
 
+    # Verificar que el estado sea 'generating'
+    unless main_form_fill.generating?
+      Rails.logger.warn "FormFill ##{main_form_fill.id} is not in generating state. Current state: #{main_form_fill.pdf_generation_status}"
+      return
+    end
+
     # 1. Encontrar el formulario de deficiencias asociado.
     deficiencies_template = FormTemplate.find_by(name: 'Deficiencies')
     deficiencies_form_fill = inspection.form_fills.find_by(form_template: deficiencies_template)
@@ -12,11 +18,13 @@ class GeneratePdfJob < ApplicationJob
     # 2. Validar que las plantillas de PDF estén presentes.
     unless inspection && main_form_fill.form_template.original_file.attached?
       Rails.logger.error "El template del PDF principal no se encuentra para FormFill ##{main_form_fill.id}."
+      main_form_fill.update!(pdf_generation_status: 'failed')
       return
     end
 
     if deficiencies_form_fill && !deficiencies_form_fill.form_template.original_file.attached?
       Rails.logger.error "El template del PDF de deficiencias no se encuentra para la inspección ##{inspection.id}."
+      main_form_fill.update!(pdf_generation_status: 'failed')
       return
     end
 
@@ -65,23 +73,48 @@ class GeneratePdfJob < ApplicationJob
 
       # 7. Guardar el PDF final y adjuntarlo al registro.
       if final_pdf_object
-        final_pdf_path = "tmp/final_inspection_#{inspection.id}_#{Time.now.to_i}.pdf"
+        final_pdf_path = Rails.root.join('tmp', "final_inspection_#{inspection.id}_#{Time.now.to_i}.pdf")
         final_pdf_object.save(final_pdf_path)
 
-        main_form_fill.filled_pdf.attach(
-          io: File.open(final_pdf_path),
-          filename: "inspeccion_final_#{inspection.id}.pdf",
-          content_type: 'application/pdf'
-        )
+        # Verificar que el archivo se guardó correctamente
+        if File.exist?(final_pdf_path) && File.size(final_pdf_path) > 0
+          # Si ya existe un PDF anterior, eliminarlo antes de adjuntar el nuevo
+          if main_form_fill.filled_pdf.attached?
+            Rails.logger.info "Eliminando PDF anterior para FormFill ##{main_form_fill.id}"
+            main_form_fill.filled_pdf.purge
+          end
+
+          # Adjuntar el nuevo PDF
+          File.open(final_pdf_path, 'rb') do |file|
+            main_form_fill.filled_pdf.attach(
+              io: file,
+              filename: "inspeccion_final_#{inspection.id}_#{Time.now.to_i}.pdf",
+              content_type: 'application/pdf'
+            )
+          end
+
+          # Marcar como completado exitosamente
+          main_form_fill.update!(pdf_generation_status: 'completed')
+          Rails.logger.info "PDF generado exitosamente para FormFill ##{main_form_fill.id}."
+        else
+          # Marcar como fallido si el archivo no se generó correctamente
+          main_form_fill.update!(pdf_generation_status: 'failed')
+          Rails.logger.error "Error: El archivo PDF no se generó correctamente para FormFill ##{main_form_fill.id}"
+        end
 
         # 8. Limpiar todos los archivos temporales.
         FileUtils.rm_f([main_pdf_path, deficiencies_pdf_path, final_pdf_path].compact)
-        Rails.logger.info "PDF generado exitosamente para FormFill ##{main_form_fill.id}."
+      else
+        # Si no se pudo generar el PDF final
+        main_form_fill.update!(pdf_generation_status: 'failed')
+        Rails.logger.error "No se pudo generar el PDF final para FormFill ##{main_form_fill.id}"
       end
 
     rescue JSON::ParserError => e
+      main_form_fill.update!(pdf_generation_status: 'failed')
       Rails.logger.error "Error procesando la estructura del formulario en el Job para FormFill ##{main_form_fill.id}: #{e.message}"
     rescue StandardError => e
+      main_form_fill.update!(pdf_generation_status: 'failed')
       Rails.logger.error "Error en GeneratePdfJob para FormFill ##{main_form_fill.id}: #{e.message}\n#{e.backtrace.join("\n")}"
     end
   end

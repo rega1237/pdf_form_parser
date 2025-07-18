@@ -148,12 +148,34 @@
           
           <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
             <div class="flex items-start space-x-4 mb-6"><div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div><h3 class="text-white font-bold text-xl mb-2">Form Actions</h3><p class="text-blue-300 text-base mb-4">Save your progress or generate the final PDF</p></div></div>
-            <div class="flex flex-wrap items-center gap-4">
+            <div class="flex flex-wrap items-center gap-4" 
+                 data-controller="pdf-status" 
+                 data-pdf-status-status-value="<%= @form_fill.pdf_generation_status %>"
+                 data-pdf-status-refresh-interval-value="5000">
               <button type="button" data-controller="external-form-action" data-action="click->external-form-action#triggerSaveDraft" data-external-form-action-form-id-value="form-fill-main-form" class="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg"><svg class="w-5 h-5 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path></svg>Save Draft</button>
-              <%= button_tag 'Generate PDF', type: 'button', class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { action: "click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." } %>
-                <%# --- Botón para el PDF Principal --- %>
-              <% if @form_fill.filled_pdf.attached? %>
-                <a href="<%= rails_blob_path(@form_fill.filled_pdf, disposition: 'inline') %>" 
+              <%# --- Botón Generate PDF con estado --- %>
+              <% if @form_fill.generating? %>
+                <div class="inline-flex items-center justify-center bg-gradient-to-r from-amber-500 to-amber-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
+                  <svg class="w-5 h-5 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  Generating PDF...
+                </div>
+              <% elsif @form_fill.failed? %>
+                <div class="inline-flex items-center justify-center bg-gradient-to-r from-red-500 to-red-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
+                  <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  PDF Generation Failed
+                </div>
+                <%= button_tag 'Retry Generate PDF', type: 'button', class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { action: "click->form-fill#submitToPdf", confirm: "Are you sure you want to retry generating the PDF?" } %>
+              <% else %>
+                <%= button_tag 'Generate PDF', type: 'button', class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { action: "click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." } %>
+              <% end %>
+
+              <%# --- Botón para el PDF Principal --- %>
+              <% if @form_fill.filled_pdf.attached? && @form_fill.completed? %>
+                <a href="<%= download_pdf_form_fill_path(@form_fill, disposition: 'inline') %>" 
                   target="_blank" 
                   class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
                   <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -176,7 +198,7 @@
 
               <%# --- Botón para el PDF de Deficiencias (solo si existe y tiene archivo) --- %>
               <% if @deficiencies_form_fill&.filled_pdf&.attached? %>
-                <a href="<%= rails_blob_path(@deficiencies_form_fill.filled_pdf, disposition: 'inline') %>" 
+                <a href="<%= download_pdf_form_fill_path(@deficiencies_form_fill, disposition: 'inline') %>" 
                   target="_blank" 
                   class="inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
                   <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>

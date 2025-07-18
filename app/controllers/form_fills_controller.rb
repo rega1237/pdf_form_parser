@@ -230,12 +230,38 @@ class FormFillsController < ApplicationController
 
   def submit_form
     @main_form_fill = FormFill.find(params[:id])
+    
+    # Verificar si ya se está generando un PDF
+    if @main_form_fill.generating?
+      redirect_to @main_form_fill, alert: 'PDF is already being generated. Please wait.'
+      return
+    end
+    
+    # Marcar como generando antes de encolar el trabajo
+    @main_form_fill.update!(pdf_generation_status: 'generating')
   
-    # Simplemente encolamos el trabajo y le pasamos el ID del formulario principal
+    # Encolar el trabajo de generación de PDF
     GeneratePdfJob.perform_later(@main_form_fill.id)
   
-    # Redirigimos al usuario inmediatamente con un mensaje informativo
-    redirect_to @main_form_fill, notice: 'Your pdf is beign generated will be list shortly'
+    # Redirigir al usuario con un mensaje informativo
+    redirect_to @main_form_fill, notice: 'Your PDF is being generated and will be available shortly.'
+  end
+
+  def download_pdf
+    @form_fill = FormFill.find(params[:id])
+    
+    if @form_fill.filled_pdf.attached?
+      # Usar send_data para servir el archivo directamente
+      send_data @form_fill.filled_pdf.download,
+                filename: @form_fill.filled_pdf.filename.to_s,
+                type: @form_fill.filled_pdf.content_type,
+                disposition: params[:disposition] || 'inline'
+    else
+      redirect_to @form_fill, alert: 'PDF not found or not yet generated.'
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error downloading PDF for FormFill ##{@form_fill.id}: #{e.message}"
+    redirect_to @form_fill, alert: 'Error accessing PDF file.'
   end
 
   private
