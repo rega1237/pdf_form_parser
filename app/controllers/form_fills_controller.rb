@@ -377,7 +377,7 @@ class FormFillsController < ApplicationController
     results
   end
 
-  # Método para verificar si ya existe una foto para un campo
+  # Método para verificar si ya existe la MISMA foto para un campo
   def photo_already_exists_for_field?(field_name, new_photo_file)
     return false unless @form_fill.form_structure.present?
 
@@ -385,18 +385,30 @@ class FormFillsController < ApplicationController
       structure = JSON.parse(@form_fill.form_structure)
       field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
       
-      # Si el campo tiene photo_attachment_id, significa que ya tiene una foto guardada
-      has_existing_photo = field_data&.dig('photo_attachment_id').present?
+      # Si el campo no tiene photo_attachment_id, no hay foto existente
+      return false unless field_data&.dig('photo_attachment_id').present?
       
-      if has_existing_photo
-        # Verificar que la foto realmente existe en Active Storage
-        existing_photo = @form_fill.get_photo_for_field(field_name)
-        return existing_photo.present?
-      end
+      # Obtener la foto existente
+      existing_photo = @form_fill.get_photo_for_field(field_name)
+      return false unless existing_photo.present?
       
-      false
+      # Comparar características del archivo para determinar si es el mismo
+      same_size = existing_photo.byte_size == new_photo_file.size
+      same_content_type = existing_photo.content_type == new_photo_file.content_type
+      same_filename = existing_photo.filename.to_s.include?(new_photo_file.original_filename.to_s.parameterize)
+      
+      # Solo hacer skip si es exactamente el mismo archivo
+      is_same_file = same_size && same_content_type && same_filename
+      
+      Rails.logger.info "Photo comparison for #{field_name}: size(#{same_size}), type(#{same_content_type}), name(#{same_filename}) = same_file(#{is_same_file})"
+      
+      return is_same_file
+      
     rescue JSON::ParserError => e
       Rails.logger.error "Error checking existing photo for field #{field_name}: #{e.message}"
+      false
+    rescue StandardError => e
+      Rails.logger.error "Error comparing photos for field #{field_name}: #{e.message}"
       false
     end
   end
