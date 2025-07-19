@@ -376,4 +376,33 @@ class FormFill < ApplicationRecord
 
     Rails.application.routes.url_helpers.rails_blob_path(filled_pdf, only_path: true)
   end
+
+  # Método para calcular conteos de Pass, Fail y N/A
+  def calculate_form_counts
+    return { pass: 0, fail: 0, na: 0 } unless form_structure.present?
+
+    begin
+      structure = JSON.parse(form_structure)
+      counts = { pass: 0, fail: 0, na: 0 }
+
+      structure.each do |field|
+        next unless field['value'].present?
+        
+        value = field['value'].to_s.downcase
+        case value
+        when 'pass'
+          counts[:pass] += 1
+        when 'fail'
+          counts[:fail] += 1
+        when 'n/a', 'na'
+          counts[:na] += 1
+        end
+      end
+
+      counts
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure for counts: #{e.message}"
+      { pass: 0, fail: 0, na: 0 }
+    end
+  end
 end
