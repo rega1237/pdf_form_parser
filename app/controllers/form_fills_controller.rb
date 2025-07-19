@@ -136,6 +136,37 @@ class FormFillsController < ApplicationController
     end
   end
 
+  # Endpoint para obtener estructura actualizada del formulario
+  def structure
+    @form_fill = FormFill.find(params[:id])
+
+    if @form_fill.form_structure.present?
+      begin
+        # Sincronizar la estructura con las fotos existentes antes de devolver
+        @form_fill.sync_photos_with_structure!
+        
+        form_fields = JSON.parse(@form_fill.form_structure)
+        render json: {
+          form_structure: @form_fill.form_structure,
+          form_fields: form_fields,
+          success: true
+        }
+      rescue JSON::ParserError => e
+        Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
+        render json: {
+          error: 'Invalid form structure',
+          success: false
+        }, status: :unprocessable_entity
+      end
+    else
+      render json: {
+        form_structure: '[]',
+        form_fields: [],
+        success: true
+      }
+    end
+  end
+
   # Endpoint para obtener URL de foto específica
   def photo_url
     @form_fill = FormFill.find(params[:id])
@@ -170,33 +201,7 @@ class FormFillsController < ApplicationController
     end
   end
 
-  # Endpoint para obtener estructura actualizada del formulario
-  def structure
-    @form_fill = FormFill.find(params[:id])
 
-    if @form_fill.form_structure.present?
-      begin
-        form_fields = JSON.parse(@form_fill.form_structure)
-        render json: {
-          form_structure: @form_fill.form_structure,
-          form_fields: form_fields,
-          success: true
-        }
-      rescue JSON::ParserError => e
-        Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
-        render json: {
-          error: 'Invalid form structure',
-          success: false
-        }, status: :unprocessable_entity
-      end
-    else
-      render json: {
-        form_structure: '[]',
-        form_fields: [],
-        success: true
-      }
-    end
-  end
 
   # Método específico para subir fotos via AJAX (opcional, para uso futuro)
   def upload_photo
@@ -377,7 +382,6 @@ class FormFillsController < ApplicationController
     results
   end
 
-  # Método para verificar si ya existe la MISMA foto para un campo
   def photo_already_exists_for_field?(field_name, new_photo_file)
     return false unless @form_fill.form_structure.present?
 
@@ -392,15 +396,14 @@ class FormFillsController < ApplicationController
       existing_photo = @form_fill.get_photo_for_field(field_name)
       return false unless existing_photo.present?
       
-      # Comparar características del archivo para determinar si es el mismo
+      # Comparación básica por tamaño y tipo (más eficiente)
       same_size = existing_photo.byte_size == new_photo_file.size
       same_content_type = existing_photo.content_type == new_photo_file.content_type
-      same_filename = existing_photo.filename.to_s.include?(new_photo_file.original_filename.to_s.parameterize)
       
-      # Solo hacer skip si es exactamente el mismo archivo
-      is_same_file = same_size && same_content_type && same_filename
+      # Si son exactamente iguales en tamaño y tipo, probablemente es el mismo archivo
+      is_same_file = same_size && same_content_type
       
-      Rails.logger.info "Photo comparison for #{field_name}: size(#{same_size}), type(#{same_content_type}), name(#{same_filename}) = same_file(#{is_same_file})"
+      Rails.logger.info "Photo comparison for #{field_name}: size(#{same_size}), type(#{same_content_type}) = same_file(#{is_same_file})"
       
       return is_same_file
       

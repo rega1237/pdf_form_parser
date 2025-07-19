@@ -98,7 +98,7 @@ class FormFill < ApplicationRecord
     end
   end
 
-  # Método para obtener URL de foto por campo
+  # Método para obtener foto por campo
   def get_photo_for_field(field_name)
     return nil if field_name.blank? || form_structure.blank?
 
@@ -106,13 +106,18 @@ class FormFill < ApplicationRecord
       structure = JSON.parse(form_structure)
       field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
 
-      # Obtenemos el ID del adjunto directamente desde la estructura
-      attachment_id = field_data['photo_attachment_id'] if field_data
-      return nil if attachment_id.blank?
+      # Verificar que field_data existe y tiene photo_attachment_id
+      return nil unless field_data&.dig('photo_attachment_id').present?
 
+      attachment_id = field_data['photo_attachment_id']
+      
       # Buscamos la foto por el nombre de archivo, que es el ID único que guardamos
       photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
-    rescue JSON::ParserError
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure in get_photo_for_field: #{e.message}"
+      nil
+    rescue StandardError => e
+      Rails.logger.error "Error getting photo for field #{field_name}: #{e.message}"
       nil
     end
   end
@@ -242,42 +247,7 @@ class FormFill < ApplicationRecord
     end
   end
 
-  # Método de debug para ver todas las fotos
-  def debug_photos
-    puts "=== DEBUG PHOTOS FOR FORM_FILL ##{id} ==="
-    puts "Inspection ID: #{inspection&.id}"
-    puts "Total photos attached: #{photos.count}"
 
-    photos.each_with_index do |photo, index|
-      puts "Photo #{index + 1}:"
-      puts "  - Filename: #{photo.filename}"
-      puts "  - Content Type: #{photo.content_type}"
-      puts "  - Blob present: #{photo.blob.present?}"
-      puts "  - Record type: #{photo.record_type}"
-      puts "  - Record ID: #{photo.record_id}"
-    end
-
-    if form_structure.present?
-      structure = JSON.parse(form_structure)
-      photo_fields = structure.select { |field| field['type'] == 'Photo' }
-
-      puts "\nPhoto fields in structure:"
-      photo_fields.each do |field|
-        puts "  - Field: #{field['name']}"
-        puts "  - Attachment ID: #{field['photo_attachment_id']}"
-
-        # Test pattern matching
-        field_pattern = "inspection_#{inspection.id}_#{field['name'].parameterize.underscore}_"
-        puts "  - Expected pattern: #{field_pattern}"
-
-        matching_photo = photos.find { |photo| photo.filename.to_s.include?(field_pattern) }
-        puts "  - Has matching photo: #{matching_photo.present?}"
-
-        puts "  - Matching filename: #{matching_photo.filename}" if matching_photo
-      end
-    end
-    puts '=== END DEBUG ==='
-  end
 
   # Método para limpiar fotos duplicadas existentes
   def cleanup_duplicate_photos!
@@ -334,6 +304,70 @@ class FormFill < ApplicationRecord
       Rails.logger.error "Error cleaning duplicate photos: #{e.message}"
       { cleaned: 0, error: e.message }
     end
+  end
+
+  # Método para sincronizar fotos existentes con la estructura del formulario
+  def sync_photos_with_structure!
+    return false unless form_structure.present? && photos.attached?
+
+    begin
+      structure = JSON.parse(form_structure)
+      photo_fields = structure.select { |field| field['type'] == 'Photo' }
+      structure_updated = false
+
+      photo_fields.each do |field|
+        field_name = field['name']
+        
+        # Si el campo ya tiene photo_attachment_id, verificar que la foto existe
+        if field['photo_attachment_id'].present?
+          existing_photo = get_photo_for_field(field_name)
+          # Si no existe la foto, limpiar el attachment_id
+          if existing_photo.blank?
+            field['photo_attachment_id'] = nil
+            structure_updated = true
+          end
+        else
+          # Si no tiene attachment_id, buscar si hay una foto para este campo
+          field_section = field.dig('section_name').presence || field_name
+          safe_section_name = field_section.gsub('|', '__')
+          parameterized_name = safe_section_name.parameterize.underscore
+          field_pattern = "inspection_#{inspection.id}_#{parameterized_name}_"
+          
+          # Buscar foto que coincida con el patrón
+          matching_photo = photos.find { |photo| photo.filename.to_s.include?(field_pattern) }
+          
+          if matching_photo
+            # Extraer el attachment_id del filename
+            attachment_id = matching_photo.filename.to_s.split('.').first
+            field['photo_attachment_id'] = attachment_id
+            structure_updated = true
+            Rails.logger.info "Synced photo for field #{field_name}: #{attachment_id}"
+          end
+        end
+      end
+
+      # Actualizar la estructura si hubo cambios
+      if structure_updated
+        update(form_structure: structure.to_json)
+        Rails.logger.info "Form structure synced with existing photos for FormFill ##{id}"
+      end
+
+      true
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error syncing photos with structure: #{e.message}"
+      false
+    rescue StandardError => e
+      Rails.logger.error "Error in sync_photos_with_structure: #{e.message}"
+      false
+    end
+  end
+
+  # Método para obtener URL de foto por campo
+  def get_photo_url_for_field(field_name)
+    photo = get_photo_for_field(field_name)
+    return nil unless photo.present?
+
+    Rails.application.routes.url_helpers.rails_blob_path(photo, only_path: true)
   end
 
   # Método existente para obtener la URL del archivo PDF rellenado
