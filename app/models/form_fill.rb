@@ -110,7 +110,7 @@ class FormFill < ApplicationRecord
       return nil unless field_data&.dig('photo_attachment_id').present?
 
       attachment_id = field_data['photo_attachment_id']
-      
+
       # Buscamos la foto por el nombre de archivo, que es el ID único que guardamos
       photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
     rescue JSON::ParserError => e
@@ -168,27 +168,26 @@ class FormFill < ApplicationRecord
       # Parsear la estructura para obtener información del campo
       structure = JSON.parse(form_structure) if form_structure.present?
       field_data = structure&.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
-      
+
       # Obtener el section_name para buscar fotos
       field_section = field_data&.dig('section_name').presence || field_name
       safe_section_name = field_section.gsub('|', '__')
       parameterized_name = safe_section_name.parameterize.underscore
-      
+
       # Buscar todas las fotos que coincidan con el patrón del campo
       field_pattern = "inspection_#{inspection.id}_#{parameterized_name}_"
-      
+
       photos_to_remove = photos.select do |photo|
         photo.filename.to_s.include?(field_pattern)
       end
-      
+
       # Eliminar todas las fotos encontradas
       photos_to_remove.each do |photo|
         Rails.logger.info "Removing duplicate photo: #{photo.filename}"
         photo.purge
       end
-      
+
       Rails.logger.info "Removed #{photos_to_remove.count} photos for field: #{field_name}"
-      
     rescue JSON::ParserError => e
       Rails.logger.error "Error parsing form_structure in remove_all_photos_for_field: #{e.message}"
     rescue StandardError => e
@@ -247,8 +246,6 @@ class FormFill < ApplicationRecord
     end
   end
 
-
-
   # Método para limpiar fotos duplicadas existentes
   def cleanup_duplicate_photos!
     return { cleaned: 0, message: 'No photos to clean' } unless photos.attached? && form_structure.present?
@@ -256,47 +253,44 @@ class FormFill < ApplicationRecord
     begin
       structure = JSON.parse(form_structure)
       photo_fields = structure.select { |field| field['type'] == 'Photo' }
-      
+
       cleaned_count = 0
-      
+
       photo_fields.each do |field|
         field_name = field['name']
         field_section = field.dig('section_name').presence || field_name
         safe_section_name = field_section.gsub('|', '__')
         parameterized_name = safe_section_name.parameterize.underscore
         field_pattern = "inspection_#{inspection.id}_#{parameterized_name}_"
-        
+
         # Encontrar todas las fotos para este campo
         field_photos = photos.select { |photo| photo.filename.to_s.include?(field_pattern) }
-        
-        if field_photos.count > 1
-          # Mantener solo la más reciente y eliminar las demás
-          photos_to_keep = field_photos.sort_by(&:created_at).last(1)
-          photos_to_remove = field_photos - photos_to_keep
-          
-          photos_to_remove.each do |photo|
-            Rails.logger.info "Cleaning duplicate photo: #{photo.filename}"
-            photo.purge
-            cleaned_count += 1
-          end
-          
-          # Actualizar la estructura con el attachment_id de la foto que se mantuvo
-          if photos_to_keep.any?
-            kept_photo = photos_to_keep.first
-            attachment_id = kept_photo.filename.to_s.split('.').first
-            field['photo_attachment_id'] = attachment_id
-          end
+
+        next unless field_photos.count > 1
+
+        # Mantener solo la más reciente y eliminar las demás
+        photos_to_keep = field_photos.sort_by(&:created_at).last(1)
+        photos_to_remove = field_photos - photos_to_keep
+
+        photos_to_remove.each do |photo|
+          Rails.logger.info "Cleaning duplicate photo: #{photo.filename}"
+          photo.purge
+          cleaned_count += 1
         end
+
+        # Actualizar la estructura con el attachment_id de la foto que se mantuvo
+        next unless photos_to_keep.any?
+
+        kept_photo = photos_to_keep.first
+        attachment_id = kept_photo.filename.to_s.split('.').first
+        field['photo_attachment_id'] = attachment_id
       end
-      
+
       # Actualizar la estructura si se hicieron cambios
-      if cleaned_count > 0
-        update(form_structure: structure.to_json)
-      end
-      
+      update(form_structure: structure.to_json) if cleaned_count > 0
+
       Rails.logger.info "Cleaned #{cleaned_count} duplicate photos for FormFill ##{id}"
       { cleaned: cleaned_count, message: "Cleaned #{cleaned_count} duplicate photos" }
-      
     rescue JSON::ParserError => e
       Rails.logger.error "Error parsing form_structure in cleanup_duplicate_photos: #{e.message}"
       { cleaned: 0, error: e.message }
@@ -317,7 +311,7 @@ class FormFill < ApplicationRecord
 
       photo_fields.each do |field|
         field_name = field['name']
-        
+
         # Si el campo ya tiene photo_attachment_id, verificar que la foto existe
         if field['photo_attachment_id'].present?
           existing_photo = get_photo_for_field(field_name)
@@ -332,10 +326,10 @@ class FormFill < ApplicationRecord
           safe_section_name = field_section.gsub('|', '__')
           parameterized_name = safe_section_name.parameterize.underscore
           field_pattern = "inspection_#{inspection.id}_#{parameterized_name}_"
-          
+
           # Buscar foto que coincida con el patrón
           matching_photo = photos.find { |photo| photo.filename.to_s.include?(field_pattern) }
-          
+
           if matching_photo
             # Extraer el attachment_id del filename
             attachment_id = matching_photo.filename.to_s.split('.').first
@@ -387,7 +381,7 @@ class FormFill < ApplicationRecord
 
       structure.each do |field|
         next unless field['value'].present?
-        
+
         value = field['value'].to_s.downcase
         case value
         when 'pass'

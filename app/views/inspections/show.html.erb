@@ -1,4 +1,6 @@
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" 
+     data-controller="inspection-status" 
+     data-inspection-status-inspection-id-value="<%= @inspection.id %>">
   <div class="container mx-auto px-4 py-6 lg:py-12">
     <!-- Header con navegación -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
@@ -182,7 +184,8 @@
           </div>
           
           <div class="space-y-3">
-            <button onclick="updateStatus('completed')" 
+            <button data-action="click->inspection-status#updateStatus" 
+                    data-status="completed"
                     class="w-full bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,7 +194,8 @@
                 Mark as Completed
               </div>
             </button>
-            <button onclick="updateStatus('in_progress')" 
+            <button data-action="click->inspection-status#updateStatus" 
+                    data-status="in_progress"
                     class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,7 +204,8 @@
                 In Progress
               </div>
             </button>
-            <button onclick="updateStatus('pending')" 
+            <button data-action="click->inspection-status#updateStatus" 
+                    data-status="pending"
                     class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-colors duration-200">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -209,7 +214,8 @@
                 Mark as Pending
               </div>
             </button>
-            <button onclick="updateStatus('cancelled')" 
+            <button data-action="click->inspection-status#updateStatus" 
+                    data-status="cancelled"
                     class="w-full bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -293,29 +299,3 @@
   </div>
 </div>
 
-<script>
-function updateStatus(status) {
-  if (confirm('Are you sure you want to change the status of this inspection?')) {
-    fetch(`/inspections/<%= @inspection.id %>/update_status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
-      },
-      body: JSON.stringify({ status: status })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        location.reload();
-      } else {
-        alert('Error: ' + data.errors.join(', '));
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('An error occurred while updating the status.');
-    });
-  }
-}
-</script>
