@@ -12,6 +12,12 @@ export default class extends Controller {
       "reload-form-values",
       this.handleReloadFormValues.bind(this),
     );
+
+    // Agregar event listener para cambios de página (que activan save draft automático)
+    this.element.addEventListener(
+      "pageChanged",
+      this.handlePageChange.bind(this),
+    );
   }
 
   // Método para sincronizar la estructura del formulario con fotos existentes
@@ -43,16 +49,29 @@ export default class extends Controller {
   }
 
   disconnect() {
-    // Limpiar event listener al desconectar
+    // Limpiar event listeners al desconectar
     this.element.removeEventListener(
       "reload-form-values",
       this.handleReloadFormValues.bind(this),
+    );
+    this.element.removeEventListener(
+      "pageChanged",
+      this.handlePageChange.bind(this),
     );
   }
 
   // Método para manejar el evento de recarga de valores del formulario
   handleReloadFormValues(event) {
     this.loadFormValues();
+  }
+
+  // Método para manejar cambios de página (que activan save draft automático)
+  handlePageChange(event) {
+    // Solo mostrar overlay si el cambio de página viene del controlador de paginación
+    if (event.detail && event.detail.source === "pagination") {
+      // Ejecutar save draft automáticamente con overlay
+      this.saveDraft();
+    }
   }
 
   loadFormValues() {
@@ -214,6 +233,9 @@ export default class extends Controller {
   async saveDraft(event) {
     if (event) event.preventDefault();
 
+    // Mostrar overlay de carga
+    this.showSaveDraftOverlay();
+
     const formStructureHiddenInput = document.getElementById(
       "form_fill_form_structure",
     );
@@ -224,31 +246,35 @@ export default class extends Controller {
     // Crear FormData (las fotos ya se subieron inmediatamente)
     const formData = new FormData(this.element);
 
-    fetch(this.element.action, {
-      method: "PATCH",
-      headers: { "X-CSRF-Token": this.csrfToken, Accept: "application/json" },
-      body: formData,
-    })
-      .then((response) =>
-        response.json().then((data) => ({ ok: response.ok, data })),
-      )
-      .then(({ ok, data }) => {
-        if (ok) {
-          this.dispatchNotification(
-            "success",
-            data.message || "Draft saved successfully.",
-          );
-          this.reloadFormStructure();
-        } else {
-          this.dispatchNotification(
-            "error",
-            data.message || "Could not save draft.",
-          );
-        }
-      })
-      .catch(() =>
-        this.dispatchNotification("error", "Network error when saving draft."),
-      );
+    try {
+      const response = await fetch(this.element.action, {
+        method: "PATCH",
+        headers: { "X-CSRF-Token": this.csrfToken, Accept: "application/json" },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        this.dispatchNotification(
+          "success",
+          data.message || "Draft saved successfully.",
+        );
+        await this.reloadFormStructure();
+      } else {
+        this.dispatchNotification(
+          "error",
+          data.message || "Could not save draft.",
+        );
+      }
+    } catch (error) {
+      this.dispatchNotification("error", "Network error when saving draft.");
+    } finally {
+      // Ocultar overlay de carga después de un pequeño delay para mejor UX
+      setTimeout(() => {
+        this.hideSaveDraftOverlay();
+      }, 500);
+    }
   }
 
   async submitToPdf(event) {
@@ -404,6 +430,26 @@ export default class extends Controller {
       }
     }
     console.log(`All alternative URLs failed for ${fileName}`);
+  }
+
+  // Método para mostrar el overlay de carga durante save draft
+  showSaveDraftOverlay() {
+    const overlay = document.getElementById("save-draft-overlay");
+    if (overlay) {
+      overlay.classList.add("show");
+      // Prevenir scroll del body mientras se muestra el overlay
+      document.body.style.overflow = "hidden";
+    }
+  }
+
+  // Método para ocultar el overlay de carga
+  hideSaveDraftOverlay() {
+    const overlay = document.getElementById("save-draft-overlay");
+    if (overlay) {
+      overlay.classList.remove("show");
+      // Restaurar scroll del body
+      document.body.style.overflow = "";
+    }
   }
 
   dispatchNotification(type, message) {
