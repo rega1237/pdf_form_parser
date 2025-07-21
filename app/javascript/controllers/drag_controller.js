@@ -60,7 +60,7 @@ export default class extends Controller {
   sendNotification(message, type = "info") {
     const event = new CustomEvent("show-notification", {
       detail: { message, type },
-      bubbles: true
+      bubbles: true,
     });
     document.dispatchEvent(event);
   }
@@ -99,6 +99,20 @@ export default class extends Controller {
     const itemInput = itemEl.querySelector('[data-field-attribute="item"]');
     const riserInput = itemEl.querySelector('[data-field-attribute="riser"]');
 
+    // Extraer categorías seleccionadas para campos de categoría
+    const selectedCategoriesElement = itemEl.querySelector(
+      '[data-field-attribute="selected-categories"]',
+    );
+    let selectedCategories = [];
+    if (
+      selectedCategoriesElement &&
+      selectedCategoriesElement.textContent.trim() !== "No categories selected"
+    ) {
+      selectedCategories = selectedCategoriesElement.textContent
+        .split(", ")
+        .filter((cat) => cat.trim() !== "");
+    }
+
     const baseField = {
       id: nameInput ? nameInput.value : fieldName,
       name: nameInput ? nameInput.value : fieldName,
@@ -118,8 +132,13 @@ export default class extends Controller {
     // Agregar campos específicos según el tipo
     if (currentType === "Photo") {
       baseField.photo_attachment_id = null; // Se llenará cuando se use en form_fill
-    } else if (["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(currentType)) {
-      baseField.options = options.length > 0 ? options : this.getDefaultOptionsForType(currentType);
+    } else if (
+      ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(currentType)
+    ) {
+      baseField.options =
+        options.length > 0
+          ? options
+          : this.getDefaultOptionsForType(currentType);
     }
 
     // Campos específicos para Deficiency y Deficiency_field
@@ -129,6 +148,11 @@ export default class extends Controller {
       baseField.Riser = riserInput ? riserInput.value : "";
       baseField.D = ""; // Campo oculto para llenar en otra vista
       baseField.C = ""; // Campo oculto para llenar en otra vista
+    }
+
+    // Campos específicos para System Category e Interval Category
+    if (["System Category", "Interval Category"].includes(currentType)) {
+      baseField.selected_categories = selectedCategories;
     }
 
     return baseField;
@@ -145,6 +169,9 @@ export default class extends Controller {
         return ["Option 1", "Option 2"];
       case "Choice":
         return [];
+      case "System Category":
+      case "Interval Category":
+        return []; // Categories don't use options, they use selected_categories
       default:
         return null;
     }
@@ -178,16 +205,29 @@ export default class extends Controller {
   }
 
   buildItemElement(itemData, globalIndex) {
-    const element = document.createElement('div');
-    element.classList.add('field-item', 'bg-white/10', 'backdrop-blur-sm', 'rounded-2xl', 'p-6', 'border', 'border-white/20', 'shadow-lg');
-    element.dataset.dragTarget = 'item';
-    
+    const element = document.createElement("div");
+    element.classList.add(
+      "field-item",
+      "bg-white/10",
+      "backdrop-blur-sm",
+      "rounded-2xl",
+      "p-6",
+      "border",
+      "border-white/20",
+      "shadow-lg",
+    );
+    element.dataset.dragTarget = "item";
+
     element.dataset.id = itemData.name || itemData.id;
     element.dataset.fieldType = itemData.type;
 
-    const fieldIdBase = `field_${(itemData.name || itemData.id).replace(/\W/g, '_')}_${globalIndex}`;
-    const hasOptions = ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].includes(itemData.type);
-    const isDeficiencyType = ['Deficiency', 'Deficiency_field'].includes(itemData.type);
+    const fieldIdBase = `field_${(itemData.name || itemData.id).replace(/\W/g, "_")}_${globalIndex}`;
+    const hasOptions = ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(
+      itemData.type,
+    );
+    const isDeficiencyType = ["Deficiency", "Deficiency_field"].includes(
+      itemData.type,
+    );
 
     element.innerHTML = `
       <!-- Field Header -->
@@ -202,15 +242,17 @@ export default class extends Controller {
                    placeholder="Field Name">
             
             <select data-field-attribute="type" class="editable-type bg-white/10 border border-white/20 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="Text" ${itemData.type === 'Text' ? 'selected' : ''}>Text</option>
-              <option value="Choice" ${itemData.type === 'Choice' ? 'selected' : ''}>Choice</option>
-              <option value="Button" ${itemData.type === 'Button' ? 'selected' : ''}>Button</option>
-              <option value="Photo" ${itemData.type === 'Photo' ? 'selected' : ''}>Photo</option>
-              <option value="Deficiency" ${itemData.type === 'Deficiency' ? 'selected' : ''}>Deficiency</option>
-              <option value="Pass/Fail" ${itemData.type === 'Pass/Fail' ? 'selected' : ''}>Pass/Fail</option>
-              <option value="Radio" ${itemData.type === 'Radio' ? 'selected' : ''}>Radio</option>
-              <option value="Date" ${itemData.type === 'Date' ? 'selected' : ''}>Date</option>
-              <option value="Deficiency_field" ${itemData.type === 'Deficiency_field' ? 'selected' : ''}>Deficiency Field</option>
+              <option value="Text" ${itemData.type === "Text" ? "selected" : ""}>Text</option>
+              <option value="Choice" ${itemData.type === "Choice" ? "selected" : ""}>Choice</option>
+              <option value="Button" ${itemData.type === "Button" ? "selected" : ""}>Button</option>
+              <option value="Photo" ${itemData.type === "Photo" ? "selected" : ""}>Photo</option>
+              <option value="Deficiency" ${itemData.type === "Deficiency" ? "selected" : ""}>Deficiency</option>
+              <option value="Pass/Fail" ${itemData.type === "Pass/Fail" ? "selected" : ""}>Pass/Fail</option>
+              <option value="Radio" ${itemData.type === "Radio" ? "selected" : ""}>Radio</option>
+              <option value="Date" ${itemData.type === "Date" ? "selected" : ""}>Date</option>
+              <option value="Deficiency_field" ${itemData.type === "Deficiency_field" ? "selected" : ""}>Deficiency Field</option>
+              <option value="System Category" ${itemData.type === "System Category" ? "selected" : ""}>System Category</option>
+              <option value="Interval Category" ${itemData.type === "Interval Category" ? "selected" : ""}>Interval Category</option>
             </select>
           </div>
         </div>
@@ -229,28 +271,30 @@ export default class extends Controller {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/10">
         <div class="space-y-2">
           <label for="${fieldIdBase}_label_name" class="block text-white font-semibold text-sm">Custom Label</label>
-          <input type="text" id="${fieldIdBase}_label_name" value="${itemData.label_name || ''}" data-field-attribute="label_name" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter custom label">
+          <input type="text" id="${fieldIdBase}_label_name" value="${itemData.label_name || ""}" data-field-attribute="label_name" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter custom label">
         </div>
         <div class="space-y-2">
           <label for="${fieldIdBase}_section_name" class="block text-white font-semibold text-sm">Section Name</label>
-          <input type="text" id="${fieldIdBase}_section_name" value="${itemData.section_name || ''}" data-field-attribute="section_name" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter section name">
+          <input type="text" id="${fieldIdBase}_section_name" value="${itemData.section_name || ""}" data-field-attribute="section_name" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Enter section name">
         </div>
         <div class="space-y-2">
           <label for="${fieldIdBase}_page_number" class="block text-white font-semibold text-sm">Page Number</label>
-          <input type="number" id="${fieldIdBase}_page_number" value="${itemData.page_number || ''}" data-field-attribute="page_number" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Page">
+          <input type="number" id="${fieldIdBase}_page_number" value="${itemData.page_number || ""}" data-field-attribute="page_number" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="Page">
         </div>
         <div class="space-y-2">
           <label for="${fieldIdBase}_column_width" class="block text-white font-semibold text-sm">Column Width (1-9)</label>
           <input type="number" id="${fieldIdBase}_column_width" value="${itemData.column_width || 3}" data-field-attribute="column_width" min="1" max="9" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="3">
         </div>
         <div class="flex items-center space-x-3 lg:col-span-4 mt-2">
-          <input type="checkbox" id="${fieldIdBase}_required" ${itemData.required ? 'checked' : ''} data-field-attribute="required" class="w-5 h-5 text-indigo-600 bg-white/10 border-white/20 rounded focus:ring-indigo-500 focus:ring-2">
+          <input type="checkbox" id="${fieldIdBase}_required" ${itemData.required ? "checked" : ""} data-field-attribute="required" class="w-5 h-5 text-indigo-600 bg-white/10 border-white/20 rounded focus:ring-indigo-500 focus:ring-2">
           <label for="${fieldIdBase}_required" class="text-white font-medium">Required Field</label>
         </div>
       </div>
 
       <!-- Campos específicos para Deficiency y Deficiency_field -->
-      ${isDeficiencyType ? `
+      ${
+        isDeficiencyType
+          ? `
         <div class="deficiency-fields border-t border-white/10 pt-4 mt-4">
           <div class="mb-4">
             <div class="flex items-center space-x-2 mb-3">
@@ -264,7 +308,7 @@ export default class extends Controller {
                 <label for="${fieldIdBase}_item" class="block text-white font-semibold text-sm">Item</label>
                 <input type="text" 
                        id="${fieldIdBase}_item" 
-                       value="${itemData.Item || ''}" 
+                       value="${itemData.Item || ""}" 
                        data-field-attribute="item"
                        class="w-full bg-orange-500/10 border border-orange-500/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" 
                        placeholder="Enter item description">
@@ -273,7 +317,7 @@ export default class extends Controller {
                 <label for="${fieldIdBase}_riser" class="block text-white font-semibold text-sm">Riser</label>
                 <input type="text" 
                        id="${fieldIdBase}_riser" 
-                       value="${itemData.Riser || ''}" 
+                       value="${itemData.Riser || ""}" 
                        data-field-attribute="riser"
                        class="w-full bg-orange-500/10 border border-orange-500/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" 
                        placeholder="Enter riser information">
@@ -286,10 +330,62 @@ export default class extends Controller {
             </div>
           </div>
         </div>
-      ` : ''}
+      `
+          : ""
+      }
+
+      <!-- Category Selection Section (for System Category and Interval Category fields) -->
+      ${
+        ["System Category", "Interval Category"].includes(itemData.type)
+          ? `
+        <div class="category-selection-fields border-t border-white/10 pt-4 mt-4">
+          <div class="mb-4">
+            <div class="flex items-center space-x-2 mb-3">
+              <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+              </svg>
+              <span class="text-purple-300 font-semibold text-sm">${itemData.type} Configuration</span>
+            </div>
+            
+            <!-- Category Selection Button -->
+            <div class="space-y-3">
+              <button type="button" 
+                      class="w-full p-4 bg-purple-500/20 border border-purple-500/30 rounded-xl text-white hover:bg-purple-500/30 transition-all duration-200 flex items-center justify-between"
+                      data-action="click->category-selector#openModal"
+                      data-field-name="${itemData.name}"
+                      data-field-type="${itemData.type}">
+                <div class="flex items-center space-x-3">
+                  <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                  </svg>
+                  <span class="font-medium">Select ${itemData.type}</span>
+                </div>
+                <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </button>
+              
+              <!-- Selected Categories Display -->
+              <div class="selected-categories-display p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <div class="text-purple-200 text-sm font-medium mb-2">Selected Categories:</div>
+                <div class="selected-categories-list text-purple-100 text-sm" data-field-attribute="selected-categories">
+                  ${
+                    itemData.selected_categories &&
+                    itemData.selected_categories.length > 0
+                      ? itemData.selected_categories.join(", ")
+                      : '<span class="text-purple-300 italic">No categories selected</span>'
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+          : ""
+      }
 
       <!-- Options Section (for Choice and Deficiency fields) -->
-      <div class="options-container ${hasOptions ? '' : 'hidden'}" data-field-attribute="options-container">
+      <div class="options-container ${hasOptions ? "" : "hidden"}" data-field-attribute="options-container">
         <div class="border-t border-white/10 pt-4 mt-4">
           <div class="flex items-center justify-between mb-3">
             <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail & Radio fields)</label>
@@ -307,7 +403,9 @@ export default class extends Controller {
       </div>
 
       <!-- Photo Field Info (solo para campos Photo) -->
-      ${itemData.type === 'Photo' ? `
+      ${
+        itemData.type === "Photo"
+          ? `
         <div class="photo-info border-t border-white/10 pt-4 mt-4">
           <div class="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
             <div class="flex items-center space-x-2 mb-2">
@@ -325,7 +423,9 @@ export default class extends Controller {
             </p>
           </div>
         </div>
-      ` : ''}
+      `
+          : ""
+      }
     `;
     return element;
   }
@@ -356,7 +456,7 @@ export default class extends Controller {
 
   createPhotoField() {
     const fieldName = `Photo Field ${this.fieldCounter}`;
-    
+
     return {
       id: fieldName,
       name: fieldName,
@@ -369,7 +469,27 @@ export default class extends Controller {
       section_name: "",
       page_number: "1",
       column_width: "3",
-      required: false
+      required: false,
+    };
+  }
+
+  // Método para crear un campo de categoría
+  createCategoryField(type) {
+    const fieldName = `${type} Field ${this.fieldCounter}`;
+
+    return {
+      id: fieldName,
+      name: fieldName,
+      original_name: fieldName,
+      type: type,
+      value: "",
+      selected_categories: [],
+      human_label: fieldName,
+      label_name: fieldName,
+      section_name: "",
+      page_number: "1",
+      column_width: "3",
+      required: false,
     };
   }
 
@@ -402,7 +522,7 @@ export default class extends Controller {
     const itemInAllItems = this.allItems.find(
       (item) => item.name === itemId || item.id === itemId,
     );
-    
+
     if (itemInAllItems) {
       if (changedInput.type === "checkbox") {
         itemInAllItems[attributeName] = changedInput.checked;
@@ -424,23 +544,27 @@ export default class extends Controller {
         // Manejar cambio de tipo
         const oldType = itemInAllItems.type;
         const newType = changedInput.value;
-        
-        console.log(`Cambiando tipo de campo "${itemInAllItems.name}" de "${oldType}" a "${newType}"`);
-        
+
+        console.log(
+          `Cambiando tipo de campo "${itemInAllItems.name}" de "${oldType}" a "${newType}"`,
+        );
+
         // Actualizar tipo
         itemInAllItems.type = newType;
         itemEl.dataset.fieldType = newType;
 
         // Aplicar cambios específicos del tipo
         this.handleTypeChange(itemInAllItems, oldType, newType);
-        
+
         // Actualizar visibilidad del contenedor de opciones
         this.updateOptionsContainerVisibility(itemEl, newType);
 
         // Forzar re-render para mostrar/ocultar campos específicos de Deficiency
         this.renderCurrentPage();
 
-        console.log(`Tipo de campo "${itemInAllItems.name}" cambiado a "${newType}"`);
+        console.log(
+          `Tipo de campo "${itemInAllItems.name}" cambiado a "${newType}"`,
+        );
       } else if (attributeName === "option-value") {
         // Manejar cambio en opciones
         this.updateOptionsFromDOM(itemEl, itemInAllItems);
@@ -450,24 +574,32 @@ export default class extends Controller {
       } else if (attributeName === "riser") {
         // Manejar cambio en campo Riser de Deficiency
         itemInAllItems.Riser = changedInput.value;
+      } else if (attributeName === "selected-categories") {
+        // Manejar cambio en categorías seleccionadas (esto se maneja desde category-selector controller)
+        // No hacer nada aquí, se actualiza desde el category selector
+        return;
       } else {
         itemInAllItems[attributeName] = changedInput.value;
       }
-      
+
       this.updateHiddenInput();
     }
   }
 
   // Método para actualizar la visibilidad del contenedor de opciones
   updateOptionsContainerVisibility(itemEl, fieldType) {
-    const optionsContainer = itemEl.querySelector('[data-field-attribute="options-container"]');
-    const hasOptions = ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].includes(fieldType);
-    
+    const optionsContainer = itemEl.querySelector(
+      '[data-field-attribute="options-container"]',
+    );
+    const hasOptions = ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(
+      fieldType,
+    );
+
     if (optionsContainer) {
       if (hasOptions) {
-        optionsContainer.classList.remove('hidden');
+        optionsContainer.classList.remove("hidden");
       } else {
-        optionsContainer.classList.add('hidden');
+        optionsContainer.classList.add("hidden");
       }
     }
   }
@@ -477,7 +609,9 @@ export default class extends Controller {
     // Limpiar campos específicos del tipo anterior
     if (oldType === "Photo") {
       delete itemData.photo_attachment_id;
-    } else if (["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(oldType)) {
+    } else if (
+      ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(oldType)
+    ) {
       delete itemData.options;
     }
 
@@ -489,11 +623,17 @@ export default class extends Controller {
       delete itemData.C;
     }
 
+    if (["System Category", "Interval Category"].includes(oldType)) {
+      delete itemData.selected_categories;
+    }
+
     // Agregar campos específicos del nuevo tipo
     if (newType === "Photo") {
       // Agregar campo para ID de photo que se llenará después
       itemData.photo_attachment_id = null; // Se llenará cuando se suba la foto
-    } else if (["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(newType)) {
+    } else if (
+      ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(newType)
+    ) {
       itemData.options = this.getDefaultOptionsForType(newType);
     }
 
@@ -503,6 +643,10 @@ export default class extends Controller {
       itemData.Riser = "";
       itemData.D = ""; // Campo oculto para llenar en otra vista
       itemData.C = ""; // Campo oculto para llenar en otra vista
+    }
+
+    if (["System Category", "Interval Category"].includes(newType)) {
+      itemData.selected_categories = [];
     }
 
     console.log(`Type change applied: ${oldType} -> ${newType}`, itemData);
@@ -762,30 +906,30 @@ export default class extends Controller {
   }
 
   // Método para crear un campo por defecto tipo Deficiency
- // Método para crear un campo por defecto tipo Deficiency
- createDefaultField() {
-  const fieldName = `Deficiency Field ${this.fieldCounter}`;
+  // Método para crear un campo por defecto tipo Deficiency
+  createDefaultField() {
+    const fieldName = `Deficiency Field ${this.fieldCounter}`;
 
-  return {
-    id: fieldName,
-    name: fieldName,
-    original_name: fieldName,
-    type: "Deficiency",
-    value: "",
-    options: ["Minor", "Major", "Critical"], // Opciones por defecto para Deficiency
-    comment_value: "", // Agregar comment_value para Deficiency
-    Item: "", // Campo para Item
-    Riser: "", // Campo para Riser
-    D: "", // Campo oculto para llenar en otra vista
-    C: "", // Campo oculto para llenar en otra vista
-    human_label: fieldName,
-    label_name: fieldName,
-    section_name: "",
-    page_number: "1",
-    column_width: "3",
-    required: false,
-  };
-}
+    return {
+      id: fieldName,
+      name: fieldName,
+      original_name: fieldName,
+      type: "Deficiency",
+      value: "",
+      options: ["Minor", "Major", "Critical"], // Opciones por defecto para Deficiency
+      comment_value: "", // Agregar comment_value para Deficiency
+      Item: "", // Campo para Item
+      Riser: "", // Campo para Riser
+      D: "", // Campo oculto para llenar en otra vista
+      C: "", // Campo oculto para llenar en otra vista
+      human_label: fieldName,
+      label_name: fieldName,
+      section_name: "",
+      page_number: "1",
+      column_width: "3",
+      required: false,
+    };
+  }
 
   // Método para hacer scroll al nuevo campo
   scrollToNewField() {

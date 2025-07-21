@@ -6,6 +6,8 @@ class FormFillsController < ApplicationController
   def show
     @form_fill = FormFill.find(params[:id])
     @deficiencies = Deficiency.order(:name).all
+    @system_categories = SystemCategory.all
+    @interval_categories = IntervalCategory.all
     @form_template = @form_fill.form_template
     if @form_fill.form_structure.present?
       begin
@@ -76,6 +78,9 @@ class FormFillsController < ApplicationController
     # Procesar campos de deficiency antes de la actualización
     process_deficiency_fields(update_params)
 
+    # Procesar campos de categoría antes de la actualización
+    process_category_fields(update_params)
+
     # Actualizar campos regulares
     if @form_fill.update(update_params)
       # Procesar fotos si las hay
@@ -89,7 +94,9 @@ class FormFillsController < ApplicationController
       else
         success_message = 'Draft saved successfully.'
         success_message += " #{photo_results[:uploaded]} photo(s) uploaded." if photo_results[:uploaded] > 0
-        success_message += " #{photo_results[:skipped]} photo(s) skipped (already saved)." if photo_results[:skipped] > 0
+        if photo_results[:skipped] > 0
+          success_message += " #{photo_results[:skipped]} photo(s) skipped (already saved)."
+        end
 
         render json: { success: true, message: success_message }, status: :ok
       end
@@ -144,7 +151,7 @@ class FormFillsController < ApplicationController
       begin
         # Sincronizar la estructura con las fotos existentes antes de devolver
         @form_fill.sync_photos_with_structure!
-        
+
         form_fields = JSON.parse(@form_fill.form_structure)
         render json: {
           form_structure: @form_fill.form_structure,
@@ -201,8 +208,6 @@ class FormFillsController < ApplicationController
     end
   end
 
-
-
   # Método específico para subir fotos via AJAX (opcional, para uso futuro)
   def upload_photo
     @form_fill = FormFill.find(params[:id])
@@ -236,26 +241,26 @@ class FormFillsController < ApplicationController
 
   def submit_form
     @main_form_fill = FormFill.find(params[:id])
-    
+
     # Verificar si ya se está generando un PDF
     if @main_form_fill.generating?
       redirect_to @main_form_fill, alert: 'PDF is already being generated. Please wait.'
       return
     end
-    
+
     # Marcar como generando antes de encolar el trabajo
     @main_form_fill.update!(pdf_generation_status: 'generating')
-  
+
     # Encolar el trabajo de generación de PDF
     GeneratePdfJob.perform_later(@main_form_fill.id)
-  
+
     # Redirigir al usuario con un mensaje informativo
     redirect_to @main_form_fill, notice: 'Your PDF is being generated and will be available shortly.'
   end
 
   def download_pdf
     @form_fill = FormFill.find(params[:id])
-    
+
     if @form_fill.filled_pdf.attached?
       # Usar send_data para servir el archivo directamente
       send_data @form_fill.filled_pdf.download,
@@ -282,8 +287,11 @@ class FormFillsController < ApplicationController
     # Obtener campos de deficiency dinámicamente
     deficiency_params = deficiency_field_params
 
+    # Obtener campos de categoría dinámicamente
+    category_params = category_field_params
+
     # Combinar todos los parámetros
-    basic_params.merge(photo_params).merge(deficiency_params)
+    basic_params.merge(photo_params).merge(deficiency_params).merge(category_params)
   end
 
   # Método para obtener nombres de campos de tipo Photo dinámicamente
@@ -354,6 +362,38 @@ class FormFillsController < ApplicationController
     end
   end
 
+  # Método para obtener parámetros de campos Category dinámicamente
+  def category_field_params
+    category_params = {}
+
+    # Si no hay form_fill aún (como en create), intentar obtener de form_template
+    structure_source = @form_fill&.form_structure ||
+                       (if params[:form_fill][:form_template_id].present?
+                          FormTemplate.find_by(id: params[:form_fill][:form_template_id])&.form_structure
+                        else
+                          nil
+                        end)
+
+    return {} unless structure_source.present?
+
+    begin
+      structure = JSON.parse(structure_source)
+      category_fields = structure.select { |field| ['System Category', 'Interval Category'].include?(field['type']) }
+
+      category_fields.each do |field|
+        field_name = field['name']
+        # Permitir el campo de categoría
+        category_params[field_name] = params.dig(:form_fill, field_name)
+      end
+
+      # Filtrar parámetros nulos
+      category_params.compact
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form structure for category params: #{e.message}"
+      {}
+    end
+  end
+
   # Método para procesar subidas de fotos (solo fotos nuevas)
   def process_photo_uploads(photo_params)
     results = { uploaded: 0, errors: [], skipped: 0 }
@@ -382,31 +422,74 @@ class FormFillsController < ApplicationController
     results
   end
 
+  # Método para procesar campos de categoría
+  def process_category_fields(update_params)
+    return unless update_params[:form_structure].present?
+
+    begin
+      # Parsear la estructura actual del formulario
+      form_structure = JSON.parse(update_params[:form_structure])
+
+      # Actualizar campos de categoría con los valores de los parámetros
+      form_structure.each do |field|
+        next unless ['System Category', 'Interval Category'].include?(field['type'])
+
+        field_name = field['name']
+
+        # Actualizar el valor del campo de categoría
+        next unless update_params[field_name].present?
+
+        field['value'] = update_params[field_name]
+
+        # Para campos de categoría múltiple, también actualizar selected_categories
+        field['selected_categories'] = if field['type'] == 'Interval Category'
+                                         # Si el valor contiene múltiples categorías separadas por coma
+                                         update_params[field_name].split(', ').map(&:strip)
+                                       else
+                                         # Para System Category, es una sola categoría
+                                         [update_params[field_name]]
+                                       end
+      end
+
+      # Actualizar la estructura en los parámetros
+      update_params[:form_structure] = form_structure.to_json
+
+      # Remover los parámetros de categoría individuales ya que están en form_structure
+      category_keys = update_params.keys.select do |key|
+        form_structure.any? do |field|
+          field['name'] == key.to_s && ['System Category', 'Interval Category'].include?(field['type'])
+        end
+      end
+      category_keys.each { |key| update_params.delete(key) }
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error processing category fields: #{e.message}"
+    end
+  end
+
   def photo_already_exists_for_field?(field_name, new_photo_file)
     return false unless @form_fill.form_structure.present?
 
     begin
       structure = JSON.parse(@form_fill.form_structure)
       field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
-      
+
       # Si el campo no tiene photo_attachment_id, no hay foto existente
       return false unless field_data&.dig('photo_attachment_id').present?
-      
+
       # Obtener la foto existente
       existing_photo = @form_fill.get_photo_for_field(field_name)
       return false unless existing_photo.present?
-      
+
       # Comparación básica por tamaño y tipo (más eficiente)
       same_size = existing_photo.byte_size == new_photo_file.size
       same_content_type = existing_photo.content_type == new_photo_file.content_type
-      
+
       # Si son exactamente iguales en tamaño y tipo, probablemente es el mismo archivo
       is_same_file = same_size && same_content_type
-      
+
       Rails.logger.info "Photo comparison for #{field_name}: size(#{same_size}), type(#{same_content_type}) = same_file(#{is_same_file})"
-      
-      return is_same_file
-      
+
+      is_same_file
     rescue JSON::ParserError => e
       Rails.logger.error "Error checking existing photo for field #{field_name}: #{e.message}"
       false
