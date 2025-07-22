@@ -39,6 +39,9 @@ class InspectionsController < ApplicationController
 
     # Buscar el formulario principal específico
     @form_fill = @inspection.form_fills.find_by(form_template_id: @inspection.form_template_id)
+    
+    # Calcular conteos del formulario principal si existe
+    @form_counts = @form_fill&.calculate_form_counts || { pass: 0, fail: 0, na: 0 }
   end
 
   # GET /inspections/new

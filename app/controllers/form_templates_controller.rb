@@ -18,6 +18,8 @@ class FormTemplatesController < ApplicationController
   # GET /form_templates/:id/form_builder
   def form_builder
     authorize @form_template
+    set_interval_categories
+    set_system_categories
   end
 
   def new
@@ -28,7 +30,7 @@ class FormTemplatesController < ApplicationController
   def create
     authorize FormTemplate
     uploaded_file = form_template_params[:original_file]
-  
+
     # 1. Validar que se haya subido un archivo
     unless uploaded_file
       @form_template = FormTemplate.new(form_template_params.except(:original_file))
@@ -39,7 +41,7 @@ class FormTemplatesController < ApplicationController
       render :new, status: :unprocessable_entity
       return
     end
-  
+
     # 2. Crear el registro del FormTemplate sin la estructura del formulario
     @form_template = FormTemplate.new(
       id: form_template_params[:id],
@@ -48,22 +50,23 @@ class FormTemplatesController < ApplicationController
       file_type: uploaded_file.content_type,
       system_category: form_template_params[:system_category]
     )
-  
+
     # Asignar las categorías de intervalo (si se seleccionaron)
     if params[:form_template][:interval_category_ids].present?
       @form_template.interval_category_ids = params[:form_template][:interval_category_ids]
     end
-  
+
     # Adjuntar el archivo usando Active Storage
     @form_template.original_file.attach(uploaded_file)
-  
+
     # 3. Guardar el registro y encolar el trabajo en segundo plano
     if @form_template.save
       # Encolar el job para que parseé el PDF en segundo plano
       ParseFormTemplateJob.perform_later(@form_template.id)
-  
+
       # Redirigir inmediatamente al usuario con un mensaje informativo
-      redirect_to @form_template, notice: 'Form template created successfully. The file is being processed and the structure will appear shortly.'
+      redirect_to @form_template,
+                  notice: 'Form template created successfully. The file is being processed and the structure will appear shortly.'
     else
       # Si falla el guardado, volver a renderizar el formulario con los errores
       set_interval_categories
