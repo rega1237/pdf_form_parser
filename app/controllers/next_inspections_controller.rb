@@ -7,6 +7,7 @@ class NextInspectionsController < ApplicationController
 
   def index
     # Por defecto, muestra las inspecciones del próximo mes
+    @next_inspections = policy_scope(NextInspection)
     @from_date = params[:from_date].presence || Date.current.beginning_of_day
     @to_date = params[:to_date].presence || 1.month.from_now.end_of_day
 
@@ -16,10 +17,11 @@ class NextInspectionsController < ApplicationController
   end
 
   def show
-    # La vista mostrará los detalles de @next_inspection
+    authorize @next_inspection
   end
 
   def create_inspection_from_next
+    authorize @next_inspection, :create_inspection_from_next?
     # Preparamos los datos para enviar al formulario de nueva inspección
     property = @next_inspection.property
     system_category = @next_inspection.system_category.name
