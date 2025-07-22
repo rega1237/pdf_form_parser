@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_18_010254) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_21_184631) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -118,6 +118,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_18_010254) do
     t.string "name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "duration_in_months"
+  end
+
+  create_table "next_inspections", force: :cascade do |t|
+    t.bigint "property_id", null: false
+    t.bigint "system_category_id", null: false
+    t.bigint "interval_category_id", null: false
+    t.date "next_inspection_date"
+    t.string "status"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["interval_category_id"], name: "index_next_inspections_on_interval_category_id"
+    t.index ["property_id"], name: "index_next_inspections_on_property_id"
+    t.index ["system_category_id"], name: "index_next_inspections_on_system_category_id"
   end
 
   create_table "properties", force: :cascade do |t|
@@ -172,6 +187,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_18_010254) do
   add_foreign_key "inspections", "form_templates"
   add_foreign_key "inspections", "properties"
   add_foreign_key "inspections", "users"
+  add_foreign_key "next_inspections", "interval_categories"
+  add_foreign_key "next_inspections", "properties"
+  add_foreign_key "next_inspections", "system_categories"
   add_foreign_key "properties", "customers"
   add_foreign_key "users", "roles"
 end

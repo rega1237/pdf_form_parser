@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Inspections Pro" %></title>
+    <title><%= content_for(:title) || "Aes Pro" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -70,6 +70,7 @@
                     <%= link_to "Customers", customers_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                   <% end %>
                   <%= link_to "Inspections", inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                  <%= link_to "Next Inspections", next_inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                   <% if policy(:company_settings).index? %>
                     <%= link_to "Settings", settings_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                   <%end%>
@@ -158,6 +159,7 @@
                   <%= link_to "Customers", customers_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                 <% end %>
                 <%= link_to "Inspections", inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                <%= link_to "Next Inspections", next_inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                 <% if policy(:company_settings).index? %>
                   <%= link_to "Settings", settings_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                 <%end%>

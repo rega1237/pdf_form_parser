@@ -254,6 +254,9 @@ class FormFillsController < ApplicationController
     # Encolar el trabajo de generación de PDF
     GeneratePdfJob.perform_later(@main_form_fill.id)
 
+    # Le pasamos el `form_structure` ya actualizado. para crear el next_inspection
+    create_next_inspection_from_structure(@main_form_fill.form_structure)
+
     # Redirigir al usuario con un mensaje informativo
     redirect_to @main_form_fill, notice: 'Your PDF is being generated and will be available shortly.'
   end
@@ -542,6 +545,49 @@ class FormFillsController < ApplicationController
       deficiency_keys.each { |key| update_params.delete(key) }
     rescue JSON::ParserError => e
       Rails.logger.error "Error processing deficiency fields: #{e.message}"
+    end
+  end
+
+  def create_next_inspection_from_structure(form_structure_json)
+    inspection = @main_form_fill.inspection
+    return unless inspection && form_structure_json.present?
+
+    begin
+      structure = JSON.parse(form_structure_json)
+
+      # Encontrar los valores seleccionados en el formulario
+      system_category_field = structure.find { |field| field['type'] == 'System Category' }
+      interval_category_field = structure.find { |field| field['type'] == 'Interval Category' }
+
+      system_category_name = system_category_field['value'] if system_category_field
+
+      # Maneja tanto 'value' como 'selected_categories' para el intervalo
+      interval_category_name = if interval_category_field
+                                 (interval_category_field['selected_categories'] || [interval_category_field['value']]).first
+                               end
+
+      # Proceder si tenemos toda la información
+      if system_category_name.present? && interval_category_name.present?
+        system_category = SystemCategory.find_by(name: system_category_name)
+        interval_category = IntervalCategory.find_by(name: interval_category_name)
+
+        if system_category && interval_category&.duration_in_months.present?
+          next_date = inspection.date + interval_category.duration_in_months.months
+
+          NextInspection.create!(
+            property: inspection.property,
+            system_category: system_category,
+            interval_category: interval_category,
+            next_inspection_date: next_date,
+            status: 'scheduled'
+          )
+          Rails.logger.info "Next inspection scheduled for property #{inspection.property.id} on #{next_date}"
+        else
+          Rails.logger.warn('Could not find System/Interval category or duration_in_months is not set.')
+        end
+      end
+    rescue JSON::ParserError => e
+      Rails.logger.error "Failed to parse form_structure for next inspection: #{e.message}"
     end
   end
 end

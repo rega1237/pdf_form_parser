@@ -39,7 +39,7 @@ class InspectionsController < ApplicationController
 
     # Buscar el formulario principal específico
     @form_fill = @inspection.form_fills.find_by(form_template_id: @inspection.form_template_id)
-    
+
     # Calcular conteos del formulario principal si existe
     @form_counts = @form_fill&.calculate_form_counts || { pass: 0, fail: 0, na: 0 }
   end
@@ -47,6 +47,21 @@ class InspectionsController < ApplicationController
   # GET /inspections/new
   def new
     @inspection = Inspection.new
+
+    if params[:property_id].present?
+      @property = Property.find(params[:property_id])
+      @inspection.property_id = @property.id
+      @selected_customer = @property.customer
+      @properties = @selected_customer.properties.order(:property_name)
+
+      # Asignar valores pre-seleccionados si vienen en los parámetros
+      @inspection.system_category = params[:system_category] if params[:system_category].present?
+      @inspection.interval_category = params[:interval_category] if params[:interval_category].present?
+      @inspection.date = params[:date] if params[:date].present?
+    else
+      @properties = []
+      @selected_customer = nil
+    end
 
     authorize @inspection
 
