@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  get "next_inspections/index"
+  get "next_inspections/show"
   resources :system_categories
   devise_for :users, skip: [:registrations]
 
@@ -53,6 +55,13 @@ Rails.application.routes.draw do
       get :calendar
       get :dashboard
       get :properties_by_customer
+    end
+  end
+
+  resources :next_inspections, only: %i[index show] do
+    member do
+      # Esta ruta nos permitirá crear una inspección a partir de una 'NextInspection'
+      post :create_inspection_from_next
     end
   end
 

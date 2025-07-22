@@ -88,7 +88,7 @@ class GeneratePdfJob < ApplicationJob
           File.open(final_pdf_path, 'rb') do |file|
             main_form_fill.filled_pdf.attach(
               io: file,
-              filename: "inspeccion_final_#{inspection.id}_#{Time.now.to_i}.pdf",
+              filename: "#{inspection.property['property_name']}_#{inspection.id}_#{Time.now.to_i}.pdf",
               content_type: 'application/pdf'
             )
           end

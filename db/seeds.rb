@@ -1,12 +1,12 @@
 # Crear categorías de intervalo si no existen
 interval_categories = [
-  "Quarterly Inspection",
-  "Annual Inspection",
-  "5-Year Inspection"
+  ["Quarterly Inspection", 3],
+  ["Annual Inspection", 12],
+  ["5-Year Inspection", 60]
 ]
 
-interval_categories.each do |name|
-  IntervalCategory.find_or_create_by(name: name)
+interval_categories.each do |interval|
+  IntervalCategory.find_or_create_by(name: interval[0], duration_in_months: interval[1])
 end
 
 puts "Categorías de intervalo creadas exitosamente"
