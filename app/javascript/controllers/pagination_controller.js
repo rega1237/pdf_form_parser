@@ -73,7 +73,7 @@ export default class extends Controller {
       if (fieldContainer) {
         const value = this.getFieldValue(fieldContainer);
         if (value === 'Pass' || value === 'N/A') {
-          pageIncrement = 3;
+          pageIncrement = 2;
         }
       }
     }
