@@ -165,6 +165,10 @@
       min-width: 0;
     }
 
+    .option-item .grid {
+      flex: 1;
+    }
+
     .remove-option-btn {
       flex-shrink: 0;
       width: 2rem;
@@ -492,7 +496,10 @@
                   <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].include?(field['type']) %>" data-field-attribute="options-container">
                     <div class="border-t border-white/10 pt-4 mt-4">
                       <div class="flex items-center justify-between mb-3">
-                        <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail & Radio fields)</label>
+                        <div>
+                          <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail & Radio fields)</label>
+                          <p class="text-slate-400 text-xs mt-1">Label: what users see | Value: what gets submitted</p>
+                        </div>
                         <button type="button" 
                                 class="add-option-btn text-xs px-3 py-1" 
                                 data-action="click->drag#addOption"
@@ -503,12 +510,29 @@
                       <div class="options-list space-y-2" data-field-attribute="options-list">
                         <% if field['options'] && field['options'].is_a?(Array) %>
                           <% field['options'].each_with_index do |option, opt_index| %>
+                            <% 
+                              # Determinar si la opción es un array [label, valor] o string simple
+                              if option.is_a?(Array) && option.length == 2
+                                option_label = option[0]
+                                option_value = option[1]
+                              else
+                                option_label = option
+                                option_value = option
+                              end
+                            %>
                             <div class="option-item">
-                              <input type="text" 
-                                     value="<%= option %>" 
-                                     data-field-attribute="option-value"
-                                     class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                                     placeholder="Option value">
+                              <div class="grid grid-cols-2 gap-2 flex-1">
+                                <input type="text" 
+                                       value="<%= option_label %>" 
+                                       data-field-attribute="option-label"
+                                       class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                       placeholder="Display label">
+                                <input type="text" 
+                                       value="<%= option_value %>" 
+                                       data-field-attribute="option-value"
+                                       class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                       placeholder="Form value">
+                              </div>
                               <button type="button" 
                                       class="remove-option-btn" 
                                       data-action="click->drag#removeOption">

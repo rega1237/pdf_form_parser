@@ -17,6 +17,7 @@ export default class extends Controller {
     this.allItems = [];
     this.fieldCounter = 1;
     this.isInitialLoad = true;
+    this.isUpdating = false; // Flag para evitar actualizaciones concurrentes
 
     // Initial population of allItems from the DOM elements rendered by ERB
     // These elements are expected to have data-id and data-field-type, etc.
@@ -47,7 +48,6 @@ export default class extends Controller {
   initializeFieldCounter() {
     // Contar campos existentes y empezar desde el siguiente número
     this.fieldCounter = this.allItems.length + 1;
-    console.log(`Field counter inicializado en: ${this.fieldCounter}`);
   }
 
   disconnect() {
@@ -88,12 +88,39 @@ export default class extends Controller {
       '[data-field-attribute="required"]',
     );
 
-    const optionInputs = itemEl.querySelectorAll(
-      '[data-field-attribute="option-value"]',
+    // Extraer opciones (tanto label como valor)
+    const optionsContainer = itemEl.querySelector(
+      '[data-field-attribute="options-container"]',
     );
-    const options = Array.from(optionInputs)
-      .map((input) => input.value)
-      .filter((val) => val.trim() !== "");
+    let options = [];
+
+    if (optionsContainer) {
+      const optionItems = optionsContainer.querySelectorAll(".option-item");
+
+      optionItems.forEach((optionItem) => {
+        const labelInput = optionItem.querySelector(
+          '[data-field-attribute="option-label"]',
+        );
+        const valueInput = optionItem.querySelector(
+          '[data-field-attribute="option-value"]',
+        );
+
+        if (labelInput && valueInput) {
+          const label = labelInput.value.trim();
+          const value = valueInput.value.trim();
+
+          if (label && value) {
+            // Si label y value son iguales, guardar como string simple para compatibilidad
+            if (label === value) {
+              options.push(value);
+            } else {
+              // Si son diferentes, guardar como array [label, valor]
+              options.push([label, value]);
+            }
+          }
+        }
+      });
+    }
 
     // Extraer campos específicos de Deficiency
     const itemInput = itemEl.querySelector('[data-field-attribute="item"]');
@@ -166,7 +193,10 @@ export default class extends Controller {
       case "Pass/Fail":
         return ["Pass", "Fail", "N/A"];
       case "Radio":
-        return ["Option 1", "Option 2"];
+        return [
+          ["Yes", "Choice1"],
+          ["No", "Choice2"],
+        ]; // Ejemplo con label/valor diferentes
       case "Choice":
         return [];
       case "System Category":
@@ -220,6 +250,8 @@ export default class extends Controller {
 
     element.dataset.id = itemData.name || itemData.id;
     element.dataset.fieldType = itemData.type;
+    element.dataset.originalName =
+      itemData.original_name || itemData.name || itemData.id;
 
     const fieldIdBase = `field_${(itemData.name || itemData.id).replace(/\W/g, "_")}_${globalIndex}`;
     const hasOptions = ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(
@@ -388,7 +420,10 @@ export default class extends Controller {
       <div class="options-container ${hasOptions ? "" : "hidden"}" data-field-attribute="options-container">
         <div class="border-t border-white/10 pt-4 mt-4">
           <div class="flex items-center justify-between mb-3">
-            <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail & Radio fields)</label>
+            <div>
+              <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail & Radio fields)</label>
+              <p class="text-slate-400 text-xs mt-1">Label: what users see | Value: what gets submitted</p>
+            </div>
             <button type="button" 
                     class="add-option-btn bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-3 py-1 rounded-lg transition-colors" 
                     data-action="click->drag#addOption"
@@ -433,14 +468,26 @@ export default class extends Controller {
   // Método para construir el HTML de las opciones
   buildOptionsHTML(options) {
     return options
-      .map(
-        (option) => `
+      .map((option) => {
+        // Determinar si es array [label, valor] o string simple
+        const isArray = Array.isArray(option);
+        const label = isArray ? option[0] : option;
+        const value = isArray ? option[1] : option;
+
+        return `
       <div class="option-item">
-        <input type="text" 
-               value="${option}" 
-               data-field-attribute="option-value"
-               class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-               placeholder="Option value">
+        <div class="grid grid-cols-2 gap-2 flex-1">
+          <input type="text" 
+                 value="${label}" 
+                 data-field-attribute="option-label"
+                 class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                 placeholder="Display label">
+          <input type="text" 
+                 value="${value}" 
+                 data-field-attribute="option-value"
+                 class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                 placeholder="Form value">
+        </div>
         <button type="button" 
                 class="remove-option-btn" 
                 data-action="click->drag#removeOption">
@@ -449,8 +496,8 @@ export default class extends Controller {
           </svg>
         </button>
       </div>
-    `,
-      )
+    `;
+      })
       .join("");
   }
 
@@ -494,20 +541,21 @@ export default class extends Controller {
   }
 
   addEventListenersToPageItems() {
+    // Crear una función bound una sola vez para poder removerla correctamente
+    if (!this.boundHandleAttributeChange) {
+      this.boundHandleAttributeChange = this.handleAttributeChange.bind(this);
+    }
+
     this.itemTargets.forEach((itemEl) => {
       const attributeInputs = itemEl.querySelectorAll("[data-field-attribute]");
       attributeInputs.forEach((input) => {
-        // Remove old listener before adding new one to prevent duplicates if called multiple times
-        input.removeEventListener(
-          "input",
-          this.handleAttributeChange.bind(this),
-        );
-        input.removeEventListener(
-          "change",
-          this.handleAttributeChange.bind(this),
-        ); // Para selects
-        input.addEventListener("input", this.handleAttributeChange.bind(this));
-        input.addEventListener("change", this.handleAttributeChange.bind(this)); // Para selects
+        // Remove old listener before adding new one to prevent duplicates
+        input.removeEventListener("input", this.boundHandleAttributeChange);
+        input.removeEventListener("change", this.boundHandleAttributeChange);
+
+        // Add new listeners
+        input.addEventListener("input", this.boundHandleAttributeChange);
+        input.addEventListener("change", this.boundHandleAttributeChange);
       });
     });
   }
@@ -522,6 +570,10 @@ export default class extends Controller {
     const itemInAllItems = this.allItems.find(
       (item) => item.name === itemId || item.id === itemId,
     );
+
+    if (!itemInAllItems) {
+      return;
+    }
 
     if (itemInAllItems) {
       if (changedInput.type === "checkbox") {
@@ -538,16 +590,10 @@ export default class extends Controller {
 
         // Actualizar el dataset del elemento
         itemEl.dataset.id = newName;
-
-        console.log(`Campo renombrado de "${oldId}" a "${newName}"`);
       } else if (attributeName === "type") {
         // Manejar cambio de tipo
         const oldType = itemInAllItems.type;
         const newType = changedInput.value;
-
-        console.log(
-          `Cambiando tipo de campo "${itemInAllItems.name}" de "${oldType}" a "${newType}"`,
-        );
 
         // Actualizar tipo
         itemInAllItems.type = newType;
@@ -559,15 +605,37 @@ export default class extends Controller {
         // Actualizar visibilidad del contenedor de opciones
         this.updateOptionsContainerVisibility(itemEl, newType);
 
-        // Forzar re-render para mostrar/ocultar campos específicos de Deficiency
-        this.renderCurrentPage();
-
-        console.log(
-          `Tipo de campo "${itemInAllItems.name}" cambiado a "${newType}"`,
-        );
-      } else if (attributeName === "option-value") {
-        // Manejar cambio en opciones
-        this.updateOptionsFromDOM(itemEl, itemInAllItems);
+        // Solo re-renderizar si es necesario para campos específicos (Deficiency, etc.)
+        if (
+          [
+            "Deficiency",
+            "Deficiency_field",
+            "System Category",
+            "Interval Category",
+          ].includes(newType) ||
+          [
+            "Deficiency",
+            "Deficiency_field",
+            "System Category",
+            "Interval Category",
+          ].includes(oldType)
+        ) {
+          // IMPORTANTE: Actualizar el hidden input ANTES del re-render para evitar pérdida de datos
+          this.updateHiddenInput();
+          console.log(
+            `Re-rendering due to type change from ${oldType} to ${newType}`,
+          );
+          this.renderCurrentPage();
+        } else {
+          // Para otros tipos, solo actualizar el hidden input
+          this.updateHiddenInput();
+        }
+      } else if (
+        attributeName === "option-value" ||
+        attributeName === "option-label"
+      ) {
+        // Manejar cambio en opciones (tanto label como value)
+        this.updateSingleFieldOptions(itemEl, itemInAllItems);
       } else if (attributeName === "item") {
         // Manejar cambio en campo Item de Deficiency
         itemInAllItems.Item = changedInput.value;
@@ -648,18 +716,127 @@ export default class extends Controller {
     if (["System Category", "Interval Category"].includes(newType)) {
       itemData.selected_categories = [];
     }
-
-    console.log(`Type change applied: ${oldType} -> ${newType}`, itemData);
   }
 
-  // Método para actualizar opciones desde el DOM
-  updateOptionsFromDOM(itemEl, itemData) {
-    const optionInputs = itemEl.querySelectorAll(
-      '[data-field-attribute="option-value"]',
+  // Método específico para actualizar opciones de un solo campo
+  updateSingleFieldOptions(itemEl, itemData) {
+    // Evitar actualizaciones concurrentes
+    if (this.isUpdating) {
+      return;
+    }
+
+    this.isUpdating = true;
+
+    // Verificar que el elemento corresponde al campo correcto
+    const elementFieldId = itemEl.dataset.id;
+    if (elementFieldId !== itemData.name && elementFieldId !== itemData.id) {
+      this.isUpdating = false;
+      return;
+    }
+
+    // Buscar específicamente el contenedor de opciones de este campo
+    const optionsContainer = itemEl.querySelector(
+      '[data-field-attribute="options-container"]',
     );
-    const options = Array.from(optionInputs)
-      .map((input) => input.value)
-      .filter((val) => val.trim() !== "");
+    if (!optionsContainer) {
+      this.isUpdating = false;
+      return;
+    }
+
+    // Solo seleccionar option-items dentro del contenedor de opciones de este campo específico
+    const optionItems = optionsContainer.querySelectorAll(".option-item");
+    const options = [];
+
+    optionItems.forEach((optionItem) => {
+      const labelInput = optionItem.querySelector(
+        '[data-field-attribute="option-label"]',
+      );
+      const valueInput = optionItem.querySelector(
+        '[data-field-attribute="option-value"]',
+      );
+
+      if (labelInput && valueInput) {
+        const label = labelInput.value.trim();
+        const value = valueInput.value.trim();
+
+        if (label && value) {
+          // Si label y value son iguales, guardar como string simple para compatibilidad
+          if (label === value) {
+            options.push(value);
+          } else {
+            // Si son diferentes, guardar como array [label, valor]
+            options.push([label, value]);
+          }
+        }
+      }
+    });
+
+    // Actualizar solo este campo específico
+    itemData.options = options.length > 0 ? options : null;
+
+    // Actualizar el hidden input con todos los datos
+    this.updateHiddenInput();
+
+    // Liberar el flag de actualización
+    this.isUpdating = false;
+  }
+
+  // Método para actualizar opciones desde el DOM (mantener para compatibilidad)
+  updateOptionsFromDOM(itemEl, itemData) {
+    // Verificar que el elemento corresponde al campo correcto
+    const elementFieldId = itemEl.dataset.id;
+    if (elementFieldId !== itemData.name && elementFieldId !== itemData.id) {
+      console.error(
+        `Mismatch: Element ID "${elementFieldId}" doesn't match item data "${itemData.name}"`,
+      );
+      return;
+    }
+
+    // Buscar específicamente el contenedor de opciones de este campo
+    const optionsContainer = itemEl.querySelector(
+      '[data-field-attribute="options-container"]',
+    );
+    if (!optionsContainer) {
+      console.log(`No options container found for field ${itemData.name}`);
+      return;
+    }
+
+    // Solo seleccionar option-items dentro del contenedor de opciones de este campo específico
+    const optionItems = optionsContainer.querySelectorAll(".option-item");
+    const options = [];
+
+    console.log(
+      `Updating options for field "${itemData.name}", found ${optionItems.length} option items`,
+    );
+
+    optionItems.forEach((optionItem, index) => {
+      const labelInput = optionItem.querySelector(
+        '[data-field-attribute="option-label"]',
+      );
+      const valueInput = optionItem.querySelector(
+        '[data-field-attribute="option-value"]',
+      );
+
+      if (labelInput && valueInput) {
+        const label = labelInput.value.trim();
+        const value = valueInput.value.trim();
+
+        console.log(`Option ${index}: label="${label}", value="${value}"`);
+
+        if (label && value) {
+          // Si label y value son iguales, guardar como string simple para compatibilidad
+          if (label === value) {
+            options.push(value);
+          } else {
+            // Si son diferentes, guardar como array [label, valor]
+            options.push([label, value]);
+          }
+        }
+      }
+    });
+
+    console.log(`Final options for field "${itemData.name}":`, options);
+
     itemData.options = options.length > 0 ? options : null;
     this.updateHiddenInput();
   }
@@ -674,11 +851,18 @@ export default class extends Controller {
 
     const optionHTML = `
       <div class="option-item">
-        <input type="text" 
-               value="" 
-               data-field-attribute="option-value"
-               class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-               placeholder="Option value">
+        <div class="grid grid-cols-2 gap-2 flex-1">
+          <input type="text" 
+                 value="" 
+                 data-field-attribute="option-label"
+                 class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                 placeholder="Display label">
+          <input type="text" 
+                 value="" 
+                 data-field-attribute="option-value"
+                 class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                 placeholder="Form value">
+        </div>
         <button type="button" 
                 class="remove-option-btn" 
                 data-action="click->drag#removeOption">
@@ -691,14 +875,20 @@ export default class extends Controller {
 
     optionsList.insertAdjacentHTML("beforeend", optionHTML);
 
-    // Agregar event listener al nuevo input
-    const newInput = optionsList.lastElementChild.querySelector(
+    // Agregar event listeners a los nuevos inputs
+    const newOptionItem = optionsList.lastElementChild;
+    const labelInput = newOptionItem.querySelector(
+      '[data-field-attribute="option-label"]',
+    );
+    const valueInput = newOptionItem.querySelector(
       '[data-field-attribute="option-value"]',
     );
-    newInput.addEventListener("input", this.handleAttributeChange.bind(this));
 
-    // Focus en el nuevo input
-    newInput.focus();
+    labelInput.addEventListener("input", this.boundHandleAttributeChange);
+    valueInput.addEventListener("input", this.boundHandleAttributeChange);
+
+    // Focus en el primer input (label)
+    labelInput.focus();
 
     // Actualizar el array de opciones
     const itemId = itemEl.dataset.id;
@@ -706,10 +896,8 @@ export default class extends Controller {
       (item) => item.name === itemId || item.id === itemId,
     );
     if (itemInAllItems) {
-      this.updateOptionsFromDOM(itemEl, itemInAllItems);
+      this.updateSingleFieldOptions(itemEl, itemInAllItems);
     }
-
-    console.log(`Nueva opción agregada al campo "${itemId}"`);
   }
 
   // Método para eliminar una opción
@@ -726,10 +914,8 @@ export default class extends Controller {
       (item) => item.name === itemId || item.id === itemId,
     );
     if (itemInAllItems) {
-      this.updateOptionsFromDOM(itemEl, itemInAllItems);
+      this.updateSingleFieldOptions(itemEl, itemInAllItems);
     }
-
-    console.log(`Opción eliminada del campo "${itemId}"`);
   }
 
   // Método para eliminar un campo completo
@@ -742,7 +928,6 @@ export default class extends Controller {
     const fieldToDelete = this.allItems.find((item) => item.name === itemId);
 
     if (!fieldToDelete) {
-      console.error(`Campo "${itemId}" no encontrado en allItems`);
       this.sendNotification("Error: Campo no encontrado", "error");
       return;
     }
@@ -756,10 +941,6 @@ export default class extends Controller {
       try {
         // Eliminar del array
         this.allItems = this.allItems.filter((item) => item.name !== itemId);
-
-        console.log(
-          `Campo "${itemId}" eliminado. Campos restantes: ${this.allItems.length}`,
-        );
 
         // Re-renderizar la página actual (forzar re-render)
         this.isInitialLoad = false; // Asegurar que no es carga inicial
@@ -785,7 +966,6 @@ export default class extends Controller {
           }
         }
       } catch (error) {
-        console.error("Error al eliminar campo:", error);
         this.sendNotification("Error al eliminar el campo", "error");
       }
     }
@@ -814,8 +994,6 @@ export default class extends Controller {
     this.allItems.splice(globalNewIndex, 0, itemActualToMove);
 
     this.updateHiddenInput();
-    // No re-renderizar después de drag & drop para mantener elementos DOM
-    // this.renderCurrentPage(); // Comentado para evitar que desaparezcan los campos
   }
 
   updateHiddenInput() {
@@ -827,7 +1005,6 @@ export default class extends Controller {
     if (this.hasInputTarget) {
       this.inputTarget.value = JSON.stringify(payload);
     }
-    console.log("Updated hidden input with all items:", payload); // Para debugging
   }
 
   updatePaginationControls() {
@@ -862,29 +1039,22 @@ export default class extends Controller {
 
   // Método para agregar un nuevo campo
   addNewField(event) {
-    console.log("=== AGREGANDO NUEVO CAMPO ===");
-
     try {
       // Crear el nuevo campo por defecto tipo Deficiency
       const newField = this.createDefaultField();
-      console.log("Nuevo campo creado:", newField);
 
       // Agregar el campo al array
       this.allItems.push(newField);
-      console.log(`Campo agregado. Total campos: ${this.allItems.length}`);
 
       // Ir a la última página si es necesario
       const totalPages = Math.ceil(this.allItems.length / this.itemsPerPage);
       this.currentPage = totalPages;
-      console.log(`Navegando a página: ${totalPages}`);
 
       // Re-renderizar la página actual
       this.renderCurrentPage();
-      console.log("Página re-renderizada");
 
       // Actualizar el input hidden
       this.updateHiddenInput();
-      console.log("Input hidden actualizado");
 
       // Scroll al campo recién agregado
       this.scrollToNewField();
@@ -897,10 +1067,7 @@ export default class extends Controller {
 
       // Incrementar contador para el próximo campo
       this.fieldCounter++;
-
-      console.log(`=== CAMPO AGREGADO EXITOSAMENTE: ${newField.name} ===`);
     } catch (error) {
-      console.error("Error detallado al agregar nuevo campo:", error);
       this.sendNotification("Error al agregar el campo", "error");
     }
   }
