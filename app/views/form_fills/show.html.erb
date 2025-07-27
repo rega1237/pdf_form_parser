@@ -176,7 +176,7 @@
                             column_width_int = field['column_width'].to_i
                             column_span = column_width_int.in?(1..9) ? "custom-col-span-#{column_width_int}" : 'custom-col-span-3'
                           %>
-                          <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>" data-required="<%= field['required'] == true ? 'true' : 'false' %>" data-field-name="<%= field['name'] %>">
+                          <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>" data-required="<%= field['required'] == true ? 'true' : 'false' %>" data-field-name="<%= field['name'] %>" data-section-name="<%= field['section_name'] %>">
                             <%= render partial: 'form_fills/form_field', locals: { form: form, field: field, field_id: "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}" } %>
                           </div>
                         <% end %>
@@ -194,7 +194,7 @@
                                   column_width_int = field['column_width'].to_i
                                   column_span = column_width_int.in?(1..9) ? "custom-col-span-#{column_width_int}" : 'custom-col-span-3'
                                 %>
-                                <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>" data-required="<%= field['required'] == true ? 'true' : 'false' %>" data-field-name="<%= field['name'] %>">
+                                <div class="<%= column_span %> space-y-4" data-field-type="<%= field['type'] %>" data-required="<%= field['required'] == true ? 'true' : 'false' %>" data-field-name="<%= field['name'] %>" data-section-name="<%= field['section_name'] %>">
                                   <%= render partial: 'form_fills/form_field', locals: { form: form, field: field, field_id: "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}_additional" } %>
                                 </div>
                               <% end %>

@@ -22,59 +22,63 @@ export default class extends Controller {
 
     // Set up field change tracking for incremental saves
     this.setupFieldChangeTracking();
-    
+
     // Set up Pass/Fail field tracking
     this.setupPassFailTracking();
   }
 
-
   // Setup tracking for Pass/Fail fields
   setupPassFailTracking() {
     // Find all Pass/Fail hidden inputs
-    const passFailInputs = this.element.querySelectorAll('input[type="hidden"][id^="hidden_input_"]');
-    
-    passFailInputs.forEach(hiddenInput => {
+    const passFailInputs = this.element.querySelectorAll(
+      'input[type="hidden"][id^="hidden_input_"]',
+    );
+
+    passFailInputs.forEach((hiddenInput) => {
       // Create a MutationObserver to watch for value changes
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-          if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+          if (
+            mutation.type === "attributes" &&
+            mutation.attributeName === "value"
+          ) {
             this.handlePassFailChange(hiddenInput);
           }
         });
       });
-      
+
       // Start observing
       observer.observe(hiddenInput, {
         attributes: true,
-        attributeFilter: ['value']
+        attributeFilter: ["value"],
       });
-      
+
       // Also listen for direct value property changes
       const originalValue = hiddenInput.value;
-      Object.defineProperty(hiddenInput, 'value', {
+      Object.defineProperty(hiddenInput, "value", {
         get() {
-          return this.getAttribute('value') || '';
+          return this.getAttribute("value") || "";
         },
         set(newValue) {
-          if (this.getAttribute('value') !== newValue) {
-            this.setAttribute('value', newValue);
+          if (this.getAttribute("value") !== newValue) {
+            this.setAttribute("value", newValue);
             // Trigger our change handler
             setTimeout(() => {
-              const event = new Event('passfail-change', { bubbles: true });
+              const event = new Event("passfail-change", { bubbles: true });
               this.dispatchEvent(event);
             }, 0);
           }
-        }
+        },
       });
-      
+
       // Listen for the custom event
-      hiddenInput.addEventListener('passfail-change', () => {
+      hiddenInput.addEventListener("passfail-change", () => {
         this.handlePassFailChange(hiddenInput);
       });
     });
-    
+
     // Also listen for choice-buttons events (if they dispatch custom events)
-    this.element.addEventListener('choice-selected', (event) => {
+    this.element.addEventListener("choice-selected", (event) => {
       const hiddenInput = event.target.querySelector('input[type="hidden"]');
       if (hiddenInput) {
         this.handlePassFailChange(hiddenInput);
@@ -85,20 +89,22 @@ export default class extends Controller {
   // Handle Pass/Fail field changes
   handlePassFailChange(hiddenInput) {
     const fieldName = this.extractFieldNameFromHidden(hiddenInput);
-    
+
     if (fieldName) {
-      const fieldValue = hiddenInput.value || '';
+      const fieldValue = hiddenInput.value || "";
       const currentValue = this.changedFields.get(fieldName);
-      
-      console.log(`Pass/Fail change detected - Field: ${fieldName}, Value: ${fieldValue}`);
-      
+
+      console.log(
+        `Pass/Fail change detected - Field: ${fieldName}, Value: ${fieldValue}`,
+      );
+
       // Only track if value actually changed
       if (currentValue !== fieldValue) {
         this.changedFields.set(fieldName, fieldValue);
-        
+
         // Trigger debounced save
         this.debouncedSave();
-        
+
         // Trigger validation update for pagination
         this.updateFieldValidation(fieldName, fieldValue);
       }
@@ -109,9 +115,11 @@ export default class extends Controller {
   extractFieldNameFromHidden(hiddenInput) {
     // Pattern: hidden_input_form_data_fieldname_...
     const id = hiddenInput.id;
-    if (id.startsWith('hidden_input_')) {
+    if (id.startsWith("hidden_input_")) {
       // Try to find the corresponding form field
-      const choiceButtonGroup = hiddenInput.closest('[data-controller*="choice-buttons"]');
+      const choiceButtonGroup = hiddenInput.closest(
+        '[data-controller*="choice-buttons"]',
+      );
       if (choiceButtonGroup) {
         const hiddenInputId = choiceButtonGroup.dataset.hiddenInputId;
         if (hiddenInputId) {
@@ -119,7 +127,7 @@ export default class extends Controller {
           const match = hiddenInputId.match(/hidden_input_(.+)/);
           if (match) {
             // Convert back to form field name format
-            return match[1].replace(/^form_data_/, '').replace(/_[^_]+$/, '');
+            return match[1].replace(/^form_data_/, "").replace(/_[^_]+$/, "");
           }
         }
       }
@@ -130,21 +138,23 @@ export default class extends Controller {
   // Update field validation status
   updateFieldValidation(fieldName, fieldValue) {
     // Find the field container
-    const fieldContainer = this.element.querySelector(`[data-field-name="${fieldName}"]`);
+    const fieldContainer = this.element.querySelector(
+      `[data-field-name="${fieldName}"]`,
+    );
     if (fieldContainer) {
-      const isRequired = fieldContainer.dataset.required === 'true';
-      const hasValue = fieldValue && fieldValue.trim() !== '';
-      
+      const isRequired = fieldContainer.dataset.required === "true";
+      const hasValue = fieldValue && fieldValue.trim() !== "";
+
       // Update validation state
       if (isRequired) {
-        fieldContainer.classList.toggle('field-valid', hasValue);
-        fieldContainer.classList.toggle('field-invalid', !hasValue);
+        fieldContainer.classList.toggle("field-valid", hasValue);
+        fieldContainer.classList.toggle("field-invalid", !hasValue);
       }
-      
+
       // Trigger pagination validation update
-      const event = new CustomEvent('field-validation-changed', {
+      const event = new CustomEvent("field-validation-changed", {
         bubbles: true,
-        detail: { fieldName, hasValue, isRequired }
+        detail: { fieldName, hasValue, isRequired },
       });
       this.element.dispatchEvent(event);
     }
@@ -193,11 +203,11 @@ export default class extends Controller {
 
   loadFormValues() {
     console.log("Loading form values...");
-    
+
     // First, get data from the data column
     const dataFromColumn = this.getDataFromColumn();
     console.log("Data from column:", dataFromColumn);
-    
+
     const formStructureData = JSON.parse(
       this.element.dataset.formFillFormStructureValue || "[]",
     );
@@ -209,7 +219,7 @@ export default class extends Controller {
         if (field.type === "Pass/Fail") {
           const valueFromData = dataFromColumn[field.name];
           const finalValue = valueFromData || field.value;
-          
+
           if (finalValue) {
             this.loadPassFailField(field.name, finalValue);
           }
@@ -242,18 +252,26 @@ export default class extends Controller {
           if (selectElement) {
             selectElement.value = field.select || field.value || "";
           }
-          
+
           // Also update the searchable-select display if it exists
-          const searchableSelectContainer = this.element.querySelector(`[data-controller*="searchable-select"] input[id*="${field.name}_select"]`)?.closest('[data-controller*="searchable-select"]');
+          const searchableSelectContainer = this.element
+            .querySelector(
+              `[data-controller*="searchable-select"] input[id*="${field.name}_select"]`,
+            )
+            ?.closest('[data-controller*="searchable-select"]');
           if (searchableSelectContainer && (field.select || field.value)) {
             // Update the display text of the searchable select
-            const buttonText = searchableSelectContainer.querySelector('[data-searchable-select-target="buttonText"]');
+            const buttonText = searchableSelectContainer.querySelector(
+              '[data-searchable-select-target="buttonText"]',
+            );
             if (buttonText) {
-              buttonText.textContent = field.select || field.value || "Select an option";
+              buttonText.textContent =
+                field.select || field.value || "Select an option";
             }
           }
-          
-          const commentElement = formElements[`form_fill[${field.name}_comment]`];
+
+          const commentElement =
+            formElements[`form_fill[${field.name}_comment]`];
           if (commentElement) {
             commentElement.value = field.comment_value || "";
           }
@@ -282,13 +300,13 @@ export default class extends Controller {
   getDataFromColumn() {
     try {
       console.log("Getting data from column...");
-      
+
       // Try to get data from Rails via a global variable or data attribute
       if (window.formFillData) {
         console.log("Using window.formFillData:", window.formFillData);
         return window.formFillData;
       }
-      
+
       // Try to get from form element data attribute
       const dataValue = this.element.dataset.formFillDataValue;
       if (dataValue) {
@@ -297,10 +315,9 @@ export default class extends Controller {
         console.log("Parsed data:", parsedData);
         return parsedData;
       }
-      
+
       console.log("No data found in attributes");
       return {};
-      
     } catch (error) {
       console.error("Error getting data from column:", error);
       return {};
@@ -317,7 +334,7 @@ export default class extends Controller {
           "X-CSRF-Token": this.csrfToken,
         },
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         return result.data || {};
@@ -335,88 +352,99 @@ export default class extends Controller {
   loadPassFailField(fieldName, value) {
     // Find the hidden input for this field
     let hiddenInput = null;
-    
+
     // Method 1: Look for hidden input by field name pattern
     const possibleSelectors = [
       `input[type="hidden"][id*="${fieldName}"]`,
       `input[type="hidden"][name*="${fieldName}"]`,
       `#hidden_input_form_data_${fieldName}`,
       `#hidden_input_${fieldName}`,
-      `input[type="hidden"][id^="hidden_input"][id*="${fieldName}"]`
+      `input[type="hidden"][id^="hidden_input"][id*="${fieldName}"]`,
     ];
-    
+
     for (const selector of possibleSelectors) {
       hiddenInput = this.element.querySelector(selector);
       if (hiddenInput) {
         break;
       }
     }
-    
+
     // Method 2: Find by looking for the field container first
     if (!hiddenInput) {
-      const fieldContainer = this.element.querySelector(`[data-field-name="${fieldName}"]`);
+      const fieldContainer = this.element.querySelector(
+        `[data-field-name="${fieldName}"]`,
+      );
       if (fieldContainer) {
         hiddenInput = fieldContainer.querySelector('input[type="hidden"]');
       }
     }
-    
+
     // Method 3: Find by choice-button-group and data attribute
     if (!hiddenInput) {
-      const choiceGroups = this.element.querySelectorAll('[data-controller*="choice-buttons"]');
-      choiceGroups.forEach(group => {
+      const choiceGroups = this.element.querySelectorAll(
+        '[data-controller*="choice-buttons"]',
+      );
+      choiceGroups.forEach((group) => {
         const hiddenInputId = group.dataset.hiddenInputId;
         if (hiddenInputId && hiddenInputId.includes(fieldName)) {
           hiddenInput = document.getElementById(hiddenInputId);
         }
       });
     }
-    
+
     if (hiddenInput) {
       // Update the hidden input value
       hiddenInput.value = value;
-      
+
       // Find the choice button group
-      const choiceButtonGroup = hiddenInput.closest('[data-controller*="choice-buttons"]') || 
-                                hiddenInput.parentElement.closest('[data-controller*="choice-buttons"]') ||
-                                this.element.querySelector(`[data-hidden-input-id="${hiddenInput.id}"]`);
-      
+      const choiceButtonGroup =
+        hiddenInput.closest('[data-controller*="choice-buttons"]') ||
+        hiddenInput.parentElement.closest(
+          '[data-controller*="choice-buttons"]',
+        ) ||
+        this.element.querySelector(
+          `[data-hidden-input-id="${hiddenInput.id}"]`,
+        );
+
       if (choiceButtonGroup) {
         // Find all buttons in this group
-        const buttons = choiceButtonGroup.querySelectorAll('.choice-button, .radio-choice-button');
-        
-        buttons.forEach(button => {
+        const buttons = choiceButtonGroup.querySelectorAll(
+          ".choice-button, .radio-choice-button",
+        );
+
+        buttons.forEach((button) => {
           const buttonValue = button.dataset.value;
           const isSelected = buttonValue === value;
-          
+
           if (isSelected) {
             // Select this button
-            if (button.classList.contains('radio-choice-button')) {
+            if (button.classList.contains("radio-choice-button")) {
               this.selectRadioButton(button);
             } else {
               // Handle regular choice-button
-              button.classList.add('selected');
+              button.classList.add("selected");
             }
           } else {
             // Deselect this button
-            if (button.classList.contains('radio-choice-button')) {
+            if (button.classList.contains("radio-choice-button")) {
               this.deselectRadioButton(button);
             } else {
               // Handle regular choice-button
-              button.classList.remove('selected');
+              button.classList.remove("selected");
             }
           }
         });
-        
+
         // Force trigger the choice-buttons controller to update
         setTimeout(() => {
-          const choiceController = this.getChoiceButtonsController(choiceButtonGroup);
+          const choiceController =
+            this.getChoiceButtonsController(choiceButtonGroup);
           if (choiceController && choiceController.preselectButton) {
             choiceController.preselectButton();
           }
         }, 200); // Increased timeout to ensure DOM is ready
-        
       }
-      
+
       // Trigger validation
       this.updateFieldValidation(fieldName, value);
     }
@@ -426,7 +454,10 @@ export default class extends Controller {
   getChoiceButtonsController(element) {
     try {
       if (this.application) {
-        return this.application.getControllerForElementAndIdentifier(element, "choice-buttons");
+        return this.application.getControllerForElementAndIdentifier(
+          element,
+          "choice-buttons",
+        );
       }
       return null;
     } catch (error) {
@@ -439,50 +470,70 @@ export default class extends Controller {
   selectRadioButton(button) {
     // Remover clases de estado no seleccionado
     button.classList.remove(
-      'from-slate-100', 'to-slate-200', 'border-slate-400', 'text-slate-900',
-      'hover:from-slate-200', 'hover:to-slate-300', 'hover:border-slate-500', 
-      'hover:-translate-y-0.5', 'hover:shadow-lg'
+      "from-slate-100",
+      "to-slate-200",
+      "border-slate-400",
+      "text-slate-900",
+      "hover:from-slate-200",
+      "hover:to-slate-300",
+      "hover:border-slate-500",
+      "hover:-translate-y-0.5",
+      "hover:shadow-lg",
     );
-    
+
     // Agregar clases de estado seleccionado
     button.classList.add(
-      'from-blue-600', 'to-blue-700', 'border-blue-900', 'text-white', 'shadow-xl'
+      "from-blue-600",
+      "to-blue-700",
+      "border-blue-900",
+      "text-white",
+      "shadow-xl",
     );
 
     // Actualizar el indicador del círculo interno
-    const radioIndicator = button.querySelector('.radio-indicator div');
+    const radioIndicator = button.querySelector(".radio-indicator div");
     if (radioIndicator) {
-      radioIndicator.classList.remove('opacity-0');
-      radioIndicator.classList.add('opacity-100');
+      radioIndicator.classList.remove("opacity-0");
+      radioIndicator.classList.add("opacity-100");
     }
 
     // Actualizar data-selected attribute
-    button.dataset.selected = 'true';
+    button.dataset.selected = "true";
   }
 
   // Deselect radio button (duplicate from choice-buttons for consistency)
   deselectRadioButton(button) {
     // Remover clases de estado seleccionado
     button.classList.remove(
-      'from-blue-600', 'to-blue-700', 'border-blue-900', 'text-white', 'shadow-xl'
+      "from-blue-600",
+      "to-blue-700",
+      "border-blue-900",
+      "text-white",
+      "shadow-xl",
     );
-    
+
     // Agregar clases de estado no seleccionado
     button.classList.add(
-      'from-slate-100', 'to-slate-200', 'border-slate-400', 'text-slate-900',
-      'hover:from-slate-200', 'hover:to-slate-300', 'hover:border-slate-500', 
-      'hover:-translate-y-0.5', 'hover:shadow-lg'
+      "from-slate-100",
+      "to-slate-200",
+      "border-slate-400",
+      "text-slate-900",
+      "hover:from-slate-200",
+      "hover:to-slate-300",
+      "hover:border-slate-500",
+      "hover:-translate-y-0.5",
+      "hover:shadow-lg",
     );
 
     // Actualizar el indicador del círculo interno
-    const radioIndicator = button.querySelector('.radio-indicator div');
+    const radioIndicator = button.querySelector(".radio-indicator div");
     if (radioIndicator) {
-      radioIndicator.classList.remove('opacity-100');
-      radioIndicator.classList.add('opacity-0');
+      radioIndicator.classList.remove("opacity-100");
+      radioIndicator.classList.add("opacity-0");
     }
 
     // Actualizar data-selected attribute
-    button.dataset.selected = 'false';
+    button.dataset.selected = "false";
   }
 
   displayExistingPhoto(fileInput, fieldData) {
@@ -584,6 +635,34 @@ export default class extends Controller {
       if (currentValue !== fieldValue) {
         this.changedFields.set(fieldName, fieldValue);
 
+        // Si el campo que cambió es un checkbox 'C' o 'D' de una deficiencia...
+        if (fieldName.endsWith("_c") || fieldName.endsWith("_d")) {
+          // ... y si el checkbox fue marcado (no desmarcado).
+          if (element.checked) {
+            const fieldContainer = element.closest(
+              '[data-field-type="Deficiency"]',
+            );
+            if (fieldContainer) {
+              const sectionName = fieldContainer.dataset.sectionName;
+              // Obtener el nombre base del campo (ej: "deficiency field 200")
+              const baseFieldName = fieldName.replace(/_c$|_d$/, "");
+
+              if (sectionName && baseFieldName) {
+                const itemNumber =
+                  this.extractItemNumberFromSection(sectionName);
+
+                // Si encontramos un número de ítem, lo guardamos.
+                if (itemNumber) {
+                  const itemFieldName = `${baseFieldName}_item`;
+                  this.changedFields.set(itemFieldName, itemNumber);
+                  console.log(
+                    `[Auto-Item] Se añadió automáticamente el ítem: { "${itemFieldName}": "${itemNumber}" }`,
+                  );
+                }
+              }
+            }
+          }
+        }
         // Trigger debounced save
         this.debouncedSave();
       }
@@ -958,6 +1037,23 @@ export default class extends Controller {
       // Restaurar scroll del body
       document.body.style.overflow = "";
     }
+  }
+
+  extractItemNumberFromSection(sectionName) {
+    if (!sectionName || !sectionName.includes("|")) {
+      return null;
+    }
+
+    const parts = sectionName.split("|");
+    if (parts.length < 2) {
+      return null;
+    }
+
+    // Expresión regular para encontrar un número decimal al inicio del texto.
+    const match = parts[1].trim().match(/^(\d+\.\d+)/);
+
+    // Devuelve el número encontrado (ej: "1.1") o null si no hay coincidencia.
+    return match ? match[1] : null;
   }
 
   dispatchNotification(type, message) {

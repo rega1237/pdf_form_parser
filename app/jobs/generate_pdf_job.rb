@@ -29,11 +29,42 @@ class GeneratePdfJob < ApplicationJob
     end
 
     begin
+      # --- INICIO DEL BLOQUE CORREGIDO ---
+
       # 3. Procesar el formulario principal para extraer las deficiencias.
-      main_form_fields = JSON.parse(main_form_fill.form_structure)
-      deficiencies_with_data = main_form_fields.select do |f|
-        f['type'] == 'Deficiency' && (f['value'].present? || f['comment_value'].present?)
+      # Se replica la lógica de fusión de datos del controlador para asegurar que los datos estén completos.
+      all_fields = JSON.parse(main_form_fill.form_structure)
+      data = main_form_fill.data || {}
+
+      main_form_fields = all_fields.map do |field|
+        field_copy = field.dup
+        name = field_copy['name']
+        next field_copy unless name.present?
+
+        case field_copy['type']
+        when 'Photo'
+          field_copy['photo_attachment_id'] = data["#{name}_photo_attachment_id"]
+        when 'Deficiency'
+          # Ensamblamos el objeto de deficiencia con todos sus datos.
+          field_copy['value'] = data["#{name}_select"]
+          field_copy['comment_value'] = data["#{name}_comment"]
+          field_copy['Item'] = data["#{name}_item"]
+          field_copy['Riser'] = data["#{name}_riser"]
+          field_copy['C'] = data["#{name}_c"]
+          field_copy['D'] = data["#{name}_d"]
+        else
+          field_copy['value'] = data[name]
+        end
+        field_copy
       end
+
+      # Ahora que `main_form_fields` está correctamente poblado, este filtro encontrará las deficiencias con datos.
+      deficiencies_with_data = main_form_fields.select do |f|
+        f['type'] == 'Deficiency' &&
+          (f['value'].present? || f['comment_value'].present? || f['Item'].present? || f['Riser'].present? || f['C'].present? || f['D'].present?)
+      end
+
+      # --- FIN DEL BLOQUE CORREGIDO ---
 
       main_processor = DeficiencyProcessorService.new(
         deficiencies_data: deficiencies_with_data,
@@ -49,7 +80,7 @@ class GeneratePdfJob < ApplicationJob
 
       # 4. Procesar y generar el PDF de deficiencias si hay sobrantes.
       if main_result[:unprocessed_deficiencies].any? && deficiencies_form_fill
-        deficiencies_form_fields = JSON.parse(deficiencies_form_fill.form_structure)
+        deficiencies_form_fields = deficiencies_form_fill.merge_structure_with_data
         deficiencies_processor = DeficiencyProcessorService.new(
           deficiencies_data: main_result[:unprocessed_deficiencies],
           target_fields: deficiencies_form_fields.select { |f| f['type'] == 'Deficiency_field' }
@@ -76,15 +107,9 @@ class GeneratePdfJob < ApplicationJob
         final_pdf_path = Rails.root.join('tmp', "final_inspection_#{inspection.id}_#{Time.now.to_i}.pdf")
         final_pdf_object.save(final_pdf_path)
 
-        # Verificar que el archivo se guardó correctamente
         if File.exist?(final_pdf_path) && File.size(final_pdf_path) > 0
-          # Si ya existe un PDF anterior, eliminarlo antes de adjuntar el nuevo
-          if main_form_fill.filled_pdf.attached?
-            Rails.logger.info "Eliminando PDF anterior para FormFill ##{main_form_fill.id}"
-            main_form_fill.filled_pdf.purge
-          end
+          main_form_fill.filled_pdf.purge if main_form_fill.filled_pdf.attached?
 
-          # Adjuntar el nuevo PDF
           File.open(final_pdf_path, 'rb') do |file|
             main_form_fill.filled_pdf.attach(
               io: file,
@@ -93,11 +118,9 @@ class GeneratePdfJob < ApplicationJob
             )
           end
 
-          # Marcar como completado exitosamente
           main_form_fill.update!(pdf_generation_status: 'completed')
           Rails.logger.info "PDF generado exitosamente para FormFill ##{main_form_fill.id}."
         else
-          # Marcar como fallido si el archivo no se generó correctamente
           main_form_fill.update!(pdf_generation_status: 'failed')
           Rails.logger.error "Error: El archivo PDF no se generó correctamente para FormFill ##{main_form_fill.id}"
         end
@@ -105,11 +128,9 @@ class GeneratePdfJob < ApplicationJob
         # 8. Limpiar todos los archivos temporales.
         FileUtils.rm_f([main_pdf_path, deficiencies_pdf_path, final_pdf_path].compact)
       else
-        # Si no se pudo generar el PDF final
         main_form_fill.update!(pdf_generation_status: 'failed')
         Rails.logger.error "No se pudo generar el PDF final para FormFill ##{main_form_fill.id}"
       end
-
     rescue JSON::ParserError => e
       main_form_fill.update!(pdf_generation_status: 'failed')
       Rails.logger.error "Error procesando la estructura del formulario en el Job para FormFill ##{main_form_fill.id}: #{e.message}"
