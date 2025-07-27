@@ -175,6 +175,7 @@ export default class extends Controller {
       baseField.Riser = riserInput ? riserInput.value : "";
       baseField.D = ""; // Campo oculto para llenar en otra vista
       baseField.C = ""; // Campo oculto para llenar en otra vista
+      baseField.select = "";
     }
 
     // Campos específicos para System Category e Interval Category

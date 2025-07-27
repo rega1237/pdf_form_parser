@@ -81,7 +81,7 @@ export default class extends Controller {
         `Photo preview displayed: ${file.name} (${this.formatFileSize(file.size)})`,
       );
 
-      // INMEDIATAMENTE subir la foto al servidor
+      // subir la foto al servidor
       this.uploadPhotoToServer(file);
     };
 
@@ -166,7 +166,7 @@ export default class extends Controller {
           this.showSuccessMessage("Foto eliminada exitosamente");
 
           // Notificar al form_fill controller para actualizar la estructura
-          this.notifyFormFillController();
+          //this.notifyFormFillController();
         } else {
           alert(`Error al eliminar la foto: ${result.error}`);
         }
@@ -206,7 +206,7 @@ export default class extends Controller {
     console.log("Photo preview cleared (local only)");
   }
 
-  // Método para eliminar foto del servidor
+  // Método para eliminar foto del servidor (updated for data column)
   async removePhotoFromServer(fieldName) {
     try {
       const formElement = document.querySelector(
@@ -214,6 +214,7 @@ export default class extends Controller {
       );
       const formId = formElement.action.split("/").pop().split("?")[0];
 
+      // Use the updated endpoint that clears data column entries
       const response = await fetch(`/form_fills/${formId}/remove_photo`, {
         method: "DELETE",
         headers: {
@@ -229,7 +230,14 @@ export default class extends Controller {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local data store to reflect photo removal
+        await this.updateDataColumnQuietly(null, fieldName);
+      }
+
+      return result;
     } catch (error) {
       console.error("Error in removePhotoFromServer:", error);
       throw error;
@@ -296,7 +304,7 @@ export default class extends Controller {
     return false;
   }
 
-  // método para verificar la estructura del formulario
+  // método para verificar la data column para fotos
   checkFormStructureForPhoto(fieldName) {
     try {
       const formFillElement = document.querySelector(
@@ -304,21 +312,34 @@ export default class extends Controller {
       );
       if (!formFillElement) return false;
 
+      // Check data column first (new approach)
+      const dataValue = formFillElement.dataset.formFillDataValue;
+      if (dataValue) {
+        const data = JSON.parse(dataValue);
+        const attachmentKey = `${fieldName}_attachment_id`;
+        if (data[attachmentKey] && data[attachmentKey].trim() !== "") {
+          return true;
+        }
+      }
+
+      // Fallback to structure column (legacy support)
       const structureValue = formFillElement.dataset.formFillFormStructureValue;
-      if (!structureValue) return false;
+      if (structureValue) {
+        const structure = JSON.parse(structureValue);
+        const field = structure.find(
+          (f) => f.name === fieldName && f.type === "Photo",
+        );
 
-      const structure = JSON.parse(structureValue);
-      const field = structure.find(
-        (f) => f.name === fieldName && f.type === "Photo",
-      );
+        return (
+          field &&
+          field.photo_attachment_id &&
+          field.photo_attachment_id.trim() !== ""
+        );
+      }
 
-      return (
-        field &&
-        field.photo_attachment_id &&
-        field.photo_attachment_id.trim() !== ""
-      );
+      return false;
     } catch (error) {
-      console.error("Error checking form structure:", error);
+      console.error("Error checking form data for photo:", error);
       return false;
     }
   }
@@ -489,7 +510,7 @@ export default class extends Controller {
       formData.append("field_name", fieldName);
       formData.append("photo", file);
 
-      // Subir la foto al servidor
+      // Subir la foto al servidor usando el nuevo endpoint que actualiza la data column
       const response = await fetch(`/form_fills/${formId}/upload_photo`, {
         method: "POST",
         headers: {
@@ -511,8 +532,8 @@ export default class extends Controller {
         // Actualizar la vista previa para mostrar que está guardada
         this.updatePreviewToSavedState(file.name);
 
-        // Actualizar la estructura del formulario sin recargar la página
-        await this.updateFormStructureQuietly(result.attachment_id, fieldName);
+        // Actualizar la data column directamente (new approach)
+        await this.updateDataColumnQuietly(result.attachment_id, fieldName);
 
         // Mostrar mensaje de éxito
         this.showSuccessMessage("Foto guardada exitosamente");
@@ -573,18 +594,63 @@ export default class extends Controller {
     }
   }
 
-  // Método para actualizar la estructura del formulario sin recargar la página
-  async updateFormStructureQuietly(attachmentId, fieldName) {
+  // Método para actualizar la data column sin recargar la página
+  async updateDataColumnQuietly(attachmentId, fieldName) {
     try {
       const formFillElement = document.querySelector(
         '[data-controller*="form-fill"]',
       );
       if (!formFillElement) {
-        console.warn("Form fill element not found for structure update");
+        console.warn("Form fill element not found for data update");
         return;
       }
 
-      // En lugar de actualizar localmente, obtener la estructura actualizada del servidor
+      const currentDataValue =
+        formFillElement.dataset.formFillDataValue || "{}";
+      const currentData = JSON.parse(currentDataValue);
+
+      // ----> CAMBIO CLAVE AQUÍ <----
+      // Usar la misma nomenclatura que el modelo de Rails.
+      const attachmentKey = `${fieldName}_photo_attachment_id`;
+
+      if (attachmentId) {
+        currentData[attachmentKey] = attachmentId;
+      } else {
+        delete currentData[attachmentKey];
+      }
+
+      formFillElement.dataset.formFillDataValue = JSON.stringify(currentData);
+
+      // Notify form fill controller about the change if available
+      const formFillController = this.getFormFillController(formFillElement);
+      if (formFillController) {
+        // Update the controller's changed fields to include this photo change
+        if (formFillController.changedFields) {
+          formFillController.changedFields.set(
+            attachmentKey,
+            attachmentId || "",
+          );
+        }
+      }
+
+      console.log(
+        `Data column updated for field: ${fieldName}, attachment: ${attachmentId}`,
+      );
+    } catch (error) {
+      console.error("Error updating data column:", error);
+      // Fallback to server reload
+      await this.reloadFromServer(fieldName);
+    }
+  }
+
+  // Fallback method to reload data from server
+  async reloadFromServer(fieldName) {
+    try {
+      const formFillElement = document.querySelector(
+        '[data-controller*="form-fill"]',
+      );
+      if (!formFillElement) return;
+
       const formId = formFillElement.action.split("/").pop().split("?")[0];
       const response = await fetch(`/form_fills/${formId}/structure`, {
         method: "GET",
@@ -597,95 +663,24 @@ export default class extends Controller {
       if (response.ok) {
         const data = await response.json();
 
-        // Actualizar la estructura del formulario con los datos del servidor
+        // Update both structure and data
         formFillElement.dataset.formFillFormStructureValue =
           data.form_structure;
-
-        // También actualizar el hidden input si existe
-        const hiddenInput = document.getElementById("form_fill_form_structure");
-        if (hiddenInput) {
-          hiddenInput.value = data.form_structure;
+        if (data.form_data) {
+          formFillElement.dataset.formFillDataValue = JSON.stringify(
+            data.form_data,
+          );
         }
 
-        // Verificar que el campo se actualizó correctamente
-        const structure = JSON.parse(data.form_structure);
-        const field = structure.find(
-          (f) => f.name === fieldName && f.type === "Photo",
-        );
-        if (field && field.photo_attachment_id) {
-          // IMPORTANTE: Forzar la recarga de valores del formulario para que se sincronice
-          const formFillController =
-            this.getFormFillController(formFillElement);
-          if (formFillController && formFillController.loadFormValues) {
-            formFillController.loadFormValues();
-          } else {
-            // Método alternativo: disparar un evento personalizado
-            const reloadEvent = new CustomEvent("reload-form-values", {
-              bubbles: true,
-              detail: { fieldName: fieldName },
-            });
-            formFillElement.dispatchEvent(reloadEvent);
-          }
-        }
-      } else {
-        console.error("Failed to fetch updated structure from server");
-        // Fallback al método local
-        this.updateFormStructureLocallyFallback(
-          attachmentId,
-          fieldName,
-          formFillElement,
-        );
+        // Trigger reload
+        const reloadEvent = new CustomEvent("reload-form-values", {
+          bubbles: true,
+          detail: { fieldName: fieldName },
+        });
+        formFillElement.dispatchEvent(reloadEvent);
       }
     } catch (error) {
-      console.error("Error updating form structure from server:", error);
-      // Fallback al método local
-      const formFillElement = document.querySelector(
-        '[data-controller*="form-fill"]',
-      );
-      if (formFillElement) {
-        this.updateFormStructureLocallyFallback(
-          attachmentId,
-          fieldName,
-          formFillElement,
-        );
-      }
-    }
-  }
-
-  // Método de fallback para actualización local
-  updateFormStructureLocallyFallback(attachmentId, fieldName, formFillElement) {
-    try {
-      const structureValue = formFillElement.dataset.formFillFormStructureValue;
-      if (!structureValue) {
-        console.warn("Form structure not found for fallback update");
-        return;
-      }
-
-      const structure = JSON.parse(structureValue);
-      const field = structure.find(
-        (f) => f.name === fieldName && f.type === "Photo",
-      );
-
-      if (field) {
-        field.photo_attachment_id = attachmentId;
-        const updatedStructure = JSON.stringify(structure);
-        formFillElement.dataset.formFillFormStructureValue = updatedStructure;
-
-        const hiddenInput = document.getElementById("form_fill_form_structure");
-        if (hiddenInput) {
-          hiddenInput.value = updatedStructure;
-        }
-
-        console.log(
-          `Form structure updated locally (fallback) for field: ${fieldName}`,
-        );
-      } else {
-        console.warn(
-          `Photo field ${fieldName} not found in structure for fallback`,
-        );
-      }
-    } catch (error) {
-      console.error("Error in fallback structure update:", error);
+      console.error("Error reloading from server:", error);
     }
   }
 

@@ -26,6 +26,9 @@ export default class extends Controller {
     const currentValue = selectedButton.dataset.value
     const isCurrentlySelected = this.isButtonSelected(selectedButton)
 
+    // Store old value for change detection
+    const oldValue = this.hiddenInput ? this.hiddenInput.value : ''
+
     if (isCurrentlySelected) {
       // Deseleccionar solo si es un botón choice regular (no radio)
       if (selectedButton.classList.contains('choice-button')) {
@@ -46,6 +49,53 @@ export default class extends Controller {
         this.hiddenInput.value = currentValue
       }
     }
+
+    // Trigger events for form tracking if value actually changed
+    const newValue = this.hiddenInput ? this.hiddenInput.value : ''
+    if (oldValue !== newValue) {
+      this.triggerChangeEvents(oldValue, newValue)
+    }
+  }
+
+  // Method to trigger change events for form tracking
+  triggerChangeEvents(oldValue, newValue) {
+    if (!this.hiddenInput) return
+
+    // Trigger standard change event
+    const changeEvent = new Event('change', { bubbles: true })
+    this.hiddenInput.dispatchEvent(changeEvent)
+
+    // Trigger custom event for the form controller
+    const customEvent = new CustomEvent('choice-selected', {
+      bubbles: true,
+      detail: { 
+        fieldName: this.getFieldName(),
+        oldValue: oldValue,
+        newValue: newValue,
+        hiddenInput: this.hiddenInput
+      }
+    })
+    this.element.dispatchEvent(customEvent)
+
+    // IMPORTANT: Force a property change event for MutationObserver
+    if (this.hiddenInput.value !== newValue) {
+      this.hiddenInput.setAttribute('value', newValue)
+    }
+
+    console.log(`Pass/Fail choice selected: ${this.getFieldName()} = ${newValue}`)
+  }
+
+  // Extract field name from hidden input
+  getFieldName() {
+    if (!this.hiddenInput) return null
+    
+    const id = this.hiddenInput.id
+    if (id.startsWith('hidden_input_')) {
+      // Extract field name from ID pattern: hidden_input_form_data_fieldname_...
+      const match = id.match(/hidden_input_form_data_(.+?)_/)
+      return match ? match[1] : null
+    }
+    return null
   }
 
   isButtonSelected(button) {

@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
-  get "next_inspections/index"
-  get "next_inspections/show"
+  get 'next_inspections/index'
+  get 'next_inspections/show'
   resources :system_categories
   devise_for :users, skip: [:registrations]
 
@@ -42,6 +42,10 @@ Rails.application.routes.draw do
       delete :remove_photo     # Nuevo endpoint para eliminar foto
       get :structure           # Endpoint para obtener estructura actualizada
       post :upload_photo
+      # New data-focused endpoints
+      patch :update_field_data # AJAX endpoint for single field updates
+      patch :bulk_update_data  # AJAX endpoint for multiple field updates
+      get :get_merged_form_data # Endpoint for PDF generation data retrieval
     end
   end
 

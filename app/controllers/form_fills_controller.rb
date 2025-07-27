@@ -9,9 +9,33 @@ class FormFillsController < ApplicationController
     @system_categories = SystemCategory.all
     @interval_categories = IntervalCategory.all
     @form_template = @form_fill.form_template
+
     if @form_fill.form_structure.present?
       begin
-        @form_fields = JSON.parse(@form_fill.form_structure)
+        form_fields = JSON.parse(@form_fill.form_structure)
+        data = @form_fill.data || {} # Asegura que `data` sea un hash
+
+        # Itera sobre los campos y fusiona los datos guardados
+        form_fields.each do |field|
+          next unless field['name'].present?
+
+          field_name = field['name']
+
+          if field['type'] == 'Deficiency'
+            # Para los campos Deficiency, carga cada sub-campo desde la columna `data`
+            field['value'] = data["#{field_name}_select"] || field['value'] || ''
+            field['select'] = data["#{field_name}_select"] || field['select'] || '' # Agregamos 'select' por consistencia
+            field['comment_value'] = data["#{field_name}_comment"] || field['comment_value'] || ''
+            field['Item'] = data["#{field_name}_item"] || field['Item'] || ''
+            field['Riser'] = data["#{field_name}_riser"] || field['Riser'] || ''
+            field['C'] = data["#{field_name}_c"] || field['C'] || ''
+            field['D'] = data["#{field_name}_d"] || field['D'] || ''
+          else
+            # Para otros tipos de campo, carga el valor desde `data`
+            field['value'] = data[field_name] || field['value'] || ''
+          end
+        end
+        @form_fields = form_fields
       rescue JSON::ParserError => e
         Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
         @form_fields = []
@@ -71,49 +95,70 @@ class FormFillsController < ApplicationController
   def update
     @form_fill = FormFill.find(params[:id])
 
-    # Separar parámetros de fotos de otros parámetros
+    # Separate photo parameters from other parameters
     update_params = form_fill_params.except(*photo_field_names)
     photo_params = form_fill_params.slice(*photo_field_names)
 
-    # Procesar campos de deficiency antes de la actualización
-    process_deficiency_fields(update_params)
+    # Separate structure updates from data updates
+    structure_params = update_params.slice(:form_structure, :name, :form_template_id, :inspection_id)
+    data_params = update_params.except(:form_structure, :name, :form_template_id, :inspection_id)
 
-    # Procesar campos de categoría antes de la actualización
-    process_category_fields(update_params)
+    # Process deficiency fields and extract data values
+    deficiency_data = process_deficiency_fields_for_data(data_params)
 
-    # Actualizar campos regulares
-    if @form_fill.update(update_params)
-      # Procesar fotos si las hay
-      photo_results = process_photo_uploads(photo_params)
+    # Process category fields and extract data values
+    category_data = process_category_fields_for_data(data_params)
 
-      if photo_results[:errors].any?
+    # Combine all data updates
+    all_data_updates = data_params.merge(deficiency_data).merge(category_data)
+
+    begin
+      # Update structure-related fields first (if any)
+      structure_updated = structure_params.empty? || @form_fill.update(structure_params)
+
+      # Update data column with field values
+      data_updated = all_data_updates.empty? || @form_fill.bulk_update_data(all_data_updates)
+
+      if structure_updated && data_updated
+        # Process photos if any
+        photo_results = process_photo_uploads(photo_params)
+
+        if photo_results[:errors].any?
+          render json: {
+            success: false,
+            message: "Form saved but with photo errors: #{photo_results[:errors].join(', ')}"
+          }, status: :unprocessable_entity
+        else
+          success_message = 'Draft saved successfully.'
+          success_message += " #{photo_results[:uploaded]} photo(s) uploaded." if photo_results[:uploaded].positive?
+          if photo_results[:skipped].positive?
+            success_message += " #{photo_results[:skipped]} photo(s) skipped (already saved)."
+          end
+
+          render json: { success: true, message: success_message }, status: :ok
+        end
+      else
         render json: {
           success: false,
-          message: "Formulario guardado pero con errores en fotos: #{photo_results[:errors].join(', ')}"
+          errors: @form_fill.errors.full_messages,
+          message: 'Could not save draft.'
         }, status: :unprocessable_entity
-      else
-        success_message = 'Draft saved successfully.'
-        success_message += " #{photo_results[:uploaded]} photo(s) uploaded." if photo_results[:uploaded] > 0
-        if photo_results[:skipped] > 0
-          success_message += " #{photo_results[:skipped]} photo(s) skipped (already saved)."
-        end
-
-        render json: { success: true, message: success_message }, status: :ok
       end
-    else
+    rescue StandardError => e
+      Rails.logger.error "Error updating FormFill ##{@form_fill.id}: #{e.message}"
       render json: {
         success: false,
-        errors: @form_fill.errors.full_messages,
+        error: "Error updating form: #{e.message}",
         message: 'Could not save draft.'
-      }, status: :unprocessable_entity
+      }, status: :internal_server_error
     end
   end
 
-  # Endpoint para eliminar foto específica
+  # Endpoint to remove specific photo (updated for data column)
   def remove_photo
     @form_fill = FormFill.find(params[:id])
 
-    # Obtener parámetros del request JSON
+    # Get parameters from JSON request
     request_data = begin
       JSON.parse(request.body.read)
     rescue StandardError
@@ -122,24 +167,37 @@ class FormFillsController < ApplicationController
     field_name = request_data['field_name'] || params[:field_name]
 
     if field_name.blank?
-      render json: { error: 'Field name required' }, status: :bad_request
+      render json: {
+        success: false,
+        error: 'Field name is required'
+      }, status: :bad_request
       return
     end
 
-    result = @form_fill.remove_photo_for_field(field_name)
+    begin
+      # Use the model method that already works with data column
+      result = @form_fill.remove_photo_for_field(field_name)
 
-    if result[:success]
-      render json: {
-        success: true,
-        message: result[:message],
-        field_name: field_name
-      }
-    else
+      if result[:success]
+        render json: {
+          success: true,
+          message: result[:message],
+          field_name: field_name
+        }
+      else
+        render json: {
+          success: false,
+          error: result[:error],
+          field_name: field_name
+        }, status: :unprocessable_entity
+      end
+    rescue StandardError => e
+      Rails.logger.error "Error removing photo for field #{field_name}: #{e.message}"
       render json: {
         success: false,
-        error: result[:error],
+        error: "Error removing photo: #{e.message}",
         field_name: field_name
-      }, status: :unprocessable_entity
+      }, status: :internal_server_error
     end
   end
 
@@ -149,13 +207,43 @@ class FormFillsController < ApplicationController
 
     if @form_fill.form_structure.present?
       begin
-        # Sincronizar la estructura con las fotos existentes antes de devolver
-        @form_fill.sync_photos_with_structure!
-
         form_fields = JSON.parse(@form_fill.form_structure)
+        data = @form_fill.data || {} # Obtenemos los datos guardados, asegurando que no sea nulo
+
+        form_fields.each do |field|
+          next unless field['name'].present?
+
+          field_name = field['name']
+
+          # Usamos un `case` para manejar cada tipo de campo de forma clara y correcta
+          case field['type']
+          when 'Photo'
+            # --- LÓGICA AGREGADA PARA FOTOS ---
+            # Se lee la clave estandarizada `_photo_attachment_id` desde la columna `data`.
+            # Si la foto fue borrada, el valor será `nil`, y eso es lo que se enviará al frontend.
+            field['photo_attachment_id'] = data["#{field_name}_photo_attachment_id"]
+
+          when 'Deficiency'
+            # La lógica para los campos de deficiencia se mantiene, ya que es correcta.
+            field['value'] = data["#{field_name}_select"] || ''
+            field['select'] = data["#{field_name}_select"] || ''
+            field['comment_value'] = data["#{field_name}_comment"] || ''
+            field['Item'] = data["#{field_name}_item"] || ''
+            field['Riser'] = data["#{field_name}_riser"] || ''
+            field['C'] = data["#{field_name}_c"] || ''
+            field['D'] = data["#{field_name}_d"] || ''
+
+          else
+            # Lógica por defecto para todos los demás tipos de campo.
+            field['value'] = data[field_name] || ''
+          end
+        end
+
+        updated_structure = form_fields.to_json
+
         render json: {
-          form_structure: @form_fill.form_structure,
-          form_fields: form_fields,
+          form_structure: updated_structure,
+          form_fields: form_fields, # Se devuelven los campos ya fusionados con los datos.
           success: true
         }
       rescue JSON::ParserError => e
@@ -174,11 +262,11 @@ class FormFillsController < ApplicationController
     end
   end
 
-  # Endpoint para obtener URL de foto específica
+  # Endpoint to get specific photo URL (updated for data column)
   def photo_url
     @form_fill = FormFill.find(params[:id])
 
-    # Obtener parámetros del request JSON
+    # Get parameters from JSON request
     request_data = begin
       JSON.parse(request.body.read)
     rescue StandardError
@@ -187,49 +275,180 @@ class FormFillsController < ApplicationController
     field_name = request_data['field_name'] || params[:field_name]
 
     if field_name.blank?
-      render json: { error: 'Field name required' }, status: :bad_request
+      render json: {
+        success: false,
+        error: 'Field name is required'
+      }, status: :bad_request
       return
     end
 
     begin
+      # Use the model method that already works with data column
       photo_url = @form_fill.get_photo_url_for_field(field_name)
 
       render json: {
+        success: true,
         photo_url: photo_url,
         field_name: field_name,
-        success: true
+        has_photo: photo_url.present?
       }
     rescue StandardError => e
-      Rails.logger.error "Error in photo_url endpoint: #{e.message}"
+      Rails.logger.error "Error getting photo URL for field #{field_name}: #{e.message}"
       render json: {
+        success: false,
         error: "Error getting photo URL: #{e.message}",
-        success: false
+        field_name: field_name
       }, status: :internal_server_error
     end
   end
 
-  # Método específico para subir fotos via AJAX (opcional, para uso futuro)
+  # AJAX endpoint for single field updates
+  def update_field_data
+    @form_fill = FormFill.find(params[:id])
+
+    # Get field name and value from request
+    field_name = params[:field_name]
+    field_value = params[:field_value]
+
+    if field_name.blank?
+      render json: {
+        success: false,
+        error: 'Field name is required'
+      }, status: :bad_request
+      return
+    end
+
+    begin
+      # Update single field in data column
+      success = @form_fill.set_field_value(field_name, field_value)
+
+      if success
+        render json: {
+          success: true,
+          message: 'Field updated successfully',
+          field_name: field_name,
+          field_value: field_value
+        }
+      else
+        render json: {
+          success: false,
+          error: 'Failed to update field',
+          field_name: field_name
+        }, status: :unprocessable_entity
+      end
+    rescue StandardError => e
+      Rails.logger.error "Error updating field #{field_name}: #{e.message}"
+      render json: {
+        success: false,
+        error: "Error updating field: #{e.message}",
+        field_name: field_name
+      }, status: :internal_server_error
+    end
+  end
+
+  # AJAX endpoint for multiple field updates
+  def bulk_update_data
+    @form_fill = FormFill.find(params[:id])
+
+    # Get field data from request
+    field_data = params[:field_data]&.permit!&.to_h || {}
+
+    if field_data.blank?
+      render json: {
+        success: false,
+        error: 'Field data is required'
+      }, status: :bad_request
+      return
+    end
+
+    begin
+      # Update multiple fields in data column
+      success = @form_fill.bulk_update_data(field_data)
+
+      if success
+        render json: {
+          success: true,
+          message: 'Fields updated successfully',
+          updated_fields: field_data.keys,
+          field_count: field_data.size
+        }
+      else
+        render json: {
+          success: false,
+          error: 'Failed to update fields'
+        }, status: :unprocessable_entity
+      end
+    rescue StandardError => e
+      Rails.logger.error "Error bulk updating fields: #{e.message}"
+      render json: {
+        success: false,
+        error: "Error updating fields: #{e.message}"
+      }, status: :internal_server_error
+    end
+  end
+
+  # Endpoint to get merged form data for PDF generation
+  def get_merged_form_data
+    @form_fill = FormFill.find(params[:id])
+
+    begin
+      # Get merged structure with data for PDF generation
+      merged_data = @form_fill.merge_structure_with_data
+
+      render json: {
+        success: true,
+        form_data: merged_data,
+        form_fill_id: @form_fill.id
+      }
+    rescue StandardError => e
+      Rails.logger.error "Error getting merged form data for FormFill ##{@form_fill.id}: #{e.message}"
+      render json: {
+        success: false,
+        error: "Error retrieving form data: #{e.message}"
+      }, status: :internal_server_error
+    end
+  end
+
+  # AJAX endpoint for photo uploads (updated for data column)
   def upload_photo
     @form_fill = FormFill.find(params[:id])
     field_name = params[:field_name]
     photo_file = params[:photo]
 
     if field_name.blank? || photo_file.blank?
-      render json: { success: false, error: 'Campo o archivo requerido' }, status: :bad_request
+      render json: {
+        success: false,
+        error: 'Field name and photo file are required'
+      }, status: :bad_request
       return
     end
 
-    result = @form_fill.attach_photo_for_field(field_name, photo_file)
+    begin
+      # Use the model method that already works with data column
+      result = @form_fill.attach_photo_for_field(field_name, photo_file)
 
-    if result[:success]
+      if result[:success]
+        render json: {
+          success: true,
+          message: 'Photo uploaded successfully',
+          attachment_id: result[:attachment_id],
+          photo_url: @form_fill.get_photo_url_for_field(field_name),
+          field_name: field_name
+        }
+      else
+        render json: {
+          success: false,
+          error: result[:error],
+          field_name: field_name
+        }, status: :unprocessable_entity
+      end
+    rescue StandardError => e
+      Rails.logger.error "Error uploading photo for field #{field_name}: #{e.message}"
       render json: {
-        success: true,
-        message: 'Photo uploaded successfully',
-        attachment_id: result[:attachment_id],
-        photo_url: @form_fill.get_photo_url_for_field(field_name)
-      }
-    else
-      render json: { success: false, error: result[:error] }, status: :unprocessable_entity
+        success: false,
+        error: "Error uploading photo: #{e.message}",
+        field_name: field_name
+      }, status: :internal_server_error
     end
   end
 
@@ -425,7 +644,42 @@ class FormFillsController < ApplicationController
     results
   end
 
-  # Método para procesar campos de categoría
+  # method to process category fields for data column
+  def process_category_fields_for_data(data_params)
+    category_data = {}
+
+    # Get form structure to identify category fields
+    return category_data unless @form_fill.form_structure.present?
+
+    begin
+      structure = JSON.parse(@form_fill.form_structure)
+      category_fields = structure.select { |field| ['System Category', 'Interval Category'].include?(field['type']) }
+
+      category_fields.each do |field|
+        field_name = field['name']
+
+        # Check if this field has a value in the data params
+        next unless data_params.key?(field_name) && data_params[field_name].present?
+
+        category_data[field_name] = data_params[field_name]
+
+        # For Interval Category, also store selected_categories
+        if field['type'] == 'Interval Category'
+          selected_categories = data_params[field_name].split(', ').map(&:strip)
+          category_data["#{field_name}_selected_categories"] = selected_categories
+        else
+          # For System Category, store as single-item array
+          category_data["#{field_name}_selected_categories"] = [data_params[field_name]]
+        end
+      end
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error processing category fields for data: #{e.message}"
+    end
+
+    category_data
+  end
+
+  # Legacy method for backward compatibility (kept for existing functionality)
   def process_category_fields(update_params)
     return unless update_params[:form_structure].present?
 
@@ -502,6 +756,51 @@ class FormFillsController < ApplicationController
     end
   end
 
+  # New method to process deficiency fields for data column
+  def process_deficiency_fields_for_data(data_params)
+    deficiency_data = {}
+
+    # Extract deficiency field values for data column storage
+    data_params.each do |key, value|
+      key_str = key.to_s
+
+      # Handle deficiency select values
+      if key_str.end_with?('_select')
+        field_name = key_str.gsub('_select', '')
+        deficiency_data["#{field_name}_select"] = value if value.present?
+        deficiency_data[field_name] = value if value.present?
+
+      # Handle deficiency comments
+      elsif key_str.end_with?('_comment')
+        field_name = key_str.gsub('_comment', '')
+        deficiency_data["#{field_name}_comment"] = value || ''
+
+      # Handle deficiency items
+      elsif key_str.end_with?('_item')
+        field_name = key_str.gsub('_item', '')
+        deficiency_data["#{field_name}_item"] = value || ''
+
+      # Handle deficiency risers
+      elsif key_str.end_with?('_riser')
+        field_name = key_str.gsub('_riser', '')
+        deficiency_data["#{field_name}_riser"] = value || ''
+
+      # Handle deficiency C values
+      elsif key_str.end_with?('_c')
+        field_name = key_str.gsub('_c', '')
+        deficiency_data["#{field_name}_c"] = value == '1' ? 'Yes' : ''
+
+      # Handle deficiency D values
+      elsif key_str.end_with?('_d')
+        field_name = key_str.gsub('_d', '')
+        deficiency_data["#{field_name}_d"] = value == '1' ? 'Yes' : ''
+      end
+    end
+
+    deficiency_data
+  end
+
+  # Legacy method for backward compatibility (kept for existing functionality)
   def process_deficiency_fields(update_params)
     return unless update_params[:form_structure].present?
 

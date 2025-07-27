@@ -125,7 +125,6 @@
     }
   </style>
 <% end %>
-
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900" data-controller="notification" data-action="show-notification@window->notification#showNotification">
   <div class="container mx-auto px-4 py-6 lg:py-12">
     <%# --- HEADER --- %>
@@ -140,35 +139,38 @@
       <% end %>
     </div>
   </div>
-
   <div class="max-w-6xl mx-auto px-4 pb-12">
     <div data-controller="field-toggle">
-      <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
+      <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json, "form-fill-data-value": @form_fill.data.to_json }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
         <%= form.submit "Submit", class: "hidden" %>
-
         <% if @form_fields.blank? %>
-          <div class="bg-red-50 border-2 border-red-200 rounded-3xl p-8"><p class="text-red-700 text-lg">No fields available in this form.</p></div>
+          <div class="bg-red-50 border-2 border-red-200 rounded-3xl p-8">
+            <p class="text-red-700 text-lg">No fields available in this form.</p>
+          </div>
         <% else %>
           <% valid_fields = @form_fields.reject { |f| f['page_number'].to_i == 0 } %>
           <% pages = valid_fields.group_by { |f| f['page_number'].to_i }.sort_by { |page_num, _| page_num } %>
-
           <div class="relative z-10">
             <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
               <div class="page-content <%= page_index == 0 ? '' : 'hidden' %>" data-pagination-target="pageContent">
                 <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-blue-400 shadow-2xl">
-                  <div class="mb-10"><h2 class="text-2xl lg:text-3xl font-bold text-white mb-3">Page <%= page_num %></h2><div class="w-20 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div></div>
+                  <div class="mb-10">
+                    <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3">Page <%= page_num %></h2>
+                    <div class="w-20 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
+                  </div>
                   <% fields_on_page.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
                     <div class="mb-10 last:mb-0">
-                      <div class="flex items-center mb-8"><div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center mr-4 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div><h3 class="text-white font-bold text-xl lg:text-2xl"><%= section_name.humanize %></h3></div>
-                      
+                      <div class="flex items-center mb-8">
+                        <div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center mr-4 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
+                        <h3 class="text-white font-bold text-xl lg:text-2xl"><%= section_name.humanize %></h3>
+                      </div>
                       <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
                         <%
                           always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency']
                           visible_fields = fields_in_section.select { |field| always_visible_types.include?(field['type']) || field['required'] == true }
                           hidden_fields = fields_in_section.reject { |field| always_visible_types.include?(field['type']) || field['required'] == true }
                         %>
-                        
                         <% visible_fields.each_with_index do |field, index| %>
                           <%
                             column_width_int = field['column_width'].to_i
@@ -178,7 +180,6 @@
                             <%= render partial: 'form_fills/form_field', locals: { form: form, field: field, field_id: "form_data_#{field['name'].parameterize.underscore}_#{section_name.parameterize.underscore}_#{index}" } %>
                           </div>
                         <% end %>
-
                         <% if hidden_fields.any? %>
                           <div class="md:col-span-9 mt-8">
                             <button type="button" data-action="click->field-toggle#toggleFields" data-field-toggle-target="toggleButton" class="toggle-button w-full py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-lg flex items-center justify-center space-x-3">
@@ -206,10 +207,9 @@
                 </div>
               </div>
             <% end %>
-            
             <button type="button" data-action="click->pagination#backPage" data-pagination-target="backPageBtn" class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out left-[-25px] md:left-[-30px] bg-slate-600 hover:bg-slate-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:transform-none"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
             <button type="button" 
-              data-action="click->pagination#nextPage click->form-fill#saveDraft" 
+              data-action="click->pagination#nextPage" 
               data-pagination-target="nextPageBtn" 
               class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out right-[-25px] md:right-[-30px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl">
               <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,9 +217,14 @@
               </svg>
             </button>
           </div>
-          
           <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
-            <div class="flex items-start space-x-4 mb-6"><div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div><h3 class="text-white font-bold text-xl mb-2">Form Actions</h3><p class="text-blue-300 text-base mb-4">Save your progress or generate the final PDF</p></div></div>
+            <div class="flex items-start space-x-4 mb-6">
+              <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+              <div>
+                <h3 class="text-white font-bold text-xl mb-2">Form Actions</h3>
+                <p class="text-blue-300 text-base mb-4">Save your progress or generate the final PDF</p>
+              </div>
+            </div>
             <div class="flex flex-wrap items-center gap-4" 
                  data-controller="pdf-status" 
                  data-pdf-status-status-value="<%= @form_fill.pdf_generation_status %>"
@@ -244,7 +249,6 @@
               <% else %>
                 <%= button_tag 'Generate PDF', type: 'button', class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { action: "click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." } %>
               <% end %>
-
               <%# --- Botón para el PDF Principal --- %>
               <% if @form_fill.filled_pdf.attached? && @form_fill.completed? %>
                 <a href="<%= download_pdf_form_fill_path(@form_fill, disposition: 'inline') %>" 
@@ -254,7 +258,6 @@
                   Ver PDF Principal
                 </a>
               <% end %>
-
               <%# --- Lógica para encontrar y mostrar el PDF de Deficiencias --- %>
               <%
                 # 1. Asegurarnos de que la inspección existe
@@ -267,7 +270,6 @@
                   end
                 end
               %>
-
               <%# --- Botón para el PDF de Deficiencias (solo si existe y tiene archivo) --- %>
               <% if @deficiencies_form_fill&.filled_pdf&.attached? %>
                 <a href="<%= download_pdf_form_fill_path(@deficiencies_form_fill, disposition: 'inline') %>" 
@@ -283,7 +285,6 @@
       <% end %>
     </div>
   </div>
-
   <!-- Overlay de carga para Save Draft -->
   <div id="save-draft-overlay" class="save-draft-overlay">
     <div class="save-draft-content">
@@ -293,6 +294,4 @@
       <div class="save-draft-subtext">Please wait, do not close this window</div>
     </div>
   </div>
-
-
 </div>
