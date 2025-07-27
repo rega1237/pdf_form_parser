@@ -9,17 +9,8 @@ class DeficiencyProcessorService
   end
 
   def process
-    Rails.logger.info '=================================================='
-    Rails.logger.info '[DeficiencyProcessor] ==> INICIANDO PROCESO DE DEFICIENCIAS.'
-    Rails.logger.debug "[DeficiencyProcessor] Datos de deficiencias recibidos (#{@deficiencies_data.count}): #{@deficiencies_data.inspect}"
-    Rails.logger.debug "[DeficiencyProcessor] Campos del PDF recibidos (#{@target_fields.count}): #{@target_fields.map do |f|
-      f['name']
-    end}"
-
     deficiency_field_groups = group_target_fields_by_section
     sorted_group_keys = deficiency_field_groups.keys.sort_by { |name| name.scan(/\d+/).first.to_i }
-
-    Rails.logger.info "[DeficiencyProcessor] Se encontraron #{sorted_group_keys.count} grupos de campos en el PDF: #{sorted_group_keys}"
 
     @deficiencies_data.each_with_index do |deficiency, index|
       next unless deficiency.is_a?(Hash) && deficiency['name'].present?
@@ -28,24 +19,11 @@ class DeficiencyProcessorService
         target_group_key = sorted_group_keys[index]
         target_group = deficiency_field_groups[target_group_key]
 
-        Rails.logger.info '--------------------------------------------------'
-        Rails.logger.info "[DeficiencyProcessor] Procesando Deficiencia ##{index + 1}: '#{deficiency['name']}' con Grupo de PDF: '#{target_group_key}'"
-
         process_single_deficiency(deficiency, target_group)
       else
         @unprocessed_deficiencies << deficiency
       end
     end
-
-    Rails.logger.info '=================================================='
-    Rails.logger.info '[DeficiencyProcessor] <== PROCESO FINALIZADO.'
-    Rails.logger.info "[DeficiencyProcessor] Total de campos procesados para el PDF: #{@processed_fields.count}"
-    if @unprocessed_deficiencies.any?
-      Rails.logger.warn "[DeficiencyProcessor] ¡ATENCIÓN! Quedaron #{@unprocessed_deficiencies.count} deficiencias sin procesar: #{@unprocessed_deficiencies.inspect}"
-    else
-      Rails.logger.info '[DeficiencyProcessor] Todas las deficiencias fueron procesadas exitosamente.'
-    end
-    Rails.logger.info '=================================================='
 
     {
       processed_fields: @processed_fields,
@@ -96,40 +74,28 @@ class DeficiencyProcessorService
     end
   end
 
-  # --- MÉTODO CORREGIDO ---
   def map_standard_fields(field, deficiency, default_date)
     label_name = field['label_name'].to_s.downcase.strip
 
     Rails.logger.debug "    [Mapeo] Intentando mapear campo del PDF: '#{field['name']}' (Label: '#{label_name}')"
 
-    # 1. Reglas más específicas primero para evitar falsos positivos.
-    value = if label_name.start_with?('date')
-              default_date
-            elsif label_name.include?('deficien') # include? es bueno para comentarios largos
-              deficiency['value'].presence || deficiency['comment_value']
-            elsif label_name.start_with?('item')
-              deficiency['Item']
-            elsif label_name.start_with?('riser')
-              deficiency['Riser']
-            # 2. Expresiones regulares precisas para 'D' y 'C'.
-            #    Esto busca una 'd' o 'c' al inicio, seguida de números (o nada), y nada más.
-            elsif /\Ad\d*\z/i =~ $_
-              deficiency['D'] == 'Yes' ? 'X' : ''
-            elsif /\Ac\d*\z/i =~ $_
-              deficiency['C'] == 'Yes' ? 'X' : ''
-            else
-              nil # No coincide con ninguna regla
-            end
-
-    if value.present?
-      Rails.logger.debug "      -> Éxito. Valor asignado: '#{value}'"
+    case label_name
+    when /^date/
+      default_date
+    when /deficien/
+      "#{deficiency['value'].presence}  #{deficiency['comment_value']}"
+    when /^item/
+      deficiency['Item']
+    when /^riser/
+      deficiency['Riser']
+    when /\Ad\d*\z/
+      deficiency['D'] == 'Yes' ? 'X' : ''
+    when /\Ac\d*\z/
+      deficiency['C'] == 'Yes' ? 'X' : ''
     else
-      Rails.logger.debug "      -> Sin valor. El label '#{label_name}' no coincide con ninguna regla de mapeo o el valor de origen está vacío."
+      nil
     end
-
-    value
   end
-  # --- FIN DEL MÉTODO CORREGIDO ---
 
   def add_processed_field(field, value, source_deficiency_name)
     processed_field = field.dup
