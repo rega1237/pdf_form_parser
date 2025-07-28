@@ -10,16 +10,11 @@ export default class extends Controller {
     this.updateButtonStates();
     this.updateProgress();
     this.setupFieldValidation();
-    
-    // Listen for choice-selected events from Pass/Fail buttons
     this.element.addEventListener('choice-selected', this.handleChoiceSelected.bind(this));
-    
-    // Listen for field validation changes
     this.element.addEventListener('field-validation-changed', this.handleValidationChange.bind(this));
   }
 
   disconnect() {
-    // Clean up event listeners
     this.element.removeEventListener('choice-selected', this.handleChoiceSelected.bind(this));
     this.element.removeEventListener('field-validation-changed', this.handleValidationChange.bind(this));
   }
@@ -150,6 +145,14 @@ export default class extends Controller {
     message.innerHTML = `<div class="font-semibold">Please fill all required fields to continue.</div>`;
     document.body.appendChild(message);
     setTimeout(() => this.hideValidationMessage(), 3000);
+  }
+
+  handleChoiceSelected(event) {
+    setTimeout(() => { this.validateCurrentPage(); }, 100);
+  }
+
+  handleValidationChange(event) {
+    this.validateCurrentPage();
   }
 
   hideValidationMessage() {
@@ -401,6 +404,19 @@ export default class extends Controller {
     } catch (error) {
       console.error("Error getting form fill controller:", error);
       return null;
+    }
+  }
+
+  jumpToPage(newIndex) {
+    console.log(`[Pagination] Se recibió la llamada para saltar a la página con índice: ${newIndex}`);
+    if (newIndex >= 0 && newIndex < this.totalPages) {
+      this.currentPage = newIndex;
+      this.showCurrentPage();
+      this.updateButtonStates();
+      this.updateProgress();
+      this.notifyPageChange();
+    } else {
+      console.warn(`[Pagination] Índice de página inválido: ${newIndex}`);
     }
   }
 }

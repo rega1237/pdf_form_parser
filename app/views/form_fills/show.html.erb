@@ -1,3 +1,5 @@
+<% @navigation_sections = navigation_sections_for_form(@form_fields) %>
+
 <% content_for :head do %>
   <style>
     /* Estilos para campos de foto */
@@ -126,13 +128,14 @@
   </style>
 <% end %>
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900" data-controller="notification" data-action="show-notification@window->notification#showNotification">
-  <div class="container mx-auto px-4 py-6 lg:py-12">
+  <div class="container mx-auto px-4 py-6 lg:pt-12 lg:pb-5">
     <%# --- HEADER --- %>
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div class="mb-4 sm:mb-0">
         <h1 class="text-2xl lg:text-4xl font-bold text-white mb-2"><%= @form_fill.name %></h1>
         <p class="text-blue-200 text-base md:text-lg">Complete all required fields to submit the inspection</p>
       </div>
+
       <%= link_to inspections_path, class: "inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl" do %>
         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
         <span class="text-base lg:text-lg">Back to inspections</span>
@@ -140,6 +143,18 @@
     </div>
   </div>
   <div class="max-w-6xl mx-auto px-4 pb-12">
+
+    <div data-controller="page-navigation" data-page-navigation-pagination-outlet="#form-fill-main-form" class="w-full sm:w-auto mb-3.5">
+      <select data-action="change->page-navigation#jump" class="w-full bg-slate-700 text-white font-semibold border-2 border-slate-500 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        <option value="">Jump to a section...</option>
+        <% @navigation_sections.each do |section| %>
+          <option value="<%= section[:page] - 1 %>">
+            Page <%= section[:page] %>: <%= section[:name].humanize %>
+          </option>
+        <% end %>
+      </select>
+    </div>
+    
     <div data-controller="field-toggle">
       <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json, "form-fill-data-value": @form_fill.data.to_json }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
@@ -151,7 +166,7 @@
         <% else %>
           <% valid_fields = @form_fields.reject { |f| f['page_number'].to_i == 0 } %>
           <% pages = valid_fields.group_by { |f| f['page_number'].to_i }.sort_by { |page_num, _| page_num } %>
-          <div class="relative z-10">
+          <div class="relative z-10" data-pagination-target="pageContainer">
             <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
               <div class="page-content <%= page_index == 0 ? '' : 'hidden' %>" data-pagination-target="pageContent">
                 <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-blue-400 shadow-2xl">
