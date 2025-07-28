@@ -36,6 +36,46 @@ class NextInspectionsController < ApplicationController
     ), notice: 'Formulario listo para crear la inspección. Por favor, asigna un técnico.'
   end
 
+  def calendar
+    # Obtener la fecha del parámetro o usar la fecha actual
+    @current_date = params[:date] ? Date.parse(params[:date]) : Date.current
+    @current_date = @current_date.beginning_of_month
+
+    # Obtener todas las inspecciones del mes actual
+    month_start = @current_date.beginning_of_month
+    month_end = @current_date.end_of_month
+
+    @month_inspections = NextInspection.includes(:property, :system_category, :interval_category)
+                                       .joins(property: :customer)
+                                       .where(next_inspection_date: month_start..month_end)
+                                       .order(:next_inspection_date)
+
+    # Crear estructura del calendario
+    @calendar_days = []
+
+    # Comenzar desde el domingo de la semana que contiene el primer día del mes
+    start_date = month_start.beginning_of_week(:sunday)
+    # Terminar en el sábado de la semana que contiene el último día del mes
+    end_date = month_end.end_of_week(:sunday)
+
+    current_date = start_date
+    while current_date <= end_date
+      # Obtener inspecciones para este día
+      day_inspections = @month_inspections.select do |inspection|
+        inspection.next_inspection_date == current_date
+      end
+
+      @calendar_days << {
+        date: current_date,
+        current_month: current_date.month == @current_date.month,
+        today: current_date == Date.current,
+        inspections: day_inspections
+      }
+
+      current_date += 1.day
+    end
+  end
+
   private
 
   def set_next_inspection

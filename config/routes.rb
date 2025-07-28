@@ -1,7 +1,4 @@
 Rails.application.routes.draw do
-  get 'next_inspections/index'
-  get 'next_inspections/show'
-  resources :system_categories
   devise_for :users, skip: [:registrations]
 
   devise_scope :user do
@@ -63,6 +60,10 @@ Rails.application.routes.draw do
   end
 
   resources :next_inspections, only: %i[index show] do
+    collection do
+      get :calendar # Ruta para la vista calendario
+    end
+
     member do
       # Esta ruta nos permitirá crear una inspección a partir de una 'NextInspection'
       post :create_inspection_from_next
@@ -71,6 +72,7 @@ Rails.application.routes.draw do
 
   resources :deficiencies
   resources :interval_categories
+  resources :system_categories
   resources :roles
 
   get 'settings', to: 'company_settings#index'

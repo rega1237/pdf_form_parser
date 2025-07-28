@@ -142,29 +142,52 @@ class InspectionsController < ApplicationController
 
   # GET /inspections/calendar
   def calendar
-    @inspections = Inspection.includes(:property, property: :customer)
+    # Autorizar la acción calendar usando un símbolo
+    authorize :inspection, :calendar?
 
-    # Filtrar por mes si se especifica
-    if params[:month].present? && params[:year].present?
-      start_date = Date.new(params[:year].to_i, params[:month].to_i, 1)
-      end_date = start_date.end_of_month
-      @inspections = @inspections.where(date: start_date..end_date)
-    else
-      # Por defecto mostrar el mes actual
-      @inspections = @inspections.where(date: Date.current.beginning_of_month..Date.current.end_of_month)
-    end
+    # Obtener la fecha del parámetro o usar la fecha actual
+    @current_date = params[:date] ? Date.parse(params[:date]) : Date.current
+    @current_date = @current_date.beginning_of_month
 
-    @inspections_by_date = @inspections.group_by(&:date)
-  end
+    # Obtener todas las inspecciones del mes actual usando policy_scope
+    month_start = @current_date.beginning_of_month
+    month_end = @current_date.end_of_month
 
-  # PATCH /inspections/1/update_status
-  def update_status
-    @inspection = Inspection.find(params[:id])
+    @month_inspections = policy_scope(Inspection).includes(:property, :user, property: :customer)
+                                                 .where(date: month_start..month_end)
+                                                 .order(:date)
 
-    if @inspection.update(status: params[:status])
-      render json: { success: true, message: 'Estado actualizado', status: @inspection.status }
-    else
-      render json: { success: false, errors: @inspection.errors.full_messages }
+    # Preparar estadísticas por técnico (sin el ORDER BY que causa problemas)
+    @technician_stats = policy_scope(Inspection).where(date: month_start..month_end)
+                                                .group(:user_id)
+                                                .count
+
+    # Inicializar @inspections para usar en la vista (usando el mismo scope)
+    @inspections = policy_scope(Inspection)
+
+    # Crear estructura del calendario
+    @calendar_days = []
+
+    # Comenzar desde el domingo de la semana que contiene el primer día del mes
+    start_date = month_start.beginning_of_week(:sunday)
+    # Terminar en el sábado de la semana que contiene el último día del mes
+    end_date = month_end.end_of_week(:sunday)
+
+    current_date = start_date
+    while current_date <= end_date
+      # Obtener inspecciones para este día
+      day_inspections = @month_inspections.select do |inspection|
+        inspection.date == current_date
+      end
+
+      @calendar_days << {
+        date: current_date,
+        current_month: current_date.month == @current_date.month,
+        today: current_date == Date.current,
+        inspections: day_inspections
+      }
+
+      current_date += 1.day
     end
   end
 
