@@ -346,13 +346,11 @@ class FormFill < ApplicationRecord
     return { pass: 0, fail: 0, na: 0 } unless form_structure.present?
 
     begin
-      structure = JSON.parse(form_structure)
       counts = { pass: 0, fail: 0, na: 0 }
 
-      structure.each do |field|
-        next unless field['value'].present?
+      data.each_value do |data_value|
 
-        value = field['value'].to_s.downcase
+        value = data_value.to_s.downcase
         case value
         when 'pass'
           counts[:pass] += 1
