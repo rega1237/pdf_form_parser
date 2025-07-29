@@ -349,7 +349,6 @@ class FormFill < ApplicationRecord
       counts = { pass: 0, fail: 0, na: 0 }
 
       data.each_value do |data_value|
-
         value = data_value.to_s.downcase
         case value
         when 'pass'
@@ -366,6 +365,25 @@ class FormFill < ApplicationRecord
       Rails.logger.error "Error parsing form_structure for counts: #{e.message}"
       { pass: 0, fail: 0, na: 0 }
     end
+  end
+
+  def get_sprinklers_data
+    sprinklers = { number: 0, date: '', brand: '', notes: '' }
+
+    data.each do |key, value|
+      case key
+      when 'Number_of_sprinklers'
+        sprinklers[:number] = value
+      when 'Manufactering_Date'
+        sprinklers[:date] = value
+      when 'Brand'
+        sprinklers[:brand] = value
+      when 'Notes'
+        sprinklers[:notes] = value
+      end
+    end
+
+    sprinklers
   end
 
   # ========================================
