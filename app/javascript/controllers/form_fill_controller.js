@@ -669,6 +669,27 @@ export default class extends Controller {
     }
   }
 
+  updateIntervalCategory(event) {
+    // Encuentra el contenedor principal para este campo específico
+    const fieldContainer = event.target.closest('.space-y-4');
+    if (!fieldContainer) return;
+
+    // Dentro de ese contenedor, encuentra el campo oculto y todas las casillas marcadas
+    const hiddenField = fieldContainer.querySelector('input[type="hidden"]');
+    const checkboxes = fieldContainer.querySelectorAll('input[type="checkbox"]:checked');
+
+    if (hiddenField) {
+      // Crea un array con los valores de las casillas marcadas
+      const selectedValues = Array.from(checkboxes).map(cb => cb.value);
+
+      // Actualiza el valor del campo oculto
+      hiddenField.value = selectedValues.join(', ');
+
+      // dispana manualmente el evento
+      hiddenField.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
   // Extract field name from element
   extractFieldName(element) {
     if (element.name.startsWith("form_fill[")) {

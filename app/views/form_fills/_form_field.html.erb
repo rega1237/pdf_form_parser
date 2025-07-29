@@ -262,7 +262,7 @@
                 selected_categories.include?(category.name),
                 id: "#{field_id}_#{category.id}",
                 class: "hidden peer",
-                onchange: "updateIntervalCategoryValue_#{field_id.gsub(/[^a-zA-Z0-9]/, '_')}()" %>
+                data: { action: "change->form-fill#updateIntervalCategory" } %>
             <label for="<%= "#{field_id}_#{category.id}" %>" 
                    class="w-full text-left p-6 bg-slate-800/90 border border-white/10 rounded-xl shadow-lg hover:bg-blue-600/50 transition-all duration-200 flex items-center justify-between cursor-pointer peer-checked:bg-blue-600 peer-checked:border-blue-400">
               
@@ -280,18 +280,6 @@
         <% end %>
       </div>
     </div>
-
-    <script>
-      function updateIntervalCategoryValue_<%= field_id.gsub(/[^a-zA-Z0-9]/, '_') %>() {
-        const fieldName = '<%= field['name'] %>';
-        const checkboxes = document.querySelectorAll(`input[name="${fieldName}_categories[]"]:checked`);
-        const selectedValues = Array.from(checkboxes).map(cb => cb.value);
-        const hiddenField = document.getElementById('<%= field_id %>_hidden');
-        if (hiddenField) {
-          hiddenField.value = selectedValues.join(', ');
-        }
-      }
-    </script>
   </div>
 
 <% else %>

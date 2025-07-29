@@ -474,7 +474,7 @@ class FormFillsController < ApplicationController
     GeneratePdfJob.perform_later(@main_form_fill.id)
 
     # Le pasamos el `form_structure` ya actualizado. para crear el next_inspection
-    create_next_inspection_from_structure(@main_form_fill.form_structure)
+    create_next_inspection_from_structure(@main_form_fill.data)
 
     # Redirigir al usuario con un mensaje informativo
     redirect_to @main_form_fill, notice: 'Your PDF is being generated and will be available shortly.'
@@ -847,28 +847,19 @@ class FormFillsController < ApplicationController
     end
   end
 
-  def create_next_inspection_from_structure(form_structure_json)
+  def create_next_inspection_from_structure(form_data)
     inspection = @main_form_fill.inspection
-    return unless inspection && form_structure_json.present?
+    return unless inspection && form_data.present?
 
     begin
-      structure = JSON.parse(form_structure_json)
-
       # Encontrar los valores seleccionados en el formulario
-      system_category_field = structure.find { |field| field['type'] == 'System Category' }
-      interval_category_field = structure.find { |field| field['type'] == 'Interval Category' }
-
-      system_category_name = system_category_field['value'] if system_category_field
-
-      # Maneja tanto 'value' como 'selected_categories' para el intervalo
-      interval_category_name = if interval_category_field
-                                 (interval_category_field['selected_categories'] || [interval_category_field['value']]).first
-                               end
+      system_category_data = form_data['System category']
+      interval_category_data = form_data['Interval Category']
 
       # Proceder si tenemos toda la información
-      if system_category_name.present? && interval_category_name.present?
-        system_category = SystemCategory.find_by(name: system_category_name)
-        interval_category = IntervalCategory.find_by(name: interval_category_name)
+      if system_category_data.present? && interval_category_data.present?
+        system_category = SystemCategory.find_by(name: system_category_data)
+        interval_category = IntervalCategory.find_by(name: interval_category_data)
 
         if system_category && interval_category&.duration_in_months.present?
           next_date = inspection.date + interval_category.duration_in_months.months
