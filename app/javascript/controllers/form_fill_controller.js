@@ -708,7 +708,7 @@ export default class extends Controller {
   // Get value from form element
   getElementValue(element) {
     if (element.type === "checkbox") {
-      return element.checked ? "Yes" : "";
+      return element.checked ? element.value : "";
     } else if (element.type === "radio") {
       return element.checked ? element.value : "";
     } else {

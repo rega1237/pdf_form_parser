@@ -493,11 +493,11 @@
                   <% end %>
 
                   <!-- Options Section (for Choice and Deficiency fields) -->
-                  <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].include?(field['type']) %>" data-field-attribute="options-container">
+                  <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency', 'Pass/Fail', 'Radio', 'Button'].include?(field['type']) %>" data-field-attribute="options-container">
                     <div class="border-t border-white/10 pt-4 mt-4">
                       <div class="flex items-center justify-between mb-3">
                         <div>
-                          <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail & Radio fields)</label>
+                          <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail, Radio & Button fields)</label>
                           <p class="text-slate-400 text-xs mt-1">Label: what users see | Value: what gets submitted</p>
                         </div>
                         <button type="button" 

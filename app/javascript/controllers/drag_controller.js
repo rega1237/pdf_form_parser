@@ -193,6 +193,8 @@ export default class extends Controller {
         return ["Minor", "Major", "Critical"];
       case "Pass/Fail":
         return ["Pass", "Fail", "N/A"];
+      case "Button":
+        return ["Yes"];
       case "Radio":
         return [
           ["Yes", "Choice1"],
@@ -255,9 +257,13 @@ export default class extends Controller {
       itemData.original_name || itemData.name || itemData.id;
 
     const fieldIdBase = `field_${(itemData.name || itemData.id).replace(/\W/g, "_")}_${globalIndex}`;
-    const hasOptions = ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(
-      itemData.type,
-    );
+    const hasOptions = [
+      "Choice",
+      "Deficiency",
+      "Pass/Fail",
+      "Radio",
+      "Button",
+    ].includes(itemData.type);
     const isDeficiencyType = ["Deficiency", "Deficiency_field"].includes(
       itemData.type,
     );
@@ -660,7 +666,7 @@ export default class extends Controller {
     const optionsContainer = itemEl.querySelector(
       '[data-field-attribute="options-container"]',
     );
-    const hasOptions = ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(
+    const hasOptions = ["Choice", "Deficiency", "Pass/Fail", "Radio", "Button"].includes(
       fieldType,
     );
 
@@ -679,7 +685,7 @@ export default class extends Controller {
     if (oldType === "Photo") {
       delete itemData.photo_attachment_id;
     } else if (
-      ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(oldType)
+      ["Choice", "Deficiency", "Pass/Fail", "Radio", "Button"].includes(oldType)
     ) {
       delete itemData.options;
     }
@@ -701,7 +707,7 @@ export default class extends Controller {
       // Agregar campo para ID de photo que se llenará después
       itemData.photo_attachment_id = null; // Se llenará cuando se suba la foto
     } else if (
-      ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(newType)
+      ["Choice", "Deficiency", "Pass/Fail", "Radio", "Button"].includes(newType)
     ) {
       itemData.options = this.getDefaultOptionsForType(newType);
     }
