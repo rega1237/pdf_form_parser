@@ -227,6 +227,11 @@
           </div>
         </footer>
       <% end %>
+
+      <!-- Modal para manejar duplicados de Next Inspection -->
+      <% if session[:duplicate_next_inspection] %>
+        <%= render 'shared/duplicate_next_inspection_modal' %>
+      <% end %>
     </div>
   </body>
 </html>

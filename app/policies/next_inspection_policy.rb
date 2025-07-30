@@ -39,6 +39,17 @@ class NextInspectionPolicy < ApplicationPolicy
   end
 
   def destroy?
-    false
+    user&.role&.level == 'Admin'
+  end
+
+  # Permitir eliminar en el contexto de resolución de duplicados
+  def destroy_for_duplicate?
+    user&.role&.level.in?(%w[Admin Technician])
+  end
+
+  # Permitir manejar duplicados tanto a Admin como a Technician
+  # ya que los técnicos completan formularios y pueden generar duplicados
+  def handle_duplicate?
+    user&.role&.level.in?(%w[Admin Technician])
   end
 end

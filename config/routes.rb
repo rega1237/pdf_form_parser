@@ -59,9 +59,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :next_inspections, only: %i[index show] do
+  resources :next_inspections, only: %i[index show destroy] do
     collection do
       get :calendar # Ruta para la vista calendario
+      post :handle_duplicate # Ruta para manejar duplicados
+      post :create_after_duplicate_resolution # Ruta para crear después de resolver duplicado
     end
 
     member do

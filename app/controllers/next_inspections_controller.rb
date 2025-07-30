@@ -3,7 +3,7 @@
 # Controller for managing next scheduled inspections
 # Handles viewing upcoming inspections and creating new inspections from scheduled ones
 class NextInspectionsController < ApplicationController
-  before_action :set_next_inspection, only: %i[show create_inspection_from_next]
+  before_action :set_next_inspection, only: %i[show create_inspection_from_next destroy]
 
   def index
     # Por defecto, muestra las inspecciones del próximo mes
@@ -33,7 +33,91 @@ class NextInspectionsController < ApplicationController
       system_category: system_category,
       interval_category: interval_category,
       date: @next_inspection.next_inspection_date
-    ), notice: 'Formulario listo para crear la inspección. Por favor, asigna un técnico.'
+    ), notice: 'Form ready to create the inspection. Please assign a technician.'
+  end
+
+  def destroy
+    authorize @next_inspection
+    @next_inspection.destroy
+    redirect_to next_inspections_path, notice: 'Next inspection successfully deleted.'
+  end
+
+  def handle_duplicate
+    # Autorizar la acción de manejar duplicados
+    authorize :next_inspection, :handle_duplicate?
+
+    duplicate_info = session[:duplicate_next_inspection]
+
+    unless duplicate_info
+      # Redirigir según el rol del usuario
+      if current_user.role.level == 'Admin'
+        redirect_to next_inspections_path, alert: 'No duplicate information was found.'
+      else
+        redirect_to inspections_path, alert: 'No duplicate information was found.'
+      end
+      return
+    end
+
+    if params[:action_type] == 'delete_existing'
+      # Eliminar la next inspection existente
+      existing_next_inspection = NextInspection.find(duplicate_info['existing']['id'])
+      # Para eliminar en contexto de duplicado, usar el método específico
+      authorize existing_next_inspection, :destroy_for_duplicate?
+      existing_next_inspection.destroy
+
+      # Crear la nueva next inspection
+      create_new_next_inspection_from_session
+
+      # Obtener el form_fill_id antes de limpiar la sesión
+      form_fill_id = duplicate_info['form_fill_id']
+      session.delete(:duplicate_next_inspection)
+
+      # Si hay un form_fill_id, proceder con la generación del PDF
+      if form_fill_id.present?
+        generate_pdf_for_form_fill(form_fill_id)
+        redirect_to form_fill_path(form_fill_id), 
+                    notice: 'Previous inspection deleted and new one created. PDF being generated.'
+      elsif current_user.role.level == 'Admin'
+        # Redirigir según el rol del usuario si no hay form_fill
+        redirect_to next_inspections_path, notice: 'Previous inspection deleted and new one successfully created.'
+      else
+        redirect_to inspections_path, notice: 'Previous inspection deleted and new one successfully created.'
+      end
+    elsif params[:action_type] == 'keep_existing'
+      # Mantener la existente, no crear nueva
+      form_fill_id = duplicate_info['form_fill_id']
+      session.delete(:duplicate_next_inspection)
+
+      # Si hay un form_fill_id, proceder con la generación del PDF
+      if form_fill_id.present?
+        generate_pdf_for_form_fill(form_fill_id)
+        redirect_to form_fill_path(form_fill_id), 
+                    notice: 'The existing next inspection was retained. PDF being generated.'
+      elsif current_user.role.level == 'Admin'
+        # Redirigir según el rol del usuario si no hay form_fill
+        redirect_to next_inspections_path, notice: 'The existing next inspection was maintained.'
+      else
+        redirect_to inspections_path, notice: 'The existing next inspection was maintained.'
+      end
+    elsif params[:action_type] == 'cancel'
+      # Cancelar la generación del PDF, limpiar sesión y regresar al form_fill
+      form_fill_id = duplicate_info['form_fill_id']
+      session.delete(:duplicate_next_inspection)
+
+      if form_fill_id.present?
+        redirect_to form_fill_path(form_fill_id),
+                    notice: 'PDF generation canceled. No Next Inspection was created.'
+      elsif current_user.role.level == 'Admin'
+        redirect_to next_inspections_path, notice: 'Action canceled.'
+      else
+        redirect_to inspections_path, notice: 'Action canceled.'
+      end
+    elsif current_user.role.level == 'Admin'
+      # Redirigir según el rol del usuario en caso de error
+      redirect_to next_inspections_path, alert: 'Invalid action.'
+    else
+      redirect_to inspections_path, alert: 'Invalid action.'
+    end
   end
 
   def calendar
@@ -80,5 +164,59 @@ class NextInspectionsController < ApplicationController
 
   def set_next_inspection
     @next_inspection = NextInspection.find(params[:id])
+  end
+
+  def generate_pdf_for_form_fill(form_fill_id)
+    form_fill = FormFill.find(form_fill_id)
+    
+    # Verificar si ya se está generando un PDF
+    return if form_fill.generating?
+
+    # Marcar como generando antes de encolar el trabajo
+    form_fill.update!(pdf_generation_status: 'generating')
+
+    # Encolar el trabajo de generación de PDF
+    GeneratePdfJob.perform_later(form_fill.id)
+    
+    Rails.logger.info "PDF generation started for FormFill ##{form_fill.id} after duplicate resolution"
+  rescue StandardError => e
+    Rails.logger.error "Error starting PDF generation for FormFill ##{form_fill_id}: #{e.message}"
+  end
+
+  def create_new_next_inspection_from_session
+    duplicate_info = session[:duplicate_next_inspection]
+    return unless duplicate_info
+
+    begin
+      # Recrear los objetos necesarios usando información más confiable
+      existing_info = duplicate_info['existing']
+
+      # Buscar por ID si está disponible, sino por nombre
+      property = if existing_info['property_id']
+                   Property.find(existing_info['property_id'])
+                 else
+                   Property.joins(:customer)
+                           .where(property_name: existing_info['property_name'])
+                           .where(customers: { name: existing_info['customer_name'] })
+                           .first
+                 end
+
+      system_category = SystemCategory.find_by(name: existing_info['system_category'])
+      interval_category = IntervalCategory.find_by(name: existing_info['interval_category'])
+
+      return unless property && system_category && interval_category
+
+      NextInspection.create!(
+        property: property,
+        system_category: system_category,
+        interval_category: interval_category,
+        next_inspection_date: Date.parse(duplicate_info['new_date'].to_s),
+        status: 'scheduled'
+      )
+
+      Rails.logger.info "New next inspection created after duplicate resolution for property #{property.id}"
+    rescue StandardError => e
+      Rails.logger.error "Failed to create new next inspection from session: #{e.message}"
+    end
   end
 end

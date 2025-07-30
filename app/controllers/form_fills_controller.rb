@@ -467,16 +467,36 @@ class FormFillsController < ApplicationController
       return
     end
 
+    # Primero manejar la lógica de next inspection ANTES de generar PDF
+    create_next_inspection_from_structure(@main_form_fill.data)
+
+    # Si hay un duplicado detectado, no proceder con la generación del PDF
+    # El usuario debe resolver el duplicado primero
+    if session[:duplicate_next_inspection]
+      # No marcar como generando ni encolar el trabajo aún
+      redirect_to @main_form_fill,
+                  notice: 'Se detectó una Next Inspection duplicada. Por favor, resuelve el duplicado antes de generar el PDF.'
+      return
+    end
+
+    # Solo si no hay duplicados, proceder con la generación del PDF
+    generate_pdf_now
+  end
+
+  # Método para proceder con la generación del PDF
+  def generate_pdf_now
+    # Verificar si ya se está generando un PDF
+    if @main_form_fill.generating?
+      redirect_to @main_form_fill, alert: 'PDF is already being generated. Please wait.'
+      return
+    end
+
     # Marcar como generando antes de encolar el trabajo
     @main_form_fill.update!(pdf_generation_status: 'generating')
 
     # Encolar el trabajo de generación de PDF
     GeneratePdfJob.perform_later(@main_form_fill.id)
 
-    # Le pasamos el `form_structure` ya actualizado. para crear el next_inspection
-    create_next_inspection_from_structure(@main_form_fill.data)
-
-    # Redirigir al usuario con un mensaje informativo
     redirect_to @main_form_fill, notice: 'Your PDF is being generated and will be available shortly.'
   end
 
@@ -862,16 +882,34 @@ class FormFillsController < ApplicationController
         interval_category = IntervalCategory.find_by(name: interval_category_data)
 
         if system_category && interval_category&.duration_in_months.present?
-          next_date = inspection.date + interval_category.duration_in_months.months
-
-          NextInspection.create!(
-            property: inspection.property,
-            system_category: system_category,
-            interval_category: interval_category,
-            next_inspection_date: next_date,
-            status: 'scheduled'
+          # Verificar si ya existe una next inspection con los mismos parámetros
+          existing_next_inspection = NextInspection.find_duplicate(
+            inspection.property.id,
+            system_category.id,
+            interval_category.id
           )
-          Rails.logger.info "Next inspection scheduled for property #{inspection.property.id} on #{next_date}"
+
+          if existing_next_inspection
+            # Almacenar información del duplicado en la sesión para mostrar al usuario
+            session[:duplicate_next_inspection] = {
+              existing: existing_next_inspection.duplicate_info,
+              new_date: inspection.date + interval_category.duration_in_months.months,
+              form_fill_id: @main_form_fill.id
+            }
+            Rails.logger.info "Duplicate next inspection found for property #{inspection.property.id}"
+          else
+            # Crear la nueva next inspection si no hay duplicados
+            next_date = inspection.date + interval_category.duration_in_months.months
+
+            NextInspection.create!(
+              property: inspection.property,
+              system_category: system_category,
+              interval_category: interval_category,
+              next_inspection_date: next_date,
+              status: 'scheduled'
+            )
+            Rails.logger.info "Next inspection scheduled for property #{inspection.property.id} on #{next_date}"
+          end
         else
           Rails.logger.warn('Could not find System/Interval category or duration_in_months is not set.')
         end
