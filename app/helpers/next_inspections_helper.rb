@@ -1,0 +1,2 @@
+module NextInspectionsHelper
+end

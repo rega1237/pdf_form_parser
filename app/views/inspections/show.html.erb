@@ -1,4 +1,6 @@
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" 
+     data-controller="inspection-status" 
+     data-inspection-status-inspection-id-value="<%= @inspection.id %>">
   <div class="container mx-auto px-4 py-6 lg:py-12">
     <!-- Header con navegación -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
@@ -147,7 +149,7 @@
                 </div>
               </div>
             </div>
-            
+                      
             <!-- Notes -->
             <% if @inspection.notes.present? %>
               <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -182,7 +184,8 @@
           </div>
           
           <div class="space-y-3">
-            <button onclick="updateStatus('completed')" 
+            <button data-action="click->inspection-status#updateStatus" 
+                    data-status="completed"
                     class="w-full bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,7 +194,8 @@
                 Mark as Completed
               </div>
             </button>
-            <button onclick="updateStatus('in_progress')" 
+            <button data-action="click->inspection-status#updateStatus" 
+                    data-status="in_progress"
                     class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,7 +204,8 @@
                 In Progress
               </div>
             </button>
-            <button onclick="updateStatus('pending')" 
+            <button data-action="click->inspection-status#updateStatus" 
+                    data-status="pending"
                     class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-colors duration-200">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -209,7 +214,8 @@
                 Mark as Pending
               </div>
             </button>
-            <button onclick="updateStatus('cancelled')" 
+            <button data-action="click->inspection-status#updateStatus" 
+                    data-status="cancelled"
                     class="w-full bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,6 +226,140 @@
             </button>
           </div>
         </div>
+
+        <!-- Sprinklers Data -->
+        <% if @form_fill.present? %>
+          <% sprinklers_data = @form_fill.get_sprinklers_data %>
+          <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+            <div class="flex items-center mb-6">
+              <div class="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center mr-3">
+                <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+              </div>
+              <h3 class="text-white font-semibold text-lg">Sprinklers Information</h3>
+            </div>
+            
+            <div class="space-y-4">
+              <!-- Number of Sprinklers -->
+              <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <dt class="text-slate-400 text-sm font-medium">Number of Sprinklers</dt>
+                    <dd class="text-white text-lg font-semibold">
+                      <%= sprinklers_data[:number].present? ? sprinklers_data[:number] : 'Not specified' %>
+                    </dd>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Manufacturing Date -->
+              <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <dt class="text-slate-400 text-sm font-medium">Manufacturing Date</dt>
+                    <dd class="text-white text-base font-semibold">
+                      <%= sprinklers_data[:date].present? ? sprinklers_data[:date] : 'Not specified' %>
+                    </dd>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Brand -->
+              <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <dt class="text-slate-400 text-sm font-medium">Brand</dt>
+                    <dd class="text-white text-base font-semibold">
+                      <%= sprinklers_data[:brand].present? ? sprinklers_data[:brand] : 'Not specified' %>
+                    </dd>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+                <div class="flex items-start space-x-3">
+                  <div class="w-10 h-10 bg-slate-500/20 rounded-lg flex items-center justify-center mt-1">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <dt class="text-slate-400 text-sm font-medium mb-1">Notes</dt>
+                    <dd class="text-white text-sm">
+                      <% if sprinklers_data[:notes].present? %>
+                        <p class="whitespace-pre-wrap"><%= sprinklers_data[:notes] %></p>
+                      <% else %>
+                        <span class="text-slate-500 italic">No notes available</span>
+                      <% end %>
+                    </dd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Form Results Summary -->
+        <% if @form_fill.present? %>
+          <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
+            <div class="flex items-start space-x-3">
+              <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center mt-1">
+                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h4 class="text-white font-semibold mb-4">Form Results Summary</h4>
+                <div class="grid grid-cols-3 gap-4">
+                  <div class="text-center">
+                    <div class="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mx-auto mb-2">
+                      <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </div>
+                    <div class="text-2xl font-bold text-emerald-400"><%= @form_counts[:pass] %></div>
+                    <div class="text-slate-400 text-sm">Pass</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mx-auto mb-2">
+                      <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </div>
+                    <div class="text-2xl font-bold text-red-400"><%= @form_counts[:fail] %></div>
+                    <div class="text-slate-400 text-sm">Fail</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="w-12 h-12 bg-slate-500/20 rounded-xl flex items-center justify-center mx-auto mb-2">
+                      <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                      </svg>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-400"><%= @form_counts[:na] %></div>
+                    <div class="text-slate-400 text-sm">N/A</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
         
         <!-- Additional Information -->
         <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
@@ -247,30 +387,3 @@
     </div>
   </div>
 </div>
-
-<script>
-function updateStatus(status) {
-  if (confirm('Are you sure you want to change the status of this inspection?')) {
-    fetch(`/inspections/<%= @inspection.id %>/update_status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
-      },
-      body: JSON.stringify({ status: status })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        location.reload();
-      } else {
-        alert('Error: ' + data.errors.join(', '));
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('An error occurred while updating the status.');
-    });
-  }
-}
-</script>

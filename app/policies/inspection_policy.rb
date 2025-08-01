@@ -15,7 +15,13 @@ class InspectionPolicy < ApplicationPolicy
   end
 
   def show?
-    user && user.role&.level == 'Admin'
+    user&.role&.level == 'Admin' || record.user_id == user.id
+  end
+
+  def calendar?
+    # Permitir acceso al calendario a usuarios autenticados
+    # El scope ya maneja qué inspecciones pueden ver
+    user.present?
   end
 
   def update?

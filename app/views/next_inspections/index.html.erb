@@ -1,0 +1,208 @@
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+    .inspection-card {
+      transition: all 0.3s ease;
+    }
+    .inspection-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+<% end %>
+
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div class="mb-4 sm:mb-0">
+        <div class="flex items-center space-x-3 mb-2">
+          <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <h1 class="text-2xl lg:text-3xl font-bold text-white">Upcoming Inspections</h1>
+        </div>
+        <p class="text-slate-300 text-sm lg:text-base">Manage and schedule your next inspections</p>
+      </div>
+
+      <div class="flex space-x-3">
+        <%= link_to calendar_next_inspections_path, class: "inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105" do %>
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+          </svg>
+          Calendar View
+        <% end %>
+      <%= link_to inspections_path, class: "inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105" do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back to Inspections
+      <% end %>
+      </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-8 animate-slide-up">
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold text-lg">Filter Inspections</h3>
+      </div>
+      
+      <%= form_with url: next_inspections_path, method: :get, class: "space-y-4" do |form| %>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <%= form.label :from_date, "From Date", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <%= form.date_field :from_date, value: @from_date, class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" %>
+            </div>
+          </div>
+          
+          <div class="space-y-2">
+            <%= form.label :to_date, "To Date", class: "block text-white font-semibold text-sm lg:text-base" %>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <%= form.date_field :to_date, value: @to_date, class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" %>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end">
+          <%= form.submit "Apply Filter", class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg" %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Inspections List -->
+    <div class="max-w-6xl mx-auto">
+      <% if @next_inspections.any? %>
+        <div class="space-y-4">
+          <% @next_inspections.each_with_index do |next_inspection, index| %>
+            <div class="inspection-card bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg animate-slide-up" style="animation-delay: <%= index * 0.1 %>s;">
+              <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between lg:gap-3 space-y-4 lg:space-y-0">
+                
+                <!-- Property Information -->
+                <div class="flex-1 lg:max-w-sm">
+                  <div class="flex items-start space-x-3">
+                    <div class="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center mt-1">
+                      <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="text-white font-bold text-lg"><%= next_inspection.property.property_name %></h3>
+                      <p class="text-slate-300 text-sm"><%= next_inspection.property.customer.name %></p>
+                      <p class="text-slate-400 text-xs"><%= next_inspection.property.address %></p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Schedule Information -->
+                <div class="flex-1 lg:max-w-xs text-center lg:text-left">
+                  <div class="bg-blue-500/10 rounded-xl p-4 border border-blue-500/20">
+                    <p class="text-blue-300 text-sm font-medium mb-1">Scheduled Date</p>
+                    <p class="text-white font-bold text-lg"><%= next_inspection.next_inspection_date.strftime("%b %d, %Y") %></p>
+                    <% days_until = (next_inspection.next_inspection_date - Date.current).to_i %>
+                    <% if days_until < 0 %>
+                      <span class="inline-block bg-red-500/20 text-red-300 text-xs font-semibold px-2 py-1 rounded-full mt-1">
+                        <%= pluralize(days_until.abs, 'day') %> overdue
+                      </span>
+                    <% elsif days_until == 0 %>
+                      <span class="inline-block bg-amber-500/20 text-amber-300 text-xs font-semibold px-2 py-1 rounded-full mt-1">
+                        Today
+                      </span>
+                    <% else %>
+                      <span class="inline-block bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-2 py-1 rounded-full mt-1">
+                        In <%= pluralize(days_until, 'day') %>
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+
+                <!-- System & Interval Information -->
+                <div class="flex-1 lg:max-w-xs">
+                  <div class="space-y-2">
+                    <div>
+                      <p class="text-slate-300 text-sm font-medium">System Category</p>
+                      <p class="text-white font-semibold"><%= next_inspection.system_category['name'] %></p>
+                    </div>
+                    <div>
+                      <p class="text-slate-300 text-sm font-medium">Interval</p>
+                      <span class="inline-block bg-indigo-500/20 text-indigo-300 text-sm font-semibold px-3 py-1 rounded-full">
+                        <%= next_inspection.interval_category['name'] %>
+                      </span>
+                    </div>
+                    <div>
+                      <span class="inline-block bg-<%= next_inspection.status == 'pending' ? 'amber' : 'emerald' %>-500/20 text-<%= next_inspection.status == 'pending' ? 'amber' : 'emerald' %>-300 text-xs font-semibold px-2 py-1 rounded-full capitalize">
+                        <%= next_inspection.status %>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                  <%= link_to next_inspection_path(next_inspection), class: "inline-flex items-center justify-center bg-slate-700/50 hover:bg-slate-600/50 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105" do %>
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    View Details
+                  <% end %>
+                  
+                  <%= button_to create_inspection_from_next_next_inspection_path(next_inspection), method: :post, class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg" do %>
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create Inspection
+                  <% end %>
+
+                  <%= button_to next_inspection_path(next_inspection), method: :delete, 
+                      class: "inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 hover:scale-105",
+                      data: { 
+                        confirm: "¿Estás seguro de que deseas eliminar esta Next Inspection para #{next_inspection.property.property_name} - #{next_inspection.system_category.name}?" 
+                      } do %>
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Delete
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <!-- Empty State -->
+        <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 text-center animate-fade-in">
+          <div class="w-16 h-16 bg-slate-600/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">No Upcoming Inspections</h3>
+          <p class="text-slate-400 text-sm">No inspections scheduled for the selected date range.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

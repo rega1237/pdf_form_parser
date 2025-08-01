@@ -1,6 +1,6 @@
 <div data-controller="inspection-modal"
-     data-inspection-modal-system-categories-value="<%= @system_categories.map { |sc| { id: sc.id, name: sc.name, thumbnail_url: (url_for(sc.thumbnail) if sc.thumbnail.attached?) } }.to_json %>"
-     data-inspection-modal-interval-categories-value="<%= @intervals.to_json(only: [:id, :name]) %>">
+     data-inspection-modal-system-categories-value="<%= @system_categories.map { |sc| { id: sc.id, name: sc.name, thumbnail_url: (sc.thumbnail.attached? ? url_for(sc.thumbnail) : nil) } }.to_json %>"
+     data-inspection-modal-interval-categories-value="<%= @intervals.map { |ic| { id: ic.id, name: ic.name } }.to_json %>">
 
   <%# Vista 1: Contenido del Formulario (lo que se muestra por defecto) %>
   <div data-inspection-modal-target="formContent">

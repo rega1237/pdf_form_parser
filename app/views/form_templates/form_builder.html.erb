@@ -165,6 +165,10 @@
       min-width: 0;
     }
 
+    .option-item .grid {
+      flex: 1;
+    }
+
     .remove-option-btn {
       flex-shrink: 0;
       width: 2rem;
@@ -324,6 +328,8 @@
                           <option value="Radio" <%= 'selected' if field['type'] == 'Radio' %>>Radio button</option>
                           <option value="Date" <%= 'selected' if field['type'] == 'Date' %>>Date</option>
                           <option value="Deficiency_field" <%= 'selected' if field['type'] == 'Deficiency_field' %>>Deficiency Field</option>
+                          <option value="System Category" <%= 'selected' if field['type'] == 'System Category' %>>System Category</option>
+                          <option value="Interval Category" <%= 'selected' if field['type'] == 'Interval Category' %>>Interval Category</option>
                         </select>
                       </div>
                     </div>
@@ -441,11 +447,59 @@
                     </div>
                   <% end %>
 
+                  <!-- Category Selection Section (for System Category and Interval Category fields) -->
+                  <% if ['System Category', 'Interval Category'].include?(field['type']) %>
+                    <div class="category-selection-fields border-t border-white/10 pt-4 mt-4">
+                      <div class="mb-4">
+                        <div class="flex items-center space-x-2 mb-3">
+                          <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                          </svg>
+                          <span class="text-purple-300 font-semibold text-sm"><%= field['type'] %> Configuration</span>
+                        </div>
+                        
+                        <!-- Category Selection Button -->
+                        <div class="space-y-3">
+                          <button type="button" 
+                                  class="w-full p-4 bg-purple-500/20 border border-purple-500/30 rounded-xl text-white hover:bg-purple-500/30 transition-all duration-200 flex items-center justify-between"
+                                  data-action="click->category-selector#openModal"
+                                  data-field-name="<%= field['name'] %>"
+                                  data-field-type="<%= field['type'] %>">
+                            <div class="flex items-center space-x-3">
+                              <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                              </svg>
+                              <span class="font-medium">Select <%= field['type'] %></span>
+                            </div>
+                            <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                          </button>
+                          
+                          <!-- Selected Categories Display -->
+                          <div class="selected-categories-display p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                            <div class="text-purple-200 text-sm font-medium mb-2">Selected Categories:</div>
+                            <div class="selected-categories-list text-purple-100 text-sm" data-field-attribute="selected-categories">
+                              <% if field['selected_categories'] && field['selected_categories'].any? %>
+                                <%= field['selected_categories'].join(', ') %>
+                              <% else %>
+                                <span class="text-purple-300 italic">No categories selected</span>
+                              <% end %>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
                   <!-- Options Section (for Choice and Deficiency fields) -->
-                  <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency', 'Pass/Fail', 'Radio'].include?(field['type']) %>" data-field-attribute="options-container">
+                  <div class="options-container <%= 'hidden' unless ['Choice', 'Deficiency', 'Pass/Fail', 'Radio', 'Button'].include?(field['type']) %>" data-field-attribute="options-container">
                     <div class="border-t border-white/10 pt-4 mt-4">
                       <div class="flex items-center justify-between mb-3">
-                        <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail & Radio fields)</label>
+                        <div>
+                          <label class="block text-white font-semibold text-sm">Options (for Choice, Deficiency, Pass/Fail, Radio & Button fields)</label>
+                          <p class="text-slate-400 text-xs mt-1">Label: what users see | Value: what gets submitted</p>
+                        </div>
                         <button type="button" 
                                 class="add-option-btn text-xs px-3 py-1" 
                                 data-action="click->drag#addOption"
@@ -456,12 +510,29 @@
                       <div class="options-list space-y-2" data-field-attribute="options-list">
                         <% if field['options'] && field['options'].is_a?(Array) %>
                           <% field['options'].each_with_index do |option, opt_index| %>
+                            <% 
+                              # Determinar si la opción es un array [label, valor] o string simple
+                              if option.is_a?(Array) && option.length == 2
+                                option_label = option[0]
+                                option_value = option[1]
+                              else
+                                option_label = option
+                                option_value = option
+                              end
+                            %>
                             <div class="option-item">
-                              <input type="text" 
-                                     value="<%= option %>" 
-                                     data-field-attribute="option-value"
-                                     class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                                     placeholder="Option value">
+                              <div class="grid grid-cols-2 gap-2 flex-1">
+                                <input type="text" 
+                                       value="<%= option_label %>" 
+                                       data-field-attribute="option-label"
+                                       class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                       placeholder="Display label">
+                                <input type="text" 
+                                       value="<%= option_value %>" 
+                                       data-field-attribute="option-value"
+                                       class="option-input bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                       placeholder="Form value">
+                              </div>
                               <button type="button" 
                                       class="remove-option-btn" 
                                       data-action="click->drag#removeOption">
@@ -544,6 +615,75 @@
           </div>
         </div>
       <% end %>
+    </div>
+  </div>
+
+  <!-- Category Selection Modal -->
+  <div data-controller="category-selector" 
+       data-category-selector-system-categories-value="<%= @system_categories.map { |cat| { id: cat.id, name: cat.name, thumbnail_url: cat.thumbnail.attached? ? url_for(cat.thumbnail) : nil } }.to_json %>"
+       data-category-selector-interval-categories-value="<%= @interval_categories.map { |cat| { id: cat.id, name: cat.name } }.to_json %>"
+       class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm" 
+       data-category-selector-target="modal">
+    
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-slate-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-white/10">
+          <h2 class="text-2xl font-bold text-white" data-category-selector-target="modalTitle">
+            Select Categories
+          </h2>
+          <button type="button" 
+                  class="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                  data-action="click->category-selector#closeModal">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- System Categories View -->
+        <div data-category-selector-target="systemView" class="hidden p-6 overflow-y-auto max-h-[70vh]">
+          <div class="mb-6">
+            <h3 class="text-xl font-semibold text-white mb-2">Select System Category</h3>
+            <p class="text-slate-300 text-sm">Choose a system category to continue</p>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" data-category-selector-target="systemButtons">
+            <!-- System category buttons will be inserted here by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Interval Categories View -->
+        <div data-category-selector-target="intervalView" class="hidden p-6 overflow-y-auto max-h-[70vh]">
+          <div class="mb-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-xl font-semibold text-white mb-2">Select Interval Categories</h3>
+                <p class="text-slate-300 text-sm">Choose one or more interval categories</p>
+              </div>
+              <button type="button" 
+                      class="text-slate-400 hover:text-white transition-colors text-sm"
+                      data-action="click->category-selector#backToSystem">
+                ← Back to System
+              </button>
+            </div>
+          </div>
+          
+          <div class="space-y-3" data-category-selector-target="intervalButtons">
+            <!-- Interval category buttons will be inserted here by JavaScript -->
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-white/10">
+            <button type="button" 
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+                    data-action="click->category-selector#confirmSelection">
+              Confirm Selection
+            </button>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 </div>

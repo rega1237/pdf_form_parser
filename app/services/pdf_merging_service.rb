@@ -18,6 +18,9 @@ class PdfMergingService
   end
 
   def self.add_images_to_pdf(pdf_object, images)
+    # This method works with the new data structure by receiving photo attachments directly
+    # Photo attachment IDs are now stored in the data column, but this service doesn't need
+    # to access them - it works with the actual photo attachments passed as parameter
     grouped_photos = group_and_process_photos(images)
     return pdf_object if grouped_photos.empty?
 
@@ -77,10 +80,18 @@ class PdfMergingService
   end
 
   # Método auxiliar para la lógica de agrupación.
+  # This method works with the new data structure by parsing photo filenames
+  # which contain the section information needed for grouping
   def self.group_and_process_photos(images)
     grouped = {}
 
+    # Ensure images is an array-like object
+    return grouped unless images.respond_to?(:each)
+
     images.each do |image|
+      # Skip invalid images
+      next unless image&.filename&.base
+
       filename = image.filename.base.to_s
       match = filename.match(/^inspection_\d+_(.+)__(.+)_[a-f0-9]{8,}/)
 

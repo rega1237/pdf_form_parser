@@ -18,6 +18,8 @@ class FormTemplatesController < ApplicationController
   # GET /form_templates/:id/form_builder
   def form_builder
     authorize @form_template
+    set_interval_categories
+    set_system_categories
   end
 
   def new
@@ -26,73 +28,49 @@ class FormTemplatesController < ApplicationController
   end
 
   def create
-    autorize FormTemplate
+    authorize FormTemplate
     uploaded_file = form_template_params[:original_file]
-    form_structure = {}
 
-    if uploaded_file
-      # Crear un nuevo FormTemplate con el archivo adjunto
-      @form_template = FormTemplate.new(
-        id: form_template_params[:id],
-        name: form_template_params[:name],
-        original_filename: uploaded_file.original_filename,
-        file_type: uploaded_file.content_type,
-        system_category: form_template_params[:system_category]
-      )
-
-      # Adjuntar el archivo usando Active Storage
-      @form_template.original_file.attach(uploaded_file)
-
-      # Asignar las categorías de intervalo
-      if params[:form_template][:interval_category_ids].present?
-        @form_template.interval_category_ids = params[:form_template][:interval_category_ids]
-      end
-
-      if @form_template.original_file.attached?
-        # Descargar el archivo temporalmente para analizarlo
-        temp_file = Tempfile.new([uploaded_file.original_filename.parameterize.truncate(50, omission: ''), '.pdf'],
-                                 Rails.root.join('tmp'))
-        temp_file_path = temp_file.path
-
-        # Guardar el archivo temporalmente
-        File.binwrite(temp_file_path, uploaded_file.read)
-
-        determined_file_type = uploaded_file.content_type
-
-        if determined_file_type == 'application/pdf'
-          parser = PdfFormsParserService.new(temp_file_path)
-          form_structure = parser.parse
-        elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-               'application/msword'].include?(determined_file_type)
-          Rails.logger.info 'DOCX/DOC parsing not yet implemented.'
-        elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-               'application/vnd.ms-excel'].include?(determined_file_type)
-          Rails.logger.info 'XLS/XLSX parsing not yet implemented.'
-        else
-          Rails.logger.warn "Unsupported file type: #{determined_file_type}"
-        end
-
-        # Limpiar el archivo temporal
-        temp_file.close
-        temp_file.unlink
-
-        # Actualizar la estructura del formulario
-        @form_template.form_structure = form_structure.to_json
-      else
-        flash[:alert] = 'Failed to attach file.'
-        render :new, status: :unprocessable_entity
-        return
-      end
-    else
+    # 1. Validar que se haya subido un archivo
+    unless uploaded_file
       @form_template = FormTemplate.new(form_template_params.except(:original_file))
       flash[:alert] = 'File upload is required.'
+      # Asegúrate de cargar las categorías para que el formulario de 'new' se renderice correctamente
+      set_interval_categories
+      set_system_categories
       render :new, status: :unprocessable_entity
       return
     end
 
+    # 2. Crear el registro del FormTemplate sin la estructura del formulario
+    @form_template = FormTemplate.new(
+      id: form_template_params[:id],
+      name: form_template_params[:name],
+      original_filename: uploaded_file.original_filename,
+      file_type: uploaded_file.content_type,
+      system_category: form_template_params[:system_category]
+    )
+
+    # Asignar las categorías de intervalo (si se seleccionaron)
+    if params[:form_template][:interval_category_ids].present?
+      @form_template.interval_category_ids = params[:form_template][:interval_category_ids]
+    end
+
+    # Adjuntar el archivo usando Active Storage
+    @form_template.original_file.attach(uploaded_file)
+
+    # 3. Guardar el registro y encolar el trabajo en segundo plano
     if @form_template.save
-      redirect_to @form_template, notice: 'Form template was successfully created.'
+      # Encolar el job para que parseé el PDF en segundo plano
+      ParseFormTemplateJob.perform_later(@form_template.id)
+
+      # Redirigir inmediatamente al usuario con un mensaje informativo
+      redirect_to @form_template,
+                  notice: 'Form template created successfully. The file is being processed and the structure will appear shortly.'
     else
+      # Si falla el guardado, volver a renderizar el formulario con los errores
+      set_interval_categories
+      set_system_categories
       render :new, status: :unprocessable_entity
     end
   end

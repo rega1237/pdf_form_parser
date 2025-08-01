@@ -1,7 +1,7 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  level: MyString
+  level: Admin
 
 two:
-  level: MyString
+  level: User
