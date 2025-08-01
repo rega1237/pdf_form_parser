@@ -71,90 +71,68 @@ class FormFill < ApplicationRecord
     end
   end
 
-  # Método para actualizar photo_attachment_id en form_structure
+  # Método para actualizar photo_attachment_id en data column (updated for new structure)
   def update_photo_attachment_id_in_structure(field_name, attachment_id)
-    return false unless form_structure.present?
+    return false if field_name.blank?
 
     begin
-      structure = JSON.parse(form_structure)
+      # Store photo attachment ID in the data column instead of form_structure
+      photo_data_key = "#{field_name}_photo_attachment_id"
+      set_field_value(photo_data_key, attachment_id)
 
-      # Buscar el campo en la estructura
-      field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
-
-      if field_data
-        field_data['photo_attachment_id'] = attachment_id
-        update(form_structure: structure.to_json)
-        true
-      else
-        Rails.logger.error "Photo field '#{field_name}' not found in form structure"
-        false
-      end
-    rescue JSON::ParserError => e
-      Rails.logger.error "Error parsing form_structure: #{e.message}"
-      false
+      Rails.logger.info "Updated photo attachment ID for field '#{field_name}': #{attachment_id}"
+      true
     rescue StandardError => e
-      Rails.logger.error "Error updating photo attachment ID in structure: #{e.message}"
+      Rails.logger.error "Error updating photo attachment ID for field #{field_name}: #{e.message}"
       false
     end
   end
 
-  # Método para obtener foto por campo
+  # Método para obtener foto por campo (updated for new data structure)
   def get_photo_for_field(field_name)
-    return nil if field_name.blank? || form_structure.blank?
+    return nil if field_name.blank?
 
     begin
-      structure = JSON.parse(form_structure)
-      field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
+      # Get photo attachment ID from data column instead of form_structure
+      photo_data_key = "#{field_name}_photo_attachment_id"
+      attachment_id = get_field_value(photo_data_key)
 
-      # Verificar que field_data existe y tiene photo_attachment_id
-      return nil unless field_data&.dig('photo_attachment_id').present?
-
-      attachment_id = field_data['photo_attachment_id']
+      # Return nil if no attachment ID is stored
+      return nil unless attachment_id.present?
 
       # Buscamos la foto por el nombre de archivo, que es el ID único que guardamos
       photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
-    rescue JSON::ParserError => e
-      Rails.logger.error "Error parsing form_structure in get_photo_for_field: #{e.message}"
-      nil
     rescue StandardError => e
       Rails.logger.error "Error getting photo for field #{field_name}: #{e.message}"
       nil
     end
   end
 
-  # Método para obtener todas las fotos organizadas por campo
+  # Método para obtener todas las fotos organizadas por campo (updated for new data structure)
   def get_photos_by_field
-    return {} unless photos.attached? && inspection.present?
+    return {} unless photos.attached?
 
     photos_hash = {}
-    photos.each do |photo|
-      # Extraer información del filename único
-      filename = photo.filename.to_s.split('.').first
 
-      # Pattern: inspection_123_field_name_abc123
-      next unless filename.match(/^inspection_#{inspection.id}_(.+)_[a-f0-9]{8}$/)
+    # Get all photo attachment IDs from data column
+    data.each do |key, value|
+      # Look for keys that end with '_photo_attachment_id'
+      next unless key.end_with?('_photo_attachment_id') && value.present?
 
-      field_parameterized = ::Regexp.last_match(1)
+      # Extract field name by removing the suffix
+      field_name = key.gsub('_photo_attachment_id', '')
+      attachment_id = value
 
-      # Buscar el campo original en form_structure
-      next unless form_structure.present?
+      # Find the corresponding photo
+      photo = photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
 
-      begin
-        structure = JSON.parse(form_structure)
-        original_field = structure.find do |field|
-          field['type'] == 'Photo' && field['name'].parameterize.underscore == field_parameterized
-        end
+      next unless photo
 
-        if original_field
-          photos_hash[original_field['name']] = {
-            photo: photo,
-            attachment_id: filename
-            # URL se genera dinámicamente cuando sea necesario
-          }
-        end
-      rescue JSON::ParserError
-        Rails.logger.error 'Error parsing form_structure for photos'
-      end
+      photos_hash[field_name] = {
+        photo: photo,
+        attachment_id: attachment_id
+        # URL se genera dinámicamente cuando sea necesario
+      }
     end
 
     photos_hash
@@ -218,30 +196,22 @@ class FormFill < ApplicationRecord
     end
   end
 
-  # Método para limpiar photo_attachment_id en form_structure
+  # Método para limpiar photo_attachment_id en data column (updated for new structure)
   def clear_photo_attachment_id_in_structure(field_name)
-    return false unless form_structure.present?
+    return false if field_name.blank?
 
     begin
-      structure = JSON.parse(form_structure)
+      # Clear photo attachment ID from data column instead of form_structure
+      photo_data_key = "#{field_name}_photo_attachment_id"
+      set_field_value(photo_data_key, nil)
 
-      # Buscar el campo en la estructura
-      field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
+      # Also clear the field value
+      set_field_value(field_name, '')
 
-      if field_data
-        field_data['photo_attachment_id'] = nil
-        field_data['value'] = ''
-        update(form_structure: structure.to_json)
-        true
-      else
-        Rails.logger.error "Photo field '#{field_name}' not found in form structure"
-        false
-      end
-    rescue JSON::ParserError => e
-      Rails.logger.error "Error parsing form_structure: #{e.message}"
-      false
+      Rails.logger.info "Cleared photo attachment ID for field '#{field_name}'"
+      true
     rescue StandardError => e
-      Rails.logger.error "Error clearing photo attachment ID in structure: #{e.message}"
+      Rails.logger.error "Error clearing photo attachment ID for field #{field_name}: #{e.message}"
       false
     end
   end
@@ -376,13 +346,10 @@ class FormFill < ApplicationRecord
     return { pass: 0, fail: 0, na: 0 } unless form_structure.present?
 
     begin
-      structure = JSON.parse(form_structure)
       counts = { pass: 0, fail: 0, na: 0 }
 
-      structure.each do |field|
-        next unless field['value'].present?
-
-        value = field['value'].to_s.downcase
+      data.each_value do |data_value|
+        value = data_value.to_s.downcase
         case value
         when 'pass'
           counts[:pass] += 1
@@ -397,6 +364,182 @@ class FormFill < ApplicationRecord
     rescue JSON::ParserError => e
       Rails.logger.error "Error parsing form_structure for counts: #{e.message}"
       { pass: 0, fail: 0, na: 0 }
+    end
+  end
+
+  def get_sprinklers_data
+    sprinklers = { number: 0, date: '', brand: '', notes: '' }
+
+    data.each do |key, value|
+      case key
+      when 'Number_of_sprinklers'
+        sprinklers[:number] = value
+      when 'Manufactering_Date'
+        sprinklers[:date] = value
+      when 'Brand'
+        sprinklers[:brand] = value
+      when 'Notes'
+        sprinklers[:notes] = value
+      end
+    end
+
+    sprinklers
+  end
+
+  # ========================================
+  # NEW DATA COLUMN ACCESS METHODS
+  # ========================================
+
+  # Retrieve user value for a specific field from the data column
+  def get_field_value(field_name)
+    return nil if field_name.blank?
+
+    # Handle case where data might be nil (defensive programming)
+    return nil if data.nil?
+
+    data[field_name.to_s]
+  end
+
+  # Store user value for a specific field in the data column
+  def set_field_value(field_name, value)
+    return false if field_name.blank?
+
+    begin
+      # Initialize data as empty hash if nil (defensive programming)
+      self.data = {} if data.nil?
+
+      # Set the field value
+      self.data = data.merge(field_name.to_s => value)
+
+      # Save the changes
+      save
+    rescue StandardError => e
+      Rails.logger.error "Error setting field value for #{field_name}: #{e.message}"
+      false
+    end
+  end
+
+  # Update multiple fields efficiently in a single operation
+  def bulk_update_data(field_hash)
+    return false if field_hash.blank? || !field_hash.is_a?(Hash)
+
+    begin
+      # Initialize data as empty hash if nil (defensive programming)
+      self.data = {} if data.nil?
+
+      # Convert keys to strings and merge with existing data
+      string_keyed_hash = field_hash.transform_keys(&:to_s)
+      self.data = data.merge(string_keyed_hash)
+
+      # Save the changes
+      save
+    rescue StandardError => e
+      Rails.logger.error "Error bulk updating data: #{e.message}"
+      false
+    end
+  end
+
+  # ========================================
+  # LEGACY DATA MIGRATION METHODS
+  # ========================================
+
+  # Check if this form fill has legacy data (uses form_structure for data storage)
+  def has_legacy_data?
+    return false if form_structure.blank?
+
+    begin
+      structure = JSON.parse(form_structure)
+
+      # Check if any field in the structure has a 'value' key (legacy format)
+      structure.any? { |field| field.key?('value') && field['value'].present? }
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure in has_legacy_data?: #{e.message}"
+      false
+    end
+  end
+
+  # Migrate legacy data from form_structure to the new data column
+  def migrate_legacy_data!
+    return false unless has_legacy_data?
+
+    begin
+      structure = JSON.parse(form_structure)
+      migrated_data = {}
+
+      # Extract values from form_structure and build data hash
+      structure.each do |field|
+        field_name = field['name']
+        field_value = field['value']
+
+        # Only migrate non-empty values
+        migrated_data[field_name] = field_value if field_name.present? && field_value.present?
+      end
+
+      # Update the data column with migrated values
+      if migrated_data.any?
+        # Initialize data as empty hash if nil
+        self.data = {} if data.nil?
+
+        # Merge migrated data with existing data (existing data takes precedence)
+        self.data = migrated_data.merge(data)
+
+        # Clear values from form_structure (keep structure, remove values)
+        cleaned_structure = structure.map do |field|
+          field_copy = field.dup
+          field_copy.delete('value') # Remove the value key
+          field_copy
+        end
+
+        # Update form_structure without values
+        self.form_structure = cleaned_structure.to_json
+
+        # Save the changes
+        save!
+
+        Rails.logger.info "Migrated legacy data for FormFill ##{id}: #{migrated_data.keys.join(', ')}"
+        true
+      else
+        Rails.logger.info "No legacy data to migrate for FormFill ##{id}"
+        false
+      end
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure in migrate_legacy_data!: #{e.message}"
+      false
+    rescue StandardError => e
+      Rails.logger.error "Error migrating legacy data for FormFill ##{id}: #{e.message}"
+      false
+    end
+  end
+
+  # Merge structure and data for PDF generation (backward compatibility)
+  def merge_structure_with_data
+    return [] if form_structure.blank?
+
+    begin
+      structure = JSON.parse(form_structure)
+
+      # Merge data values back into structure for PDF generation
+      structure.map do |field|
+        field_copy = field.dup
+        field_name = field['name']
+
+        # Get value from data column first, then fallback to existing value in structure
+        if field_name.present?
+          data_value = get_field_value(field_name)
+          structure_value = field['value']
+
+          # Use data column value if available, otherwise use structure value
+          field_copy['value'] = data_value.present? ? data_value : structure_value
+        end
+
+        field_copy
+      end
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure in merge_structure_with_data: #{e.message}"
+      []
+    rescue StandardError => e
+      Rails.logger.error "Error merging structure with data for FormFill ##{id}: #{e.message}"
+      []
     end
   end
 end

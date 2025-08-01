@@ -1,0 +1,224 @@
+<% content_for :head do %>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-in-out; }
+    .animate-slide-up { animation: slideUp 0.5s ease-out; }
+    
+    .calendar-day {
+      transition: all 0.3s ease;
+      min-height: 120px;
+    }
+    .calendar-day:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .inspection-item {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .inspection-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .nav-button {
+      transition: all 0.3s ease;
+    }
+    .nav-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+<% end %>
+
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <div class="container mx-auto px-4 py-6 lg:py-12">
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+      <div class="mb-4 sm:mb-0">
+        <div class="flex items-center space-x-3 mb-2">
+          <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <h1 class="text-2xl lg:text-3xl font-bold text-white">Inspections Calendar</h1>
+        </div>
+        <p class="text-slate-300 text-sm lg:text-base">View your scheduled inspections by month</p>
+      </div>
+      
+      <div class="flex space-x-3">
+        <%= link_to next_inspections_path, class: "inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105" do %>
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+          </svg>
+          List View
+        <% end %>
+        
+        <%= link_to inspections_path, class: "inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105" do %>
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          Back to Inspections
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Calendar Navigation -->
+    <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-8 animate-slide-up">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <%= link_to calendar_next_inspections_path(date: (@current_date - 1.month).strftime("%Y-%m-%d")), class: "nav-button inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10" do %>
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Previous
+          <% end %>
+          
+          <div class="text-center">
+            <h2 class="text-white font-bold text-2xl"><%= @current_date.strftime("%B %Y") %></h2>
+            <p class="text-slate-300 text-sm">
+              <%= pluralize(@month_inspections.count, 'inspection') %> scheduled this month
+            </p>
+          </div>
+          
+          <%= link_to calendar_next_inspections_path(date: (@current_date + 1.month).strftime("%Y-%m-%d")), class: "nav-button inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10" do %>
+            Next
+            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          <% end %>
+        </div>
+        
+        <%= link_to calendar_next_inspections_path, class: "inline-flex items-center bg-indigo-600/20 hover:bg-indigo-500/30 text-indigo-300 px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-indigo-500/20" do %>
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          Today
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden animate-slide-up" style="animation-delay: 0.2s;">
+      <!-- Calendar Header -->
+      <div class="bg-white/5 border-b border-white/10">
+        <div class="grid grid-cols-7 gap-0">
+          <% %w[Sunday Monday Tuesday Wednesday Thursday Friday Saturday].each do |day| %>
+            <div class="p-4 text-center">
+              <span class="text-white font-semibold text-sm lg:text-base"><%= day %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+      
+      <!-- Calendar Body -->
+      <div class="grid grid-cols-7 gap-0">
+        <% @calendar_days.each_with_index do |day, index| %>
+          <div class="calendar-day border-r border-b border-white/10 p-2 <%= 'bg-white/5' if day[:current_month] %>" style="animation-delay: <%= index * 0.02 %>s;">
+            <!-- Day Number -->
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold <%= day[:current_month] ? 'text-white' : 'text-slate-500' %> <%= 'bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs' if day[:today] %>">
+                <%= day[:date].day %>
+              </span>
+              <% if day[:inspections].any? %>
+                <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-full font-medium">
+                  <%= pluralize(day[:inspections].count, 'item') %>
+                </span>
+              <% end %>
+            </div>
+            
+            <!-- Inspections for this day -->
+            <div class="space-y-1">
+              <% day[:inspections].first(3).each do |inspection| %>
+                <%= link_to next_inspection_path(inspection), class: "inspection-item block" do %>
+                  <div class="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-lg p-2 mb-1">
+                    <div class="text-xs text-white font-medium truncate mb-1">
+                      <%= inspection.property.property_name %>
+                    </div>
+                    <div class="text-xs text-slate-300 truncate mb-1">
+                      <%= inspection.system_category['name'] %>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs bg-<%= inspection.status == 'pending' ? 'amber' : 'emerald' %>-500/30 text-<%= inspection.status == 'pending' ? 'amber' : 'emerald' %>-200 px-1 py-0.5 rounded capitalize">
+                        <%= inspection.status %>
+                      </span>
+                      <% days_until = (inspection.next_inspection_date - Date.current).to_i %>
+                      <% if days_until < 0 %>
+                        <span class="text-xs text-red-300">
+                          <%= days_until.abs %>d overdue
+                        </span>
+                      <% elsif days_until == 0 %>
+                        <span class="text-xs text-amber-300">
+                          Today
+                        </span>
+                      <% elsif days_until <= 7 %>
+                        <span class="text-xs text-orange-300">
+                          <%= days_until %>d
+                        </span>
+                      <% else %>
+                        <span class="text-xs text-emerald-300">
+                          <%= days_until %>d
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              <% end %>
+              
+              <!-- Show "more" indicator if there are more than 3 inspections -->
+              <% if day[:inspections].count > 3 %>
+                <div class="text-xs text-slate-400 text-center py-1">
+                  +<%= day[:inspections].count - 3 %> more...
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Monthly Summary -->
+    <% if @month_inspections.any? %>
+      <div class="mt-8 bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 animate-slide-up" style="animation-delay: 0.4s;">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg">Monthly Summary</h3>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-emerald-500/10 rounded-xl p-4 border border-emerald-500/20">
+            <p class="text-emerald-300 text-sm font-medium">Total Inspections</p>
+            <p class="text-white font-bold text-2xl"><%= @month_inspections.count %></p>
+          </div>
+          
+          <div class="bg-amber-500/10 rounded-xl p-4 border border-amber-500/20">
+            <p class="text-amber-300 text-sm font-medium">Pending</p>
+            <p class="text-white font-bold text-2xl"><%= @month_inspections.where(status: 'pending').count %></p>
+          </div>
+          
+          <div class="bg-red-500/10 rounded-xl p-4 border border-red-500/20">
+            <p class="text-red-300 text-sm font-medium">Overdue</p>
+            <p class="text-white font-bold text-2xl"><%= @month_inspections.where('next_inspection_date < ?', Date.current).count %></p>
+          </div>
+          
+          <div class="bg-blue-500/10 rounded-xl p-4 border border-blue-500/20">
+            <p class="text-blue-300 text-sm font-medium">This Week</p>
+            <p class="text-white font-bold text-2xl"><%= @month_inspections.where(next_inspection_date: Date.current.beginning_of_week..Date.current.end_of_week).count %></p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

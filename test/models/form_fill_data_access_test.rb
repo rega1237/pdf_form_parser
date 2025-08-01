@@ -1,26 +1,39 @@
 require 'test_helper'
 
-class FormFillTest < ActiveSupport::TestCase
-  self.use_transactional_tests = true
-
-  def self.fixture_path
-    nil
-  end
+class FormFillDataAccessTest < ActiveSupport::TestCase
+  # Disable fixtures completely for this test
+  self.use_transactional_tests = false
 
   def setup
+    # Clean up any existing data
+    FormFill.delete_all
+    FormTemplate.delete_all
+
+    # Create objects directly without fixtures
     @form_template = FormTemplate.create!(
-      name: 'Test Template',
+      name: "Test Template #{SecureRandom.hex(4)}",
       original_filename: 'test.pdf',
       file_path: '/test/path',
       file_type: 'pdf',
       form_structure: '[]'
     )
     @form_fill = FormFill.create!(
-      name: 'Test Form Fill',
+      name: "Test Form Fill #{SecureRandom.hex(4)}",
       form_template: @form_template,
       form_structure: '[]',
       data: {}
     )
+  end
+
+  def teardown
+    # Clean up after each test
+    FormFill.delete_all
+    FormTemplate.delete_all
+  end
+
+  # Override fixture loading
+  def load_fixtures
+    # Do nothing - we don't want fixtures
   end
 
   # ========================================

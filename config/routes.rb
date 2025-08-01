@@ -1,7 +1,4 @@
 Rails.application.routes.draw do
-  get "next_inspections/index"
-  get "next_inspections/show"
-  resources :system_categories
   devise_for :users, skip: [:registrations]
 
   devise_scope :user do
@@ -42,6 +39,10 @@ Rails.application.routes.draw do
       delete :remove_photo     # Nuevo endpoint para eliminar foto
       get :structure           # Endpoint para obtener estructura actualizada
       post :upload_photo
+      # New data-focused endpoints
+      patch :update_field_data # AJAX endpoint for single field updates
+      patch :bulk_update_data  # AJAX endpoint for multiple field updates
+      get :get_merged_form_data # Endpoint for PDF generation data retrieval
     end
   end
 
@@ -58,7 +59,13 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :next_inspections, only: %i[index show] do
+  resources :next_inspections, only: %i[index show destroy] do
+    collection do
+      get :calendar # Ruta para la vista calendario
+      post :handle_duplicate # Ruta para manejar duplicados
+      post :create_after_duplicate_resolution # Ruta para crear después de resolver duplicado
+    end
+
     member do
       # Esta ruta nos permitirá crear una inspección a partir de una 'NextInspection'
       post :create_inspection_from_next
@@ -67,6 +74,7 @@ Rails.application.routes.draw do
 
   resources :deficiencies
   resources :interval_categories
+  resources :system_categories
   resources :roles
 
   get 'settings', to: 'company_settings#index'

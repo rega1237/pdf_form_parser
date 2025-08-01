@@ -1,12 +1,9 @@
 <%# Partial para renderizar un campo individual del formulario %>
-
 <%# --- Verificaciones iniciales --- %>
 <% return unless local_assigns.key?(:field) && field.is_a?(Hash) && field.key?('name') && field['name'].present? %>
 <% return unless local_assigns.key?(:form) %>
 <% return unless local_assigns.key?(:field_id) %>
-
 <%# --- Lógica de renderizado de campos --- %>
-
 <% if field['type'] == "Pass/Fail" %>
   <div data-pagination-skip-trigger="true">
     <%= form.label field['name'],
@@ -20,7 +17,6 @@
       <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
     </div>
   </div>
-
 <% elsif field['type'] == "Photo" %>
   <div>
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
@@ -35,25 +31,28 @@
           <div class="flex items-center justify-between mb-3"><span class="text-white font-semibold text-sm"><% if field['photo_attachment_id'].present? %>Saved photo:<% else %>Captured photo:<% end %></span>
             <div class="flex space-x-2"><% if Rails.env.development? %><button type="button" data-action="click->photo-capture#debugRemovePhoto" class="text-yellow-400 hover:text-yellow-300 transition-colors text-xs">🐛</button><% end %><button type="button" data-action="click->photo-capture#removePhoto" class="text-red-400 hover:text-red-300 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
           </div>
-          <% if field['photo_attachment_id'].present? %><% existing_photo = @form_fill.get_photo_for_field(field['name']) %><% if existing_photo.present? %><%= image_tag rails_blob_path(existing_photo), data: { photo_capture_target: "image" }, class: "w-full object-cover rounded-xl border border-slate-600", alt: "Photo of #{field['label_name'].presence || field['name']}" %><% else %><img data-photo-capture-target="image" class="w-full object-cover rounded-xl border border-slate-600" alt="Captured photo" src=""><% end %><% else %><img data-photo-capture-target="image" class="w-full object-cover rounded-xl border border-slate-600" alt="Captured photo" src=""><% end %><% if field['photo_attachment_id'].present? %><div class="file-info text-xs text-slate-300 mt-2"><div class="flex justify-between items-center"><span class="flex items-center"><svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg><%= field['label_name'].presence || field['name'] %></span><span class="text-green-400">Saved</span></div></div><% end %>
+          <% if field['photo_attachment_id'].present? %><% existing_photo = @form_fill.get_photo_for_field(field['name']) %><% if existing_photo.present? %><%= image_tag rails_blob_path(existing_photo), data: { photo_capture_target: "image" }, class: "w-full object-cover rounded-xl border border-slate-600", alt: "Photo of #{field['label_name'].presence || field['name']}" %><% else %><img data-photo-capture-target="image" class="w-full object-cover rounded-xl border border-slate-600" alt="Captured photo" src=""><% end %><% else %><img data-photo-capture-target="image" class="w-full object-cover rounded-xl border border-slate-600" alt="Captured photo" src=""><% end %><% if field['photo_attachment_id'].present? %>
+            <div class="file-info text-xs text-slate-300 mt-2">
+              <div class="flex justify-between items-center"><span class="flex items-center"><svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg><%= field['label_name'].presence || field['name'] %></span><span class="text-green-400">Saved</span></div>
+            </div>
+          <% end %>
         </div>
       </div>
     </div>
-    <% if Rails.env.development? && field['photo_attachment_id'].present? %><div class="mt-2 text-xs text-purple-300 bg-purple-900/20 rounded p-2"><strong>Debug:</strong> photo_attachment_id: <%= field['photo_attachment_id'] %></div><% end %>
+    <% if Rails.env.development? && field['photo_attachment_id'].present? %>
+      <div class="mt-2 text-xs text-purple-300 bg-purple-900/20 rounded p-2"><strong>Debug:</strong> photo_attachment_id: <%= field['photo_attachment_id'] %></div>
+    <% end %>
   </div>
-
 <% elsif field['type'] == "Deficiency" %>
   <div class="space-y-4">
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-    
     <%# --- CAMPOS EXISTENTES DE DEFICIENCY (se mantienen igual) --- %>
     <div class="relative hidden"><svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg><%= form.text_field "#{field['name']}_item", id: "#{field_id}_item", value: field['Item'] || '', class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20", placeholder: "Item..." %></div>
     <div class="relative"><svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg><%= form.number_field "#{field['name']}_riser", id: "#{field_id}_riser", value: field['Riser'] || '', required: field['required'] == true, class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20", placeholder: "Riser Number..." %></div>
     <div class="grid grid-cols-2 gap-4">
       <div class="relative inline-block w-full checkbox-button"><%= check_box_tag "#{field['name']}_c", 'Yes', field['C'] == 'Yes', { id: "#{field_id}_c", class: "hidden peer" } %><label for="<%= "#{field_id}_c" %>" class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br from-blue-100 to-blue-200 border-2 border-blue-600 text-blue-900 hover:from-blue-200 hover:to-blue-400 hover:border-blue-700 hover:-translate-y-0.5 hover:shadow-lg peer-checked:from-blue-600 peer-checked:to-blue-700 peer-checked:border-blue-900 peer-checked:text-white peer-checked:shadow-xl">C</label></div>
-      <div class="relative inline-block w-full checkbox-button"><%= check_box_tag "#{field['name']}_d", 'Yes', field['D'] == 'Yes', { id: "#{field_id}_d", class: "hidden peer" } %><label for="<%= "#{field_id}_d" %>" class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-600 text-green-900 hover:from-green-200 hover:to-green-400 hover:border-green-700 hover:-translate-y-0.5 hover:shadow-lg peer-checked:from-green-600 peer-checked:to-green-700 peer-checked:border-green-900 peer-checked:text-white peer-checked:shadow-xl">D</label></div>
+      <div class="relative inline-block w-full checkbox-button"><%= check_box_tag "#{field['name']}_d", 'Yes', field['D'] == 'Yes', { id: "#{field_id}_d", class: "hidden peer" } %><label for="<%= "#{field_id}_d" %>" class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 hover:from-red-200 hover:to-red-400 hover:border-red-700 hover:-translate-y-0.5 hover:shadow-lg peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">D</label></div>
     </div>
-    
     <%# --- NUEVO DROPDOWN CON BÚSQUEDA --- %>
     <div data-controller="searchable-select">
       <%= form.hidden_field "#{field['name']}_select", 
@@ -61,36 +60,34 @@
             value: field['value'], 
             required: field['required'] == true, 
             data: { searchable_select_target: "hiddenInput" } %>
-
       <div class="relative">
         <%# Botón que muestra la selección actual y abre el dropdown %>
         <button type="button" 
                 data-action="click->searchable-select#toggle" 
-                data-searchable-select-target="button" 
-                class="relative w-full rounded-2xl py-4 pl-14 pr-10 text-left text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20">
+          data-searchable-select-target="button" 
+          class="relative w-full rounded-2xl py-4 pl-14 pr-10 text-left text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20">
           <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
           <span data-searchable-select-target="buttonText">Select an option</span>
           <span class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
             <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.53.22l3.5 3.5a.75.75 0 01-1.06 1.06L10 4.81 6.53 8.28a.75.75 0 01-1.06-1.06l3.5-3.5A.75.75 0 0110 3zm-3.72 9.28a.75.75 0 011.06 0L10 15.19l3.47-3.47a.75.75 0 111.06 1.06l-4 4a.75.75 0 01-1.06 0l-4-4a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
           </span>
         </button>
-
         <%# Contenedor del Dropdown (Búsqueda + Opciones) %>
         <div data-searchable-select-target="optionsContainer" 
              class="hidden absolute z-10 mt-2 w-full bg-white rounded-2xl shadow-lg border border-blue-600 overflow-hidden">
           <div class="p-2">
             <input type="text" 
                    data-action="input->searchable-select#search" 
-                   data-searchable-select-target="searchInput" 
-                   placeholder="Search deficiencies..." 
-                   class="w-full rounded-lg py-2 px-3 text-base font-medium transition-all duration-200 bg-slate-100 border-2 border-slate-300 text-slate-800 placeholder:text-slate-500 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-800/30">
+            data-searchable-select-target="searchInput" 
+            placeholder="Search deficiencies..." 
+            class="w-full rounded-lg py-2 px-3 text-base font-medium transition-all duration-200 bg-slate-100 border-2 border-slate-300 text-slate-800 placeholder:text-slate-500 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-800/30">
           </div>
           <ul data-searchable-select-target="optionsList" class="max-h-60 overflow-y-auto p-2">
             <%# Itera sobre las deficiencias cargadas en el controlador de Rails %>
             <% @deficiencies.each do |deficiency| %>
               <li data-action="click->searchable-select#select" 
-                  data-value="<%= deficiency.name %>" 
-                  class="p-3 text-blue-900 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                data-value="<%= deficiency.name %>" 
+                class="p-3 text-blue-900 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
                 <%= deficiency.name %>
               </li>
             <% end %>
@@ -98,28 +95,46 @@
         </div>
       </div>
     </div>
-    
     <div class="relative"><svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg><%= form.text_field "#{field['name']}_comment", id: "#{field_id}_comment", value: field['comment_value'] || '', class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20", placeholder: "Enter additional comments..." %></div>
   </div>
-
 <% elsif field['type'] == "Button" %>
   <div class="relative inline-block w-full checkbox-button">
-    <%= check_box_tag "form_fill[#{field['name']}]", 'Yes', field['value'] == 'Yes', { id: field_id, class: "hidden peer", required: field['required'] == true } %>
+    <%
+      button_on_value = 'Yes'
+      if field['options'].is_a?(Array) && field['options'].first.present?
+        option = field['options'].first
+        # Maneja ambos formatos de opción: string simple o array [label, value]
+        button_on_value = option.is_a?(Array) ? option.last : option
+      end
+
+      # Determina si el botón debe estar marcado
+      is_checked = field['value'] == button_on_value
+    %>
+    <%= check_box_tag "form_fill[#{field['name']}]", button_on_value, is_checked, { id: field_id, class: "hidden peer", required: field['required'] == true } %>
     <label for="<%= field_id %>" class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 hover:from-red-200 hover:to-red-400 hover:border-red-700 hover:-translate-y-0.5 hover:shadow-lg peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">
       <%= raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}") %>
     </label>
   </div>
-
 <% elsif field['type'] == "Radio" %>
   <div>
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
     <%= hidden_field_tag "form_fill[#{field['name']}]", field['value'], id: "hidden_input_#{field_id}" %>
     <div class="radio-button-group space-y-3" data-controller="choice-buttons" data-hidden-input-id="hidden_input_<%= field_id %>">
       <% field['options'].each_with_index do |option, option_index| %>
-        <% option_value = option.is_a?(Array) ? option.last : option %>
-        <% option_label = option.is_a?(Array) ? option.first : option %>
-        <% is_selected = field['value'] == option_value %>
-          <button type="button" class="<%= radio_choice_button_classes(is_selected) %>" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="<%= option_value %>" data-selected="<%= is_selected ? 'true' : 'false' %>">
+        <% 
+          # Determinar si la opción es un array [label, valor] o string simple
+          if option.is_a?(Array) && option.length == 2
+            option_label = option[0]  # Primer elemento es el label
+            option_value = option[1]  # Segundo elemento es el valor
+          else
+            # Compatibilidad con formato anterior (string simple)
+            option_label = option
+            option_value = option
+          end
+          
+          is_selected = field['value'] == option_value
+        %>
+        <button type="button" class="<%= radio_choice_button_classes(is_selected) %>" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="<%= option_value %>" data-selected="<%= is_selected ? 'true' : 'false' %>">
           <div class="radio-indicator w-5 h-5 rounded-full border-2 border-current mr-4 flex items-center justify-center flex-shrink-0">
             <div class="w-2.5 h-2.5 rounded-full bg-current transition-opacity duration-200 <%= is_selected ? 'opacity-100' : 'opacity-0' %>"></div>
           </div>
@@ -128,7 +143,6 @@
       <% end %>
     </div>
   </div>
-
 <% elsif field['type'] == "Text" %>
   <div>
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
@@ -137,29 +151,31 @@
       <%= form.text_field field['name'], id: field_id, value: field['value'], required: field['required'] == true, class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20", placeholder: "Enter #{(field['label_name'].presence || field['name'])}" %>
     </div>
   </div>
-
 <% elsif field['type'] == "Date" %>
   <div>
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
     <div class="relative">
       <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-      <%= form.date_field field['name'], id: field_id, value: field['value'].presence || Date.current.strftime("%Y-%m-%d"), data: { controller: "date-fix" }, required: field['required'] == true, class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+      <%= form.text_field field['name'], id: field_id, value: field['value'].presence, data: { controller: "date-fix", "date-fix-auto-set": "on-focus" }, required: field['required'] == true, placeholder: "MM/DD/YYYY", pattern: "^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/[0-9]{4}$", autocomplete: "off", class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
     </div>
   </div>
-
 <% elsif (field['type'] == "Choice") && field['options'].is_a?(Array) %>
   <div>
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
     <div class="relative">
       <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
-      <%= form.select field['name'], options_for_select(field['options'].map { |option| [option.is_a?(Array) ? option.first : option, option.is_a?(Array) ? option.last : option] }, field['value']), { include_blank: 'Select an option' }, id: field_id, required: field['required'] == true, class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+      <%= form.select field['name'], options_for_select(field['options'].map { |option| 
+        if option.is_a?(Array) && option.length == 2
+          [option[0], option[1]]  # [label, valor]
+        else
+          [option, option]  # [label, valor] iguales para compatibilidad
+        end
+      }, field['value']), { include_blank: 'Select an option' }, id: field_id, required: field['required'] == true, class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md appearance-none bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
     </div>
   </div>
-
 <% elsif field['type'] == "System Category" %>
   <div>
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-    
     <div class="space-y-4">
       <!-- Current Selection Display -->
       <% if field['value'].present? %>
@@ -175,7 +191,6 @@
           </div>
         </div>
       <% end %>
-
       <!-- System Categories Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <% @system_categories.each do |category| %>
@@ -187,7 +202,6 @@
                 class: "hidden peer" %>
             <label for="<%= "#{field_id}_#{category.id}" %>" 
                    class="group flex flex-col items-center justify-center text-center p-4 md:p-6 bg-slate-800/90 border border-white/10 rounded-2xl shadow-lg hover:bg-purple-600 hover:shadow-purple-500/50 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer peer-checked:bg-purple-600 peer-checked:border-purple-400 peer-checked:shadow-purple-500/50">
-              
               <% if category.thumbnail.attached? %>
                 <%= image_tag category.thumbnail, 
                     alt: category.name,
@@ -197,7 +211,6 @@
                   <%= category.name.first %>
                 </div>
               <% end %>
-              
               <span class="font-semibold text-white text-sm md:text-base group-hover:text-white">
                 <%= category.name %>
               </span>
@@ -207,11 +220,9 @@
       </div>
     </div>
   </div>
-
 <% elsif field['type'] == "Interval Category" %>
   <div>
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-    
     <div class="space-y-4">
       <!-- Current Selection Display -->
       <% selected_categories = field['selected_categories'] || (field['value'].present? ? field['value'].split(', ') : []) %>
@@ -234,10 +245,8 @@
           </div>
         </div>
       <% end %>
-
       <!-- Hidden field to store selected values -->
       <%= form.hidden_field field['name'], value: selected_categories.join(', '), id: "#{field_id}_hidden" %>
-
       <!-- Interval Categories List -->
       <div class="space-y-3">
         <% @interval_categories.each do |category| %>
@@ -246,14 +255,12 @@
                 selected_categories.include?(category.name),
                 id: "#{field_id}_#{category.id}",
                 class: "hidden peer",
-                onchange: "updateIntervalCategoryValue_#{field_id.gsub(/[^a-zA-Z0-9]/, '_')}()" %>
+                data: { action: "change->form-fill#updateIntervalCategory" } %>
             <label for="<%= "#{field_id}_#{category.id}" %>" 
                    class="w-full text-left p-6 bg-slate-800/90 border border-white/10 rounded-xl shadow-lg hover:bg-blue-600/50 transition-all duration-200 flex items-center justify-between cursor-pointer peer-checked:bg-blue-600 peer-checked:border-blue-400">
-              
               <span class="block text-white font-bold text-lg">
                 <%= category.name %>
               </span>
-              
               <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all duration-200 border-slate-500 peer-checked:bg-blue-600 peer-checked:border-blue-500">
                 <svg class="w-4 h-4 text-white transition-opacity opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -264,20 +271,7 @@
         <% end %>
       </div>
     </div>
-
-    <script>
-      function updateIntervalCategoryValue_<%= field_id.gsub(/[^a-zA-Z0-9]/, '_') %>() {
-        const fieldName = '<%= field['name'] %>';
-        const checkboxes = document.querySelectorAll(`input[name="${fieldName}_categories[]"]:checked`);
-        const selectedValues = Array.from(checkboxes).map(cb => cb.value);
-        const hiddenField = document.getElementById('<%= field_id %>_hidden');
-        if (hiddenField) {
-          hiddenField.value = selectedValues.join(', ');
-        }
-      }
-    </script>
   </div>
-
 <% else %>
   <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 shadow-lg">
     <div class="flex items-start space-x-3">
