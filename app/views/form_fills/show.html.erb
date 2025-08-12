@@ -181,8 +181,14 @@
       <select data-action="change->page-navigation#jump" class="w-full bg-slate-700 text-white font-semibold border-2 border-slate-500 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
         <option value="">Jump to a section...</option>
         <% @navigation_sections.each do |section| %>
+          <%
+            section_name = section[:name].humanize
+            if section_name.downcase.include?('year') && section_name.include?('|') || section_name.downcase.include?('annual') && section_name.include?('|')
+              section_name = section_name.split('|').last.strip
+            end
+          %>
           <option value="<%= section[:page] - 1 %>">
-            Page <%= section[:page] %>: <%= section[:name].humanize %>
+            Page <%= section[:page] %>: <%= section_name %>
           </option>
         <% end %>
       </select>
