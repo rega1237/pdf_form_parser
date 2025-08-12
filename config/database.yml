@@ -78,6 +78,17 @@ test:
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
 #
+# Build environment - used during Docker build for asset precompilation
+build:
+  adapter: postgresql
+  encoding: unicode
+  pool: 5
+  database: form_processor_build
+  username: postgres
+  password: ""
+  host: localhost
+  port: 5432
+
 production:
   primary: &primary_production
     url: <%= ENV["DATABASE_URL"] %>
