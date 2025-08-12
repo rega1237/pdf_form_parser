@@ -195,7 +195,7 @@
     </div>
     
     <div data-controller="field-toggle">
-      <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json, "form-fill-data-value": @form_fill.data.to_json }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
+      <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json, "form-fill-data-value": @form_fill.data.to_json, "form-fill-inspection-date-value": @inspection_date&.strftime("%m/%d/%Y") }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
         <%= form.submit "Submit", class: "hidden" %>
         <% if @form_fields.blank? %>

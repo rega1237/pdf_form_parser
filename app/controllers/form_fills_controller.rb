@@ -10,6 +10,9 @@ class FormFillsController < ApplicationController
     @interval_categories = IntervalCategory.all
     @form_template = @form_fill.form_template
 
+    # Get inspection date for date fields
+    @inspection_date = @form_fill.inspection&.date
+
     if @form_fill.form_structure.present?
       begin
         form_fields = JSON.parse(@form_fill.form_structure)
