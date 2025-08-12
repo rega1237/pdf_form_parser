@@ -2,20 +2,30 @@
 
 one:
   customer: one
-  property_type: MyString
-  property_name: MyString
-  address: MyString
-  city: MyString
-  zip_code: MyString
-  construction_type: MyString
-  note: MyText
+  property_type: Commercial
+  property_name: Test Building One
+  address: 123 Business Ave
+  city: Test City
+  zip_code: 12345
+  construction_type: Steel Frame
+  note: Test property one
 
 two:
   customer: two
-  property_type: MyString
-  property_name: MyString
-  address: MyString
-  city: MyString
-  zip_code: MyString
-  construction_type: MyString
-  note: MyText
+  property_type: Industrial
+  property_name: Test Facility Two
+  address: 456 Industrial Blvd
+  city: Test Town
+  zip_code: 67890
+  construction_type: Concrete
+  note: Test property two
+
+three:
+  customer: one
+  property_type: Commercial
+  property_name: Test Building Three
+  address: 789 Commerce St
+  city: Test City
+  zip_code: 12345
+  construction_type: Mixed
+  note: Test property three with no customer email

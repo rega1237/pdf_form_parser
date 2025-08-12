@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  property: one
+  form_template: one
+  user: one
+  date: 2025-01-15
+
+two:
+  property: two
+  form_template: two
+  user: two
+  date: 2025-01-20

@@ -1,9 +1,23 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  name: MyString
+  name: Test Form Fill One
   form_template: one
+  inspection: one
+  pdf_generation_status: completed
+  data: '{"field1": "value1", "field2": "value2"}'
+  form_structure: '[{"name": "test_field", "type": "Text", "page_number": 1, "section_name": "General", "required": true}]'
 
 two:
-  name: MyString
+  name: Test Form Fill Two
   form_template: two
+  inspection: two
+  pdf_generation_status: ready
+  data: '{"field3": "value3", "field4": "value4"}'
+
+three:
+  name: Test Form Fill Three
+  form_template: one
+  inspection: one
+  pdf_generation_status: failed
+  data: '{"field5": "value5"}'
