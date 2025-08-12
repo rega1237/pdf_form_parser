@@ -90,19 +90,9 @@ build:
   port: 5432
 
 production:
-  primary: &primary_production
-    url: <%= ENV["DATABASE_URL"] %>
-    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-    database: form_processor_production
-    username: postgres
-    password: <%= ENV["POSTGRES_PASSWORD"] %>
-    host: form_processor-db
-  cache:
-    url: <%= ENV["DATABASE_URL"]&.sub(/\/form_processor_production$/, "/form_processor_production_cache") %>
-    migrations_paths: db/cache_migrate
-  queue:
-    url: <%= ENV["DATABASE_URL"]&.sub(/\/form_processor_production$/, "/form_processor_production_queue") %>
-    migrations_paths: db/queue_migrate
-  cable:
-    url: <%= ENV["DATABASE_URL"]&.sub(/\/form_processor_production$/, "/form_processor_production_cable") %>
-    migrations_paths: db/cable_migrate
+  <<: *default
+  database: form_processor_production
+  username: postgres
+  password: <%= ENV["POSTGRES_PASSWORD"] %>
+  host: form_processor-db
+  port: 5432
