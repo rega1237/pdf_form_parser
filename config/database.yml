@@ -90,9 +90,22 @@ build:
   port: 5432
 
 production:
-  <<: *default
-  database: form_processor_production
-  username: postgres
-  password: <%= ENV["POSTGRES_PASSWORD"] %>
-  host: form_processor-db
-  port: 5432
+  primary: &primary_production
+    <<: *default
+    database: form_processor_production
+    username: postgres
+    password: <%= ENV["POSTGRES_PASSWORD"] %>
+    host: form_processor-db
+    port: 5432
+  cache:
+    <<: *primary_production
+    database: form_processor_production_cache
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    database: form_processor_production_queue
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *primary_production
+    database: form_processor_production_cable
+    migrations_paths: db/cable_migrate
