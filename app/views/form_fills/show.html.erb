@@ -183,7 +183,7 @@
         <% @navigation_sections.each do |section| %>
           <%
             section_name = section[:name].humanize
-            if section_name.downcase.include?('year') && section_name.include?('|') || section_name.downcase.include?('annual') && section_name.include?('|')
+            if section_name.downcase.include?('year') && section_name.include?('|') || section_name.downcase.include?('annual') || section_name.downcase.include?('quarterly') && section_name.include?('|')
               section_name = section_name.split('|').last.strip
             end
           %>
