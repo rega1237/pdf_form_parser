@@ -44,7 +44,7 @@ class DeficiencyProcessorService
     unified_dc_field = target_group.find do |f|
       name_down = f['name'].to_s.downcase
       label_down = f['label_name'].to_s.downcase
-      name_down.include?('cbdorc') || label_down.include?('cbdorc') || name_down == 'defdc' || label_down == 'defdc'
+      name_down.include?('cbdorc') || label_down.include?('cbdorc') || name_down == 'defdc' || label_down == 'defdc' || name_down.include?('defdorc') || label_down.include?('defdorc')
     end
 
     if unified_dc_field
