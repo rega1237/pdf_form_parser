@@ -34,7 +34,6 @@
         <% end %>
       </div>
     </div>
-
     <!-- Contenido principal -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Columna principal -->
@@ -49,7 +48,6 @@
             </div>
             <h3 class="text-white font-semibold text-lg">Inspection Details</h3>
           </div>
-          
           <div class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -65,7 +63,6 @@
                 </dd>
               </div>
             </div>
-            
             <!-- Customer Info -->
             <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div class="flex items-start space-x-3">
@@ -93,7 +90,6 @@
                 </div>
               </div>
             </div>
-            
             <!-- Property Info -->
             <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div class="flex items-start space-x-3">
@@ -119,7 +115,6 @@
                 </div>
               </div>
             </div>
-            
             <!-- Form Info -->
             <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div class="flex items-start space-x-3">
@@ -134,22 +129,34 @@
                     <div class="text-slate-300 font-medium"><%= @form_template.name %></div>
                     <% if @form_fill.present? %>
                       <div class="text-slate-400 text-sm">Filled form: <%= @form_fill.name %></div>
-                      <div class="mt-3">
-                        <%= link_to 'Continue Filling Form', form_fill_path(@form_fill), 
-                            class: 'inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]' %>
-                      </div>
                     <% else %>
                       <div class="text-slate-400 text-sm">No form filled for this inspection</div>
-                      <div class="mt-3">
-                        <%= link_to 'Create Form', new_form_fill_path(form_template_id: @form_template.id, inspection_id: @inspection.id), 
-                            class: 'inline-flex items-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]' %>
-                      </div>
                     <% end %>
+                    <!-- All Buttons - Responsive Layout -->
+                    <div class="flex flex-col sm:flex-row gap-3 mt-3">
+                      <!-- Main Form Button -->
+                      <% if @form_fill.present? %>
+                        <%= link_to 'Continue Filling Form', form_fill_path(@form_fill), 
+          class: 'inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex-1 sm:flex-none' %>
+                      <% else %>
+                        <%= link_to 'Create Form', new_form_fill_path(form_template_id: @form_template.id, inspection_id: @inspection.id), 
+          class: 'inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex-1 sm:flex-none' %>
+                      <% end %>
+                      <!-- Additional Risers Button -->
+                      <% if @additional_risers_form_fill.present? %>
+                        <%= link_to 'Additional Risers', form_fill_path(@additional_risers_form_fill), 
+          class: 'inline-flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex-1 sm:flex-none' %>
+                      <% end %>
+                      <!-- Corrected Deficiencies Button -->
+                      <% if @corrections_form_fill.present? %>
+                        <%= link_to 'Corrected Deficiencies', form_fill_path(@corrections_form_fill), 
+          class: 'inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex-1 sm:flex-none' %>
+                      <% end %>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-                      
             <!-- Notes -->
             <% if @inspection.notes.present? %>
               <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -169,7 +176,6 @@
           </div>
         </div>
       </div>
-      
       <!-- Columna lateral -->
       <div class="space-y-6">
         <!-- Quick Actions -->
@@ -182,11 +188,10 @@
             </div>
             <h3 class="text-white font-semibold text-lg">Quick Actions</h3>
           </div>
-          
           <div class="space-y-3">
             <button data-action="click->inspection-status#updateStatus" 
-                    data-status="completed"
-                    class="w-full bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
+              data-status="completed"
+              class="w-full bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -195,8 +200,8 @@
               </div>
             </button>
             <button data-action="click->inspection-status#updateStatus" 
-                    data-status="in_progress"
-                    class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
+              data-status="in_progress"
+              class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -205,8 +210,8 @@
               </div>
             </button>
             <button data-action="click->inspection-status#updateStatus" 
-                    data-status="pending"
-                    class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-colors duration-200">
+              data-status="pending"
+              class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-colors duration-200">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -215,8 +220,8 @@
               </div>
             </button>
             <button data-action="click->inspection-status#updateStatus" 
-                    data-status="cancelled"
-                    class="w-full bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
+              data-status="cancelled"
+              class="w-full bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02]">
               <div class="flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -226,7 +231,6 @@
             </button>
           </div>
         </div>
-
         <!-- Sprinklers Data -->
         <% if @form_fill.present? %>
           <% sprinklers_data = @form_fill.get_sprinklers_data %>
@@ -239,7 +243,6 @@
               </div>
               <h3 class="text-white font-semibold text-lg">Sprinklers Information</h3>
             </div>
-            
             <div class="space-y-4">
               <!-- Number of Sprinklers -->
               <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
@@ -257,7 +260,6 @@
                   </div>
                 </div>
               </div>
-
               <!-- Manufacturing Date -->
               <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
                 <div class="flex items-center space-x-3">
@@ -274,7 +276,6 @@
                   </div>
                 </div>
               </div>
-
               <!-- Brand -->
               <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
                 <div class="flex items-center space-x-3">
@@ -291,7 +292,6 @@
                   </div>
                 </div>
               </div>
-
               <!-- Notes -->
               <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
                 <div class="flex items-start space-x-3">
@@ -315,7 +315,6 @@
             </div>
           </div>
         <% end %>
-
         <!-- Form Results Summary -->
         <% if @form_fill.present? %>
           <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
@@ -360,7 +359,6 @@
             </div>
           </div>
         <% end %>
-        
         <!-- Additional Information -->
         <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
           <div class="flex items-center mb-6">
@@ -371,7 +369,6 @@
             </div>
             <h3 class="text-white font-semibold text-lg">Additional Information</h3>
           </div>
-          
           <dl class="space-y-4">
             <div>
               <dt class="text-slate-400 text-sm font-medium">Created</dt>
