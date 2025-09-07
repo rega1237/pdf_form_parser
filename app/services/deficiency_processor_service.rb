@@ -1,9 +1,10 @@
 require 'set'
 
 class DeficiencyProcessorService
-  def initialize(deficiencies_data:, target_fields:)
+  def initialize(deficiencies_data:, target_fields:, inspection_date: nil)
     @deficiencies_data = deficiencies_data || []
     @target_fields = target_fields || []
+    @inspection_date = inspection_date
     @processed_fields = []
     @unprocessed_deficiencies = []
   end
@@ -39,7 +40,7 @@ class DeficiencyProcessorService
   end
 
   def process_single_deficiency(deficiency, target_group)
-    default_date = get_default_date
+    formatted_date = get_formatted_date
 
     unified_dc_field = target_group.find do |f|
       name_down = f['name'].to_s.downcase
@@ -63,25 +64,25 @@ class DeficiencyProcessorService
       target_group.each do |field|
         next if field == unified_dc_field
 
-        value_to_set = map_standard_fields(field, deficiency, default_date)
+        value_to_set = map_standard_fields(field, deficiency, formatted_date)
         add_processed_field(field, value_to_set, deficiency['name']) if value_to_set.present?
       end
     else
       target_group.each do |field|
-        value_to_set = map_standard_fields(field, deficiency, default_date)
+        value_to_set = map_standard_fields(field, deficiency, formatted_date)
         add_processed_field(field, value_to_set, deficiency['name']) if value_to_set.present?
       end
     end
   end
 
-  def map_standard_fields(field, deficiency, default_date)
+  def map_standard_fields(field, deficiency, formatted_date)
     label_name = field['label_name'].to_s.downcase.strip
 
     Rails.logger.debug "    [Mapeo] Intentando mapear campo del PDF: '#{field['name']}' (Label: '#{label_name}')"
 
     case label_name
     when /^date/
-      default_date
+      formatted_date
     when /deficien/
       "#{deficiency['value'].presence}  #{deficiency['comment_value']}"
     when /^item/
@@ -104,7 +105,11 @@ class DeficiencyProcessorService
     Rails.logger.info "  -> Mapeo desde '#{source_deficiency_name}': El campo '#{field['name']}' se llenará con '#{value}'."
   end
 
-  def get_default_date
-    Date.current.strftime('%Y-%m-%d')
+  def get_formatted_date
+    # Use inspection date if available, otherwise fall back to current date
+    date_to_use = @inspection_date || Date.current
+
+    # Format as MM/DD/YY (abbreviated year)
+    date_to_use.strftime('%m/%d/%y')
   end
 end

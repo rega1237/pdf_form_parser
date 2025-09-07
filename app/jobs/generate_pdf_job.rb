@@ -4,6 +4,7 @@ class GeneratePdfJob < ApplicationJob
   def perform(form_fill_id)
     main_form_fill = FormFill.find(form_fill_id)
     inspection = main_form_fill.inspection
+    inspection_date = inspection&.date
 
     unless main_form_fill.generating?
       Rails.logger.warn "FormFill ##{main_form_fill.id} is not in generating state. Current state: #{main_form_fill.pdf_generation_status}"
@@ -57,7 +58,8 @@ class GeneratePdfJob < ApplicationJob
 
       main_processor = DeficiencyProcessorService.new(
         deficiencies_data: deficiencies_with_data,
-        target_fields: main_form_fields.select { |f| f['type'] == 'Deficiency_field' }
+        target_fields: main_form_fields.select { |f| f['type'] == 'Deficiency_field' },
+        inspection_date: inspection_date
       )
       main_result = main_processor.process
 
@@ -82,7 +84,8 @@ class GeneratePdfJob < ApplicationJob
 
         deficiencies_processor = DeficiencyProcessorService.new(
           deficiencies_data: main_result[:unprocessed_deficiencies],
-          target_fields: target_deficiency_fields
+          target_fields: target_deficiency_fields,
+          inspection_date: inspection_date
         )
 
         # Paso C: Ejecutar el segundo procesador
