@@ -1166,11 +1166,19 @@ export default class extends Controller {
       return null;
     }
 
-    // Expresión regular para encontrar un número decimal al inicio del texto.
-    const match = parts[1].trim().match(/^(\d+\.\d+)/);
+    // Buscar en todas las partes después del primer elemento
+    for (let i = 1; i < parts.length; i++) {
+      // Expresión regular para encontrar un número decimal al inicio del texto.
+      const match = parts[i].trim().match(/^(\d+\.\d+)/);
+      
+      if (match) {
+        // Devuelve el primer número encontrado
+        return match[1];
+      }
+    }
 
-    // Devuelve el número encontrado (ej: "1.1") o null si no hay coincidencia.
-    return match ? match[1] : null;
+    // Si no se encuentra ningún número decimal, retornar null
+    return null;
   }
 
   dispatchNotification(type, message) {
