@@ -7,7 +7,7 @@ class FormTemplatesController < ApplicationController
 
   # GET /form_templates
   def index
-    @form_templates = policy_scope(FormTemplate)
+    @form_templates = policy_scope(FormTemplate).order(name: :asc)
   end
 
   def show
