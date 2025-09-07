@@ -30,7 +30,6 @@ class InspectionsController < ApplicationController
     @statuses = Inspection.distinct.pluck(:status).compact
   end
 
-  # GET /inspections/1
   def show
     authorize @inspection
     @property = @inspection.property
@@ -39,6 +38,10 @@ class InspectionsController < ApplicationController
 
     # Buscar el formulario principal específico
     @form_fill = @inspection.form_fills.find_by(form_template_id: @inspection.form_template_id)
+
+    # Buscar los formularios adicionales
+    @additional_risers_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
+    @corrections_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Corrected Deficiencies' })
 
     # Calcular conteos del formulario principal si existe
     @form_counts = @form_fill&.calculate_form_counts || { pass: 0, fail: 0, na: 0 }
@@ -92,6 +95,7 @@ class InspectionsController < ApplicationController
       system_category = inspection_params[:system_category]
       interval_category = inspection_params[:interval_category]
 
+      # 1. Create main form fill
       if main_form_template
         form_fill_name = "#{property.property_name} - #{system_category} - #{interval_category}"
         FormFill.create!(
@@ -102,6 +106,7 @@ class InspectionsController < ApplicationController
         )
       end
 
+      # 2. Create deficiencies form fill
       deficiencies_template = FormTemplate.find_by(name: 'Deficiencies')
       if deficiencies_template
         deficiencies_form_name = "#{property.property_name} - Deficiencies"
@@ -112,11 +117,39 @@ class InspectionsController < ApplicationController
           form_structure: deficiencies_template.form_structure
         )
       else
-        Rails.logger.warn("ADVERTENCIA: No se encontró la plantilla de formulario 'Deficiencies'. No se creó el formulario de deficiencias.")
+        Rails.logger.warn("ADVERTENCIA: No se encontró la plantilla de formulario 'Deficiencies'.")
+      end
+
+      # 3. Create additional risers form fill
+      additional_risers_template = FormTemplate.find_by(name: 'Additional Risers')
+      if additional_risers_template
+        additional_risers_form_name = "#{property.property_name} - Additional Risers"
+        FormFill.create!(
+          name: additional_risers_form_name,
+          form_template: additional_risers_template,
+          inspection: @inspection,
+          form_structure: additional_risers_template.form_structure
+        )
+      else
+        Rails.logger.warn("ADVERTENCIA: No se encontró la plantilla de formulario 'Additional Risers'.")
+      end
+
+      # 4. Create corrections form fill
+      corrections_template = FormTemplate.find_by(name: 'Corrected Deficiencies')
+      if corrections_template
+        corrections_form_name = "#{property.property_name} - Corrected Deficiencies"
+        FormFill.create!(
+          name: corrections_form_name,
+          form_template: corrections_template,
+          inspection: @inspection,
+          form_structure: corrections_template.form_structure
+        )
+      else
+        Rails.logger.warn("ADVERTENCIA: No se encontró la plantilla de formulario 'Corrected Deficiencies'.")
       end
     end
 
-    redirect_to @inspection, notice: 'Inspección creada exitosamente con sus dos formularios.'
+    redirect_to @inspection, notice: 'Inspection created successfully.'
   rescue ActiveRecord::RecordInvalid => e
     @selected_customer = @inspection.property&.customer
     @inspection.errors.add(:base, "Error al crear la inspección o sus formularios: #{e.message}")
