@@ -78,20 +78,34 @@ test:
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
 #
+# Build environment - used during Docker build for asset precompilation
+build:
+  adapter: postgresql
+  encoding: unicode
+  pool: 5
+  database: form_processor_build
+  username: postgres
+  password: ""
+  host: localhost
+  port: 5432
+
 production:
   primary: &primary_production
-    url: <%= ENV["DATABASE_URL"] %>
-    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    <<: *default
     database: form_processor_production
     username: postgres
     password: <%= ENV["POSTGRES_PASSWORD"] %>
     host: form_processor-db
+    port: 5432
   cache:
-    url: <%= ENV["DATABASE_URL"]&.sub(/\/form_processor_production$/, "/form_processor_production_cache") %>
+    <<: *primary_production
+    database: form_processor_production_cache
     migrations_paths: db/cache_migrate
   queue:
-    url: <%= ENV["DATABASE_URL"]&.sub(/\/form_processor_production$/, "/form_processor_production_queue") %>
+    <<: *primary_production
+    database: form_processor_production_queue
     migrations_paths: db/queue_migrate
   cable:
-    url: <%= ENV["DATABASE_URL"]&.sub(/\/form_processor_production$/, "/form_processor_production_cable") %>
+    <<: *primary_production
+    database: form_processor_production_cable
     migrations_paths: db/cable_migrate

@@ -14,7 +14,7 @@ export default class extends Controller {
     if (this.isFieldVisible()) {
       requestAnimationFrame(() => {
         setTimeout(() => {
-          this.setCurrentDate();
+          this.setInspectionDate();
         }, 100);
       });
     }
@@ -30,24 +30,22 @@ export default class extends Controller {
     this.element.removeEventListener("focus", this.handleFirstFocus.bind(this));
   }
 
-  setCurrentDate() {
-    // Si el campo está vacío, establecer la fecha actual
+  setInspectionDate() {
+    // Si el campo está vacío, establecer la fecha de inspección
     if (!this.element.value || this.element.value === "") {
-      const today = new Date();
+      const inspectionDate = this.getInspectionDate();
 
-      // Formato estadounidense: MM/DD/YYYY
-      const month = String(today.getMonth() + 1).padStart(2, "0");
-      const day = String(today.getDate()).padStart(2, "0");
-      const year = today.getFullYear();
+      if (inspectionDate) {
+        this.element.value = inspectionDate;
+        this.element.setAttribute("value", inspectionDate);
 
-      const usDateFormat = `${month}/${day}/${year}`;
-
-      this.element.value = usDateFormat;
-      this.element.setAttribute("value", usDateFormat);
-
-      // Disparar evento change para notificar otros controladores
-      this.element.dispatchEvent(new Event("change", { bubbles: true }));
-      this.element.dispatchEvent(new Event("input", { bubbles: true }));
+        // Disparar evento change para notificar otros controladores
+        this.element.dispatchEvent(new Event("change", { bubbles: true }));
+        this.element.dispatchEvent(new Event("input", { bubbles: true }));
+      } else {
+        // Si no hay fecha de inspección, usar fecha actual como fallback
+        this.setCurrentDate();
+      }
     } else {
       // Si ya tiene valor, verificar si está en formato ISO y convertir
       const currentValue = this.element.value;
@@ -59,6 +57,36 @@ export default class extends Controller {
         this.element.value = convertedValue;
       }
     }
+  }
+
+  setCurrentDate() {
+    // Método de fallback para usar fecha actual
+    const today = new Date();
+
+    // Formato estadounidense: MM/DD/YYYY
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    const year = today.getFullYear();
+
+    const usDateFormat = `${month}/${day}/${year}`;
+
+    this.element.value = usDateFormat;
+    this.element.setAttribute("value", usDateFormat);
+
+    // Disparar evento change para notificar otros controladores
+    this.element.dispatchEvent(new Event("change", { bubbles: true }));
+    this.element.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  // Get inspection date from form-fill controller
+  getInspectionDate() {
+    // Find the form-fill controller in the DOM hierarchy
+    const formElement = this.element.closest('[data-controller*="form-fill"]');
+    if (formElement) {
+      // Get the inspection date from the form-fill controller's data attribute
+      return formElement.dataset.formFillInspectionDateValue;
+    }
+    return null;
   }
 
   handleDateChange(event) {
@@ -111,10 +139,17 @@ export default class extends Controller {
     }
   }
 
+  // Método público para establecer la fecha de inspección
+  setInspectionDateIfEmpty() {
+    if (!this.element.value || this.element.value === "") {
+      this.setInspectionDate();
+    }
+  }
+
   // Método para manejar el primer focus del usuario
   handleFirstFocus(event) {
     if (!this.element.value || this.element.value === "") {
-      this.setCurrentDate();
+      this.setInspectionDate();
     }
     // Remover el listener después del primer uso
     this.element.removeEventListener("focus", this.handleFirstFocus.bind(this));

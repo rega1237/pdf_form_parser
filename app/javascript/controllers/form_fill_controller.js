@@ -2,6 +2,12 @@ import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
   static targets = ["formStructure"];
+  static values = {
+    formStructure: String,
+    formFields: String,
+    data: Object,
+    inspectionDate: String,
+  };
 
   connect() {
     // Initialize change tracking for incremental updates
@@ -241,7 +247,12 @@ export default class extends Controller {
                 field.value === true ||
                 field.value === "true";
             } else {
-              inputElement.value = field.value || "";
+              // Handle date fields with inspection date
+              if (field.type === "Date") {
+                this.loadDateField(inputElement, field);
+              } else {
+                inputElement.value = field.value || "";
+              }
             }
           }
         }
@@ -294,6 +305,49 @@ export default class extends Controller {
         }
       }
     });
+
+    // Initialize date fields with inspection date after loading all values
+    this.initializeDateFields();
+  }
+
+  // Initialize all date fields with inspection date if they're empty
+  initializeDateFields() {
+    if (!this.inspectionDate) return;
+
+    // Find all date input fields
+    const dateFields = this.element.querySelectorAll(
+      'input[data-controller*="date-fix"]',
+    );
+
+    dateFields.forEach((dateField) => {
+      // Get the date-fix controller instance
+      const dateFixController =
+        this.application?.getControllerForElementAndIdentifier(
+          dateField,
+          "date-fix",
+        );
+
+      if (dateFixController && dateFixController.setInspectionDateIfEmpty) {
+        // Use the date-fix controller method to set inspection date if empty
+        dateFixController.setInspectionDateIfEmpty();
+      } else {
+        // Fallback: set directly if no controller found
+        if (!dateField.value || dateField.value === "") {
+          dateField.value = this.inspectionDate;
+
+          // Extract field name and track the change
+          const fieldName = this.extractFieldNameFromInput(dateField);
+          if (fieldName) {
+            this.changedFields.set(fieldName, this.inspectionDate);
+          }
+        }
+      }
+    });
+
+    // Trigger debounced save if any date fields were set
+    if (this.changedFields.size > 0) {
+      this.debouncedSave();
+    }
   }
 
   // Get data from the data column
@@ -602,6 +656,46 @@ export default class extends Controller {
     return document.querySelector('meta[name="csrf-token"]').content;
   }
 
+  // Get inspection date in US format (MM/DD/YYYY)
+  get inspectionDate() {
+    return this.inspectionDateValue || null;
+  }
+
+  // Load date field with inspection date as default
+  loadDateField(inputElement, field) {
+    // Priority: 1. Saved value from data, 2. Inspection date, 3. Empty
+    const savedValue = field.value;
+    const inspectionDate = this.inspectionDate;
+
+    if (savedValue && savedValue.trim() !== "") {
+      // Use saved value if it exists
+      inputElement.value = savedValue;
+    } else if (inspectionDate) {
+      // Use inspection date as default if no saved value
+      inputElement.value = inspectionDate;
+
+      // Also update the data to reflect this default
+      const fieldName = this.extractFieldNameFromInput(inputElement);
+      if (fieldName) {
+        this.changedFields.set(fieldName, inspectionDate);
+        // Trigger debounced save to persist the default value
+        this.debouncedSave();
+      }
+    } else {
+      // No inspection date available, leave empty
+      inputElement.value = "";
+    }
+  }
+
+  // Extract field name from input element
+  extractFieldNameFromInput(inputElement) {
+    if (inputElement.name && inputElement.name.startsWith("form_fill[")) {
+      const match = inputElement.name.match(/form_fill\[(.+)\]/);
+      return match ? match[1] : null;
+    }
+    return null;
+  }
+
   // Set up field change tracking for incremental saves
   setupFieldChangeTracking() {
     const formElements = this.element.elements;
@@ -671,22 +765,24 @@ export default class extends Controller {
 
   updateIntervalCategory(event) {
     // Encuentra el contenedor principal para este campo específico
-    const fieldContainer = event.target.closest('.space-y-4');
+    const fieldContainer = event.target.closest(".space-y-4");
     if (!fieldContainer) return;
 
     // Dentro de ese contenedor, encuentra el campo oculto y todas las casillas marcadas
     const hiddenField = fieldContainer.querySelector('input[type="hidden"]');
-    const checkboxes = fieldContainer.querySelectorAll('input[type="checkbox"]:checked');
+    const checkboxes = fieldContainer.querySelectorAll(
+      'input[type="checkbox"]:checked',
+    );
 
     if (hiddenField) {
       // Crea un array con los valores de las casillas marcadas
-      const selectedValues = Array.from(checkboxes).map(cb => cb.value);
+      const selectedValues = Array.from(checkboxes).map((cb) => cb.value);
 
       // Actualiza el valor del campo oculto
-      hiddenField.value = selectedValues.join(', ');
+      hiddenField.value = selectedValues.join(", ");
 
       // dispana manualmente el evento
-      hiddenField.dispatchEvent(new Event('change', { bubbles: true }));
+      hiddenField.dispatchEvent(new Event("change", { bubbles: true }));
     }
   }
 
@@ -1070,11 +1166,19 @@ export default class extends Controller {
       return null;
     }
 
-    // Expresión regular para encontrar un número decimal al inicio del texto.
-    const match = parts[1].trim().match(/^(\d+\.\d+)/);
+    // Buscar en todas las partes después del primer elemento
+    for (let i = 1; i < parts.length; i++) {
+      // Expresión regular para encontrar un número decimal al inicio del texto.
+      const match = parts[i].trim().match(/^(\d+\.\d+)/);
+      
+      if (match) {
+        // Devuelve el primer número encontrado
+        return match[1];
+      }
+    }
 
-    // Devuelve el número encontrado (ej: "1.1") o null si no hay coincidencia.
-    return match ? match[1] : null;
+    // Si no se encuentra ningún número decimal, retornar null
+    return null;
   }
 
   dispatchNotification(type, message) {

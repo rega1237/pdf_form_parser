@@ -52,6 +52,39 @@
       transform: none !important;
     }
 
+    /* Email button specific styles */
+    .email-button-loading {
+      opacity: 0.75;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .email-button-loading:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    
+    .email-button-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .email-button-disabled:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Tooltip styles */
+    .tooltip {
+      z-index: 1000;
+      pointer-events: none;
+    }
+    
+    .tooltip-arrow {
+      filter: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.1));
+    }
+
     /* Estilos para el overlay de carga */
     .save-draft-overlay {
       position: fixed;
@@ -148,15 +181,21 @@
       <select data-action="change->page-navigation#jump" class="w-full bg-slate-700 text-white font-semibold border-2 border-slate-500 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
         <option value="">Jump to a section...</option>
         <% @navigation_sections.each do |section| %>
+          <%
+            section_name = section[:name].humanize
+            if section_name.downcase.include?('year') && section_name.include?('|') || section_name.downcase.include?('annual') || section_name.downcase.include?('quarterly') && section_name.include?('|')
+              section_name = section_name.split('|').last.strip
+            end
+          %>
           <option value="<%= section[:page] - 1 %>">
-            Page <%= section[:page] %>: <%= section[:name].humanize %>
+            Page <%= section[:page] %>: <%= section_name %>
           </option>
         <% end %>
       </select>
     </div>
     
     <div data-controller="field-toggle">
-      <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json, "form-fill-data-value": @form_fill.data.to_json }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
+      <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json, "form-fill-data-value": @form_fill.data.to_json, "form-fill-inspection-date-value": @inspection_date&.strftime("%m/%d/%Y") }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
         <%= form.submit "Submit", class: "hidden" %>
         <% if @form_fields.blank? %>
@@ -293,6 +332,63 @@
                   <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
                   Ver PDF de Deficiencias
                 </a>
+              <% end %>
+              
+              <%# --- Email Button --- %>
+              <% 
+                # Check if PDF is available and customer has email
+                pdf_available = @form_fill.filled_pdf.attached? && @form_fill.completed?
+                customer_email_available = @form_fill.inspection&.property&.customer&.email.present?
+                email_enabled = pdf_available && customer_email_available
+              %>
+              
+              <% if email_enabled %>
+                <div class="relative group">
+                  <button type="button"
+                          data-controller="email-sender"
+                          data-action="click->email-sender#sendEmail"
+                          data-email-sender-recipient-email-value="<%= @form_fill.inspection.property.customer.email %>"
+                          data-email-sender-form-fill-id-value="<%= @form_fill.id %>"
+                          data-email-sender-csrf-token-value="<%= form_authenticity_token %>"
+                          class="inline-flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    <span data-email-sender-target="buttonText">Send Email</span>
+                    <svg class="w-5 h-5 ml-2 animate-spin hidden" data-email-sender-target="spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                  </button>
+                  <!-- Tooltip showing recipient email -->
+                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                    Send to: <%= @form_fill.inspection.property.customer.email %>
+                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                  </div>
+                </div>
+              <% elsif pdf_available && !customer_email_available %>
+                <div class="inline-flex items-center justify-center bg-gray-500 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg opacity-50 cursor-not-allowed relative group">
+                  <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                  </svg>
+                  Email Unavailable
+                  <!-- Tooltip -->
+                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                    Customer email address not available
+                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                  </div>
+                </div>
+              <% elsif !pdf_available %>
+                <div class="inline-flex items-center justify-center bg-gray-500 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg opacity-50 cursor-not-allowed relative group">
+                  <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                  </svg>
+                  PDF Required
+                  <!-- Tooltip -->
+                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                    Generate PDF first before sending email
+                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                  </div>
+                </div>
               <% end %>
             </div>
           </div>

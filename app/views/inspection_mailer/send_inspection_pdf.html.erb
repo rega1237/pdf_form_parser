@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .content {
+      background-color: #ffffff;
+      padding: 20px;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+    }
+    .footer {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+      font-size: 14px;
+      color: #6c757d;
+    }
+    .inspection-details {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 15px 0;
+    }
+    .inspection-details h3 {
+      margin-top: 0;
+      color: #495057;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><%= @company_name %></h1>
+    <p>Inspection Report</p>
+  </div>
+
+  <div class="content">
+    <p>Dear <%= @customer.name %>,</p>
+
+    <p>Please find attached a copy of the inspection report for <strong><%= @property.property_name %></strong>.</p>
+    
+    <p>This report contains the complete inspection documentation including all findings and any deficiencies identified during the inspection process.</p>
+
+    <div class="inspection-details">
+      <h3>Inspection Details</h3>
+      <ul>
+        <li><strong>Property:</strong> <%= @property.property_name %></li>
+        <li><strong>Address:</strong> <%= @property.address %></li>
+        <li><strong>Inspection Date:</strong> <%= @inspection.date.strftime('%B %d, %Y') %></li>
+        <li><strong>Inspector:</strong> <%= @inspector.name %></li>
+        <li><strong>Form Template:</strong> <%= @inspection.form_template.name %></li>
+      </ul>
+    </div>
+
+    <p>The attached PDF contains the complete inspection report with all findings and recommendations. Please review the document carefully and contact us if you have any questions.</p>
+
+    <p>Thank you for choosing our inspection services.</p>
+  </div>
+
+  <div class="footer">
+    <p>Best regards,<br>
+    <%= @inspector.name %><br>
+    <%= @company_name %></p>
+    
+    <p><em>This is an automated message. Please do not reply directly to this email. For questions or concerns, please contact us at <%= ENV.fetch('MAILER_REPLY_TO', 'support@example.com') %>.</em></p>
+  </div>
+</body>
+</html>

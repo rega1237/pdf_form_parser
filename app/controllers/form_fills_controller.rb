@@ -10,6 +10,9 @@ class FormFillsController < ApplicationController
     @interval_categories = IntervalCategory.all
     @form_template = @form_fill.form_template
 
+    # Get inspection date for date fields
+    @inspection_date = @form_fill.inspection&.date
+
     if @form_fill.form_structure.present?
       begin
         form_fields = JSON.parse(@form_fill.form_structure)
@@ -515,6 +518,50 @@ class FormFillsController < ApplicationController
   rescue StandardError => e
     Rails.logger.error "Error downloading PDF for FormFill ##{@form_fill.id}: #{e.message}"
     redirect_to @form_fill, alert: 'Error accessing PDF file.'
+  end
+
+  def send_email
+    @form_fill = FormFill.find(params[:id])
+    authorize @form_fill
+
+    # Use EmailService to handle email sending with proper validation and error handling
+    result = EmailService.send_inspection_pdf(@form_fill)
+
+    respond_to do |format|
+      if result.success?
+        format.html { redirect_to @form_fill, notice: result.message }
+        format.json { render json: { success: true, message: result.message }, status: :ok }
+      else
+        # Handle different error types with appropriate user feedback
+        error_message = case result.error_code
+                        when EmailService::ERROR_CODES[:pdf_not_available]
+                          'PDF is not available. Please generate the PDF first before sending email.'
+                        when EmailService::ERROR_CODES[:customer_email_missing]
+                          'Customer email address is not available. Please update customer information.'
+                        when EmailService::ERROR_CODES[:invalid_email_format]
+                          'Customer email address format is invalid. Please update customer information.'
+                        when EmailService::ERROR_CODES[:attachment_too_large]
+                          result.message
+                        when EmailService::ERROR_CODES[:smtp_connection_failed]
+                          'Email service is currently unavailable. Please try again later.'
+                        when EmailService::ERROR_CODES[:smtp_authentication_failed]
+                          'Email service configuration error. Please contact administrator.'
+                        else
+                          result.message || 'Failed to send email. Please try again.'
+                        end
+
+        format.html { redirect_to @form_fill, alert: error_message }
+        format.json { render json: { success: false, message: error_message }, status: :unprocessable_entity }
+      end
+    end
+  rescue StandardError => e
+    Rails.logger.error "Unexpected error in send_email action for FormFill ##{@form_fill.id}: #{e.message}"
+    error_message = 'An unexpected error occurred while sending email. Please try again.'
+
+    respond_to do |format|
+      format.html { redirect_to @form_fill, alert: error_message }
+      format.json { render json: { success: false, message: error_message }, status: :internal_server_error }
+    end
   end
 
   private

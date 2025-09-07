@@ -1,0 +1,28 @@
+<%= @company_name %>
+Inspection Report
+
+Dear <%= @customer.name %>,
+
+Please find attached a copy of the inspection report for <%= @property.property_name %>.
+
+This report contains the complete inspection documentation including all findings and any deficiencies identified during the inspection process.
+
+INSPECTION DETAILS
+==================
+Property: <%= @property.property_name %>
+Address: <%= @property.address %>
+Inspection Date: <%= @inspection.date.strftime('%B %d, %Y') %>
+Inspector: <%= @inspector.name %>
+Form Template: <%= @inspection.form_template.name %>
+
+The attached PDF contains the complete inspection report with all findings and recommendations. Please review the document carefully and contact us if you have any questions.
+
+Thank you for choosing our inspection services.
+
+Best regards,
+<%= @inspector.name %>
+<%= @company_name %>
+
+---
+This is an automated message. Please do not reply directly to this email. 
+For questions or concerns, please contact us at <%= ENV.fetch('MAILER_REPLY_TO', 'support@example.com') %>.

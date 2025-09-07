@@ -19,3 +19,23 @@ two:
   phone_1: 555-0003
   phone_2: 555-0004
   note: Test customer two
+
+three:
+  customer_type: Individual
+  name: Customer No Email
+  address: 789 No Email St
+  city_state_zip: City, ST 11111
+  email:
+  phone_1: 555-0005
+  phone_2:
+  note: Test customer without email
+
+four:
+  customer_type: Business
+  name: Customer Invalid Email
+  address: 999 Invalid St
+  city_state_zip: City, ST 22222
+  email: invalid-email-format
+  phone_1: 555-0006
+  phone_2:
+  note: Test customer with invalid email format
