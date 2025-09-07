@@ -283,7 +283,6 @@
                  data-controller="pdf-status" 
                  data-pdf-status-status-value="<%= @form_fill.pdf_generation_status %>"
                  data-pdf-status-refresh-interval-value="5000">
-              <button type="button" data-controller="external-form-action" data-action="click->external-form-action#triggerSaveDraft" data-external-form-action-form-id-value="form-fill-main-form" class="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg"><svg class="w-5 h-5 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path></svg>Save Draft</button>
               <%# --- Botón Generate PDF con estado --- %>
               <% if @form_fill.generating? %>
                 <div class="inline-flex items-center justify-center bg-gradient-to-r from-amber-500 to-amber-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">

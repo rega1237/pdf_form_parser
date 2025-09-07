@@ -312,7 +312,8 @@ export default class extends Controller {
 
   // Initialize all date fields with inspection date if they're empty
   initializeDateFields() {
-    if (!this.inspectionDate) return;
+    const formattedInspectionDate = this.getFormattedInspectionDate();
+    if (!formattedInspectionDate) return;
 
     // Find all date input fields
     const dateFields = this.element.querySelectorAll(
@@ -333,12 +334,12 @@ export default class extends Controller {
       } else {
         // Fallback: set directly if no controller found
         if (!dateField.value || dateField.value === "") {
-          dateField.value = this.inspectionDate;
+          dateField.value = formattedInspectionDate;
 
           // Extract field name and track the change
           const fieldName = this.extractFieldNameFromInput(dateField);
           if (fieldName) {
-            this.changedFields.set(fieldName, this.inspectionDate);
+            this.changedFields.set(fieldName, formattedInspectionDate);
           }
         }
       }
@@ -349,6 +350,22 @@ export default class extends Controller {
       this.debouncedSave();
     }
   }
+
+  // Format the date to MM/DD/YY format
+  getFormattedInspectionDate() {
+  if (!this.inspectionDateValue) return null;
+  
+  // Convert MM/DD/YYYY to MM/DD/YY format
+  const parts = this.inspectionDateValue.split('/');
+  if (parts.length === 3) {
+    const month = parts[0];
+    const day = parts[1];
+    const year = parts[2].slice(-2); // Get last 2 digits of year
+    return `${month}/${day}/${year}`;
+  }
+  
+  return this.inspectionDateValue; // Return as-is if format is unexpected
+}
 
   // Get data from the data column
   getDataFromColumn() {
@@ -665,7 +682,7 @@ export default class extends Controller {
   loadDateField(inputElement, field) {
     // Priority: 1. Saved value from data, 2. Inspection date, 3. Empty
     const savedValue = field.value;
-    const inspectionDate = this.inspectionDate;
+    const inspectionDate = this.getFormattedInspectionDate(); // Use new method
 
     if (savedValue && savedValue.trim() !== "") {
       // Use saved value if it exists
@@ -1170,7 +1187,7 @@ export default class extends Controller {
     for (let i = 1; i < parts.length; i++) {
       // Expresión regular para encontrar un número decimal al inicio del texto.
       const match = parts[i].trim().match(/^(\d+\.\d+)/);
-      
+
       if (match) {
         // Devuelve el primer número encontrado
         return match[1];

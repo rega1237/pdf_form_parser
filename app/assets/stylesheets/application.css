@@ -67,6 +67,7 @@
 .choice-button[data-value="Pass"].selected {
   background-color: #38a169;
   border-color: #2f855a;
+  color: white;
 }
 
 .choice-button[data-value="Fail"] {
@@ -82,6 +83,7 @@
 .choice-button[data-value="Fail"].selected {
   background-color: #e53e3e;
   border-color: #c53030;
+  color: white;
 }
 
 .choice-button[data-value="N/A"] {
@@ -97,6 +99,7 @@
 .choice-button[data-value="N/A"].selected {
   background-color: #718096;
   border-color: #4a5568;
+  color: white;
 }
 
 /* =============================================================================
