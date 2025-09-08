@@ -145,11 +145,9 @@
                   <div class="text-slate-400 text-xs mt-1"><%= inspection.property.address %></div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap"><%= status_badge_with_icon(inspection.status) %></td>
-                <%# --- INICIO DEL CAMBIO: Celda con el nombre del técnico --- %>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   <%= inspection.user&.display_name || 'Unassigned' %>
                 </td>
-                <%# --- FIN DEL CAMBIO --- %>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300"><%= main_form_fill&.name || 'No Form' %></td>
               </tr>
             <% end %>

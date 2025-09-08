@@ -249,7 +249,11 @@ export default class extends Controller {
             } else {
               // Handle date fields with inspection date
               if (field.type === "Date") {
-                this.loadDateField(inputElement, field);
+                if (inputElement.dataset.controller.includes('datepicker')) {
+                  inputElement.value = field.value || '';
+                } else {
+                  this.loadDateField(inputElement, field);
+                }
               } else {
                 inputElement.value = field.value || "";
               }
