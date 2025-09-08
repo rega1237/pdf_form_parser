@@ -35,3 +35,5 @@ app/assets/forms
 
 .kamal/secrets
 .kamal/.env.prod
+
+storage/*
