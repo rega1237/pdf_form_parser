@@ -9,6 +9,13 @@ class FormFillsController < ApplicationController
     @system_categories = SystemCategory.all
     @interval_categories = IntervalCategory.all
     @form_template = @form_fill.form_template
+    @inspection = @form_fill.inspection
+
+    if @inspection
+      @main_form_fill = @inspection.form_fills.find_by(form_template_id: @inspection.form_template_id)
+      @additional_risers_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
+      @corrections_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Corrected Deficiencies' })
+    end
 
     # Get inspection date for date fields
     @inspection_date = @form_fill.inspection&.date
