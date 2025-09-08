@@ -1,5 +1,3 @@
-require 'set'
-
 class DeficiencyProcessorService
   def initialize(deficiencies_data:, target_fields:, inspection_date: nil)
     @deficiencies_data = deficiencies_data || []
@@ -10,10 +8,17 @@ class DeficiencyProcessorService
   end
 
   def process
+    # Only process if we have actual deficiencies with meaningful data
+    valid_deficiencies = @deficiencies_data.select do |deficiency|
+      has_meaningful_data?(deficiency)
+    end
+
+    Rails.logger.info "Processing #{valid_deficiencies.count} valid deficiencies out of #{@deficiencies_data.count} total"
+
     deficiency_field_groups = group_target_fields_by_section
     sorted_group_keys = deficiency_field_groups.keys.sort_by { |name| name.scan(/\d+/).first.to_i }
 
-    @deficiencies_data.each_with_index do |deficiency, index|
+    valid_deficiencies.each_with_index do |deficiency, index|
       next unless deficiency.is_a?(Hash) && deficiency['name'].present?
 
       if index < sorted_group_keys.length
@@ -33,6 +38,23 @@ class DeficiencyProcessorService
   end
 
   private
+
+  # Check if a deficiency has meaningful data (not just empty strings)
+  def has_meaningful_data?(deficiency)
+    return false unless deficiency.is_a?(Hash)
+
+    meaningful_fields = [
+      deficiency['value'],
+      deficiency['comment_value'],
+      deficiency['Item'],
+      deficiency['Riser'],
+      deficiency['C'],
+      deficiency['D']
+    ]
+
+    # Check if any field has actual content (not just empty or whitespace)
+    meaningful_fields.any? { |field| field.present? && field.to_s.strip.present? }
+  end
 
   def group_target_fields_by_section
     valid_fields = @target_fields.select { |field| field.is_a?(Hash) && field['section_name'].present? }
@@ -82,20 +104,42 @@ class DeficiencyProcessorService
 
     case label_name
     when /^date/
-      formatted_date
+      # Only set date if there's actual deficiency data to go with it
+      if has_deficiency_content?(deficiency)
+        formatted_date
+      else
+        nil # Don't set date for empty deficiencies
+      end
     when /deficien/
-      "#{deficiency['value'].presence}  #{deficiency['comment_value']}"
+      deficiency_text = "#{deficiency['value'].presence}  #{deficiency['comment_value']}"
+      deficiency_text.strip.present? ? deficiency_text : nil
     when /^item/
-      deficiency['Item']
+      deficiency['Item'].present? ? deficiency['Item'] : nil
     when /^riser/
-      deficiency['Riser']
+      deficiency['Riser'].present? ? deficiency['Riser'] : nil
     when /\Ad\d*\z/
-      deficiency['D'] == 'Yes' ? 'X' : ''
+      deficiency['D'] == 'Yes' ? 'X' : nil
     when /\Ac\d*\z/
-      deficiency['C'] == 'Yes' ? 'X' : ''
+      deficiency['C'] == 'Yes' ? 'X' : nil
     else
       nil
     end
+  end
+
+  # Check if deficiency has actual content beyond just checkboxes
+  def has_deficiency_content?(deficiency)
+    content_fields = [
+      deficiency['value'],
+      deficiency['comment_value'],
+      deficiency['Item'],
+      deficiency['Riser']
+    ]
+
+    checkbox_fields = [deficiency['C'], deficiency['D']]
+
+    # Has content if there's text in content fields OR checkboxes are checked
+    content_fields.any? { |field| field.present? && field.to_s.strip.present? } ||
+      checkbox_fields.any? { |field| field == 'Yes' }
   end
 
   def add_processed_field(field, value, source_deficiency_name)
