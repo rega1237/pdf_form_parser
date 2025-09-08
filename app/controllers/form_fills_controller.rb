@@ -462,45 +462,71 @@ class FormFillsController < ApplicationController
   end
 
   def submit_form
-    @main_form_fill = FormFill.find(params[:id])
+    @form_fill = FormFill.find(params[:id])
 
     # Verificar si ya se está generando un PDF
-    if @main_form_fill.generating?
-      redirect_to @main_form_fill, alert: 'PDF is already being generated. Please wait.'
+    if @form_fill.generating?
+      redirect_to @form_fill, alert: 'PDF is already being generated. Please wait.'
       return
     end
 
-    # Primero manejar la lógica de next inspection ANTES de generar PDF
-    create_next_inspection_from_structure(@main_form_fill.data)
+    # Determinar qué tipo de PDF generar basado en el form template
+    if @form_fill.main_form_fill?
+      # Para el formulario principal, crear next inspection y luego generar PDF completo
+      create_next_inspection_from_structure(@form_fill.data)
 
-    # Si hay un duplicado detectado, no proceder con la generación del PDF
-    # El usuario debe resolver el duplicado primero
-    if session[:duplicate_next_inspection]
-      # No marcar como generando ni encolar el trabajo aún
-      redirect_to @main_form_fill,
-                  notice: 'Se detectó una Next Inspection duplicada. Por favor, resuelve el duplicado antes de generar el PDF.'
-      return
+      # Si hay un duplicado detectado, no proceder con la generación del PDF
+      if session[:duplicate_next_inspection]
+        redirect_to @form_fill,
+                    notice: 'Se detectó una Next Inspection duplicada. Por favor, resuelve el duplicado antes de generar el PDF.'
+        return
+      end
+
+      # Generar PDF completo con merge
+      generate_main_pdf_with_merge
+    else
+      # Para formularios individuales (Additional Risers, Corrections), generar PDF individual
+      generate_individual_pdf
     end
-
-    # Solo si no hay duplicados, proceder con la generación del PDF
-    generate_pdf_now
   end
 
-  # Método para proceder con la generación del PDF
-  def generate_pdf_now
+  # Método para generar PDF individual (Additional Risers, Corrections)
+  def generate_individual_pdf
     # Verificar si ya se está generando un PDF
-    if @main_form_fill.generating?
-      redirect_to @main_form_fill, alert: 'PDF is already being generated. Please wait.'
+    if @form_fill.generating?
+      redirect_to @form_fill, alert: 'PDF is already being generated. Please wait.'
       return
     end
 
     # Marcar como generando antes de encolar el trabajo
-    @main_form_fill.update!(pdf_generation_status: 'generating')
+    @form_fill.update!(pdf_generation_status: 'generating')
 
-    # Encolar el trabajo de generación de PDF
-    GeneratePdfJob.perform_later(@main_form_fill.id)
+    # Encolar el trabajo de generación de PDF individual
+    GenerateIndividualPdfJob.perform_later(@form_fill.id)
 
-    redirect_to @main_form_fill, notice: 'Your PDF is being generated and will be available shortly.'
+    redirect_to @form_fill, notice: 'Your individual PDF is being generated and will be available shortly.'
+  end
+
+  # Método para generar PDF principal con merge (existing logic but renamed)
+  def generate_main_pdf_with_merge
+    # Verificar si ya se está generando un PDF
+    if @form_fill.generating?
+      redirect_to @form_fill, alert: 'PDF is already being generated. Please wait.'
+      return
+    end
+
+    # Marcar como generando antes de encolar el trabajo
+    @form_fill.update!(pdf_generation_status: 'generating')
+
+    # Encolar el trabajo de generación de PDF completo
+    GeneratePdfJob.perform_later(@form_fill.id)
+
+    redirect_to @form_fill, notice: 'Your complete inspection PDF is being generated and will be available shortly.'
+  end
+
+  # Keep existing generate_pdf_now method for backward compatibility
+  def generate_pdf_now
+    generate_main_pdf_with_merge
   end
 
   def download_pdf
@@ -915,7 +941,7 @@ class FormFillsController < ApplicationController
   end
 
   def create_next_inspection_from_structure(form_data)
-    inspection = @main_form_fill.inspection
+    inspection = @form_fill.inspection # ← Cambio aquí
     return unless inspection && form_data.present?
 
     begin
@@ -941,7 +967,7 @@ class FormFillsController < ApplicationController
             session[:duplicate_next_inspection] = {
               existing: existing_next_inspection.duplicate_info,
               new_date: inspection.date + interval_category.duration_in_months.months,
-              form_fill_id: @main_form_fill.id
+              form_fill_id: @form_fill.id # ← Y cambio aquí también
             }
             Rails.logger.info "Duplicate next inspection found for property #{inspection.property.id}"
           else

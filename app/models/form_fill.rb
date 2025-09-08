@@ -542,4 +542,63 @@ class FormFill < ApplicationRecord
       []
     end
   end
+
+  # ========================================
+  # MANAGE PDF CREATION
+  # ========================================
+
+  # Mark PDF as created when successfully generated
+  def mark_pdf_created!
+    update!(pdf_created: true, pdf_generation_status: 'completed')
+  end
+
+  # Check if this form fill has an individual PDF created
+  def has_individual_pdf?
+    pdf_created? && filled_pdf.attached?
+  end
+
+  # Check if this is the main form fill for the inspection
+  def main_form_fill?
+    inspection.present? && inspection.form_template_id == form_template_id
+  end
+
+  # Check if this form fill should be included in the main PDF merge
+  def should_include_in_main_merge?
+    pdf_created? && !main_form_fill?
+  end
+
+  # Get all deficiencies from this form fill for processing
+  def get_deficiencies_for_processing
+    return [] unless form_structure.present? && data.present?
+
+    begin
+      structure = JSON.parse(form_structure)
+      deficiency_fields = structure.select { |field| field['type'] == 'Deficiency' }
+
+      deficiencies_with_data = []
+
+      deficiency_fields.each do |field|
+        field_name = field['name']
+
+        # Build deficiency data from the data column
+        deficiency_data = {
+          'name' => field_name,
+          'value' => data["#{field_name}_select"] || '',
+          'comment_value' => data["#{field_name}_comment"] || '',
+          'Item' => data["#{field_name}_item"] || '',
+          'Riser' => data["#{field_name}_riser"] || '',
+          'C' => data["#{field_name}_c"] || '',
+          'D' => data["#{field_name}_d"] || ''
+        }
+
+        # Only include if any field has data
+        deficiencies_with_data << deficiency_data if deficiency_data.values.any?(&:present?)
+      end
+
+      deficiencies_with_data
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure in get_deficiencies_for_processing: #{e.message}"
+      []
+    end
+  end
 end
