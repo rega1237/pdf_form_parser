@@ -2,5 +2,8 @@
   "devDependencies": {
     "@prettier/plugin-ruby": "^4.0.4",
     "prettier": "^3.5.3"
+  },
+  "dependencies": {
+    "flatpickr": "^4.6.13"
   }
 }
