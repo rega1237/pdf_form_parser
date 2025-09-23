@@ -1,26 +1,43 @@
-// Add a service worker for processing Web Push notifications:
-//
-// self.addEventListener("push", async (event) => {
-//   const { title, options } = await event.data.json()
-//   event.waitUntil(self.registration.showNotification(title, options))
-// })
-//
-// self.addEventListener("notificationclick", function(event) {
-//   event.notification.close()
-//   event.waitUntil(
-//     clients.matchAll({ type: "window" }).then((clientList) => {
-//       for (let i = 0; i < clientList.length; i++) {
-//         let client = clientList[i]
-//         let clientPath = (new URL(client.url)).pathname
-//
-//         if (clientPath == event.notification.data.path && "focus" in client) {
-//           return client.focus()
-//         }
-//       }
-//
-//       if (clients.openWindow) {
-//         return clients.openWindow(event.notification.data.path)
-//       }
-//     })
-//   )
-// })
+const CACHE_NAME = 'aes-pro-cache-v2'; // Cambiamos la versión para forzar la actualización
+const APP_SHELL_URLS = [
+  '/',
+  '<%= asset_path("application.js") %>',
+  '<%= asset_path("application.css") %>',
+  '<%= image_path("logo_192.png") %>',
+  '<%= image_path("logo_512.png") %>'
+];
+
+self.addEventListener('install', event => {
+  console.log('Service Worker: Instalando...');
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('Service Worker: Cacheando el App Shell');
+      return cache.addAll(APP_SHELL_URLS);
+    })
+  );
+});
+
+self.addEventListener('activate', event => {
+  console.log('Service Worker: Activando...');
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          if (cache !== CACHE_NAME) {
+            console.log('Service Worker: Limpiando caché antiguo', cache);
+            return caches.delete(cache);
+          }
+        })
+      ).then(() => self.clients.claim());
+    })
+  );
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
+  );
+});

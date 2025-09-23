@@ -5,15 +5,24 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <link rel="manifest" href="<%= manifest_path %>">
-    <meta name="theme-color" content="#FF0000"> <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1e293b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Aes Pro">
-    <link rel="apple-touch-icon" href="<%= image_path('logo_192.png') %>">
-    <link rel="icon" href="<%= image_path('logo_192.png') %>" type="image/png">
+    
+    <!-- App Icons -->
+    <link rel="apple-touch-icon" href="<%= asset_path('logo_192.png') %>">
+    <link rel="icon" href="<%= asset_path('logo_192.png') %>" type="image/png">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
+    
     <style>
       body {
         min-height: 100vh;
@@ -27,10 +36,62 @@
       .main-content {
         flex: 1;
       }
+      
+      /* PWA Install Button Styles */
+      #pwa-install-banner {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        z-index: 1000;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: none;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      #pwa-install-banner.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      
+      #pwa-install-banner:hover {
+        box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5);
+        transform: translateY(-2px);
+        background: linear-gradient(135deg, #059669, #047857);
+      }
+      
+      #pwa-install-banner:active {
+        transform: translateY(0);
+      }
+      
+      /* Responsive para móviles */
+      @media (max-width: 768px) {
+        #pwa-install-banner {
+          bottom: 10px;
+          right: 10px;
+          left: 10px;
+          text-align: center;
+          justify-content: center;
+        }
+      }
     </style>
+    
     <%= yield :head %>
   </head>
-  <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
+        data-controller="pwa install"
+        data-pwa-environment-value="<%= Rails.env %>">
     <div class="app-container">
       <!-- Header Global -->
       <% unless controller_name == 'form_fills' && action_name == 'show' %>
@@ -173,6 +234,7 @@
           </div>
         </header>
       <% end %>
+
       <!-- Flash Messages -->
       <% if flash.any? %>
         <div class="fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg">
@@ -197,10 +259,12 @@
           <% end %>
         </div>
       <% end %>
+
       <!-- Contenido Principal -->
       <main class="main-content">
         <%= yield %>
       </main>
+
       <!-- Footer Global -->
       <% unless controller_name == 'form_fills' && action_name == 'show' %>
         <footer class="bg-white/5 backdrop-blur-sm border-t border-white/10 py-6 mt-12">
@@ -222,6 +286,18 @@
           </div>
         </footer>
       <% end %>
+
+      <!-- PWA Install Banner -->
+      <button id="pwa-install-banner" 
+              style="display: none;"
+              data-install-target="banner"
+              data-action="click->install#install">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        Instalar App
+      </button>
+
       <!-- Modal para manejar duplicados de Next Inspection -->
       <% if session[:duplicate_next_inspection] %>
         <%= render 'shared/duplicate_next_inspection_modal' %>

@@ -87,9 +87,10 @@ Rails.application.routes.draw do
   # Health check route
   get 'up' => 'rails/health#show', as: :rails_health_check
 
-  # PWA routes
-  get '/service-worker.js' => 'pwa#service_worker', as: :service_worker
-  get '/manifest.json' => 'pwa#manifest', as: :manifest
+  # Rutas PWA
+  get '/manifest.json', to: 'pwa#manifest'
+  get '/sw.js', to: 'pwa#service_worker'
+  get '/service-worker.js', to: 'pwa#service_worker'
 
   # PWA routes (commented out)
   # get 'manifest' => 'rails/pwa#manifest', as: :pwa_manifest
