@@ -5,7 +5,6 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1e293b">
@@ -13,86 +12,54 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Aes Pro">
-    
     <!-- App Icons -->
     <link rel="apple-touch-icon" href="<%= asset_path('logo_192.png') %>">
     <link rel="icon" href="<%= asset_path('logo_192.png') %>" type="image/png">
-    
     <!-- Styles -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
-    
     <style>
-      body {
-        min-height: 100vh;
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      /* Solo estilos que no se pueden hacer con Tailwind */
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
-      .app-container {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-      .main-content {
-        flex: 1;
-      }
-      
-      /* PWA Install Button Styles */
-      #pwa-install-banner {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        padding: 16px 24px;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
-        z-index: 1000;
-        transform: translateY(100px);
-        opacity: 0;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        border: none;
-        font-weight: 600;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      
-      #pwa-install-banner.show {
-        transform: translateY(0);
-        opacity: 1;
-      }
-      
-      #pwa-install-banner:hover {
-        box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5);
-        transform: translateY(-2px);
-        background: linear-gradient(135deg, #059669, #047857);
-      }
-      
-      #pwa-install-banner:active {
-        transform: translateY(0);
-      }
-      
-      /* Responsive para móviles */
-      @media (max-width: 768px) {
-        #pwa-install-banner {
-          bottom: 10px;
-          right: 10px;
-          left: 10px;
-          text-align: center;
-          justify-content: center;
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.7;
+          transform: scale(1.1);
         }
       }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+
+      .animate-spin { animation: spin 1s linear infinite; }
+      .animate-pulse { animation: pulse 2s infinite; }
+      .animate-fade-in-up { animation: fadeInUp 0.3s ease; }
     </style>
-    
     <%= yield :head %>
   </head>
   <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-        data-controller="pwa install"
-        data-pwa-environment-value="<%= Rails.env %>">
-    <div class="app-container">
+        data-controller="pwa offline-status"
+        data-pwa-environment-value="<%= Rails.env %>"
+        data-offline-status-auto-hide-value="true"
+        data-offline-status-position-value="top-left">
+    <div class="min-h-screen flex flex-col">
       <!-- Header Global -->
       <% unless controller_name == 'form_fills' && action_name == 'show' %>
         <header class="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-50" data-controller="mobile-menu">
@@ -107,6 +74,21 @@
                   AES <span class="text-blue-400">PRO </span>
                 </h1>
               <% end %>
+              <!-- Connection Status Indicator - Movido al header -->
+              <div id="connection-indicator" 
+                   data-offline-status-target="indicator"
+                   class="bg-green-500/90 text-white px-3 py-1.5 rounded-2xl text-xs font-semibold flex items-center gap-1.5 backdrop-blur-md border border-white/20 transition-all duration-300 shadow-sm">
+                <div class="connection-icon">
+                  <svg class="connection-online hidden w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.07 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+                  </svg>
+                  <svg class="connection-offline hidden w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23 9C16.93 2.93 7.07 2.93 1 9l2 2c4.74-4.74 12.26-4.74 17 0l2-2zm-4 4c-3.18-3.18-8.82-3.18-12 0l2 2c1.82-1.82 4.18-1.82 6 0l2-2l2-2zm-6 6l3-3c-1.65-1.66-4.34-1.66-6 0l3 3z"/>
+                    <path d="M1 1l22 22-1.41 1.41L3.51 6.32 1 9z"/>
+                  </svg>
+                </div>
+                <span class="connection-text text-xs md:text-xs">Online</span>
+              </div>
               <!-- Navegación móvil - Hamburger menu -->
               <div class="lg:hidden">
                 <button data-action="click->mobile-menu#toggle" class="text-white p-2 rounded-lg hover:bg-white/10 transition-colors">
@@ -119,16 +101,26 @@
               <div class="hidden lg:flex items-center space-x-6">
                 <nav class="flex space-x-6">
                   <% if policy(FormTemplate).index? %>
-                    <%= link_to "Library", form_templates_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                    <%= link_to "Library", form_templates_path, 
+                        class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium",
+                        data: { requires_connection: true } %>
                   <% end %>
-                  <%= link_to "Inspections forms", form_fills_path, class: "hidden text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                  <%= link_to "Inspections forms", form_fills_path, 
+                      class: "hidden text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                   <% if policy(Customer).index? %>
-                    <%= link_to "Customers", customers_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                    <%= link_to "Customers", customers_path, 
+                        class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium",
+                        data: { requires_connection: true } %>
                   <% end %>
-                  <%= link_to "Inspections", inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
-                  <%= link_to "Next Inspections", next_inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                  <%= link_to "Inspections", inspections_path, 
+                      class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                  <%= link_to "Next Inspections", next_inspections_path, 
+                      class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium",
+                      data: { requires_connection: true } %>
                   <% if policy(:company_settings).index? %>
-                    <%= link_to "Settings", settings_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                    <%= link_to "Settings", settings_path, 
+                        class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium",
+                        data: { requires_connection: true } %>
                   <%end%>
                 </nav>
                 <!-- User Profile Desktop -->
@@ -149,23 +141,29 @@
                       <p class="text-sm font-medium text-white"><%= current_user.email %></p>
                       <div class="flex items-center space-x-3 text-xs">
                         <%= link_to "Edit Profile", edit_user_registration_path, 
-                          class: "text-blue-400 hover:text-blue-300 transition-colors duration-200" %>
+                          class: "text-blue-400 hover:text-blue-300 transition-colors duration-200",
+                          data: { requires_connection: true } %>
                         <span class="text-slate-500">•</span>
                         <%= link_to destroy_user_session_path, method: :delete,
-                          class: "text-red-400 hover:text-red-300 transition-colors duration-200" do %>
+                          class: "text-red-400 hover:text-red-300 transition-colors duration-200",
+                          data: { requires_connection: true } do %>
                           <span>Sign Out</span>
                         <% end %>
                       </div>
                     </div>
                     <!-- Mobile/Smaller screens - Just icons -->
                     <div class="xl:hidden flex items-center space-x-2">
-                      <%= link_to edit_user_registration_path, class: "text-slate-300 hover:text-white transition-colors duration-200" do %>
+                      <%= link_to edit_user_registration_path, 
+                          class: "text-slate-300 hover:text-white transition-colors duration-200",
+                          data: { requires_connection: true } do %>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
                       <% end %>
-                      <%= link_to destroy_user_session_path, method: :delete, class: "text-slate-300 hover:text-red-400 transition-colors duration-200" do %>
+                      <%= link_to destroy_user_session_path, method: :delete, 
+                          class: "text-slate-300 hover:text-red-400 transition-colors duration-200",
+                          data: { requires_connection: true } do %>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
@@ -197,7 +195,9 @@
                         <p class="text-white font-medium text-sm"><%= current_user.email %></p>
                         <p class="text-slate-400 text-xs">Inspector</p>
                       </div>
-                      <%= link_to edit_user_registration_path, class: "text-slate-300 hover:text-white" do %>
+                      <%= link_to edit_user_registration_path, 
+                          class: "text-slate-300 hover:text-white",
+                          data: { requires_connection: true } do %>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -208,21 +208,32 @@
                 <% end %>
                 <!-- Navigation Links -->
                 <% if policy(FormTemplate).index? %>
-                  <%= link_to "Library", form_templates_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                  <%= link_to "Library", form_templates_path, 
+                      class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium",
+                      data: { requires_connection: true } %>
                 <%end%>
-                <%= link_to "Inspections forms", form_fills_path, class: "hidden text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                <%= link_to "Inspections forms", form_fills_path, 
+                    class: "hidden text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
                 <% if policy(Customer).index? %>
-                  <%= link_to "Customers", customers_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                  <%= link_to "Customers", customers_path, 
+                      class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium",
+                      data: { requires_connection: true } %>
                 <% end %>
-                <%= link_to "Inspections", inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
-                <%= link_to "Next Inspections", next_inspections_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                <%= link_to "Inspections", inspections_path, 
+                    class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                <%= link_to "Next Inspections", next_inspections_path, 
+                    class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium",
+                    data: { requires_connection: true } %>
                 <% if policy(:company_settings).index? %>
-                  <%= link_to "Settings", settings_path, class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium" %>
+                  <%= link_to "Settings", settings_path, 
+                      class: "text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium",
+                      data: { requires_connection: true } %>
                 <%end%>
                 <!-- Logout Link -->
                 <div class="pt-2 mt-2 border-t border-white/10">
                   <%= link_to destroy_user_session_path, method: :delete, 
-                      class: "text-red-300 hover:text-red-200 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-all text-sm font-medium flex items-center space-x-2" do %>
+                      class: "text-red-300 hover:text-red-200 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-all text-sm font-medium flex items-center space-x-2",
+                      data: { requires_connection: true } do %>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
@@ -234,7 +245,6 @@
           </div>
         </header>
       <% end %>
-
       <!-- Flash Messages -->
       <% if flash.any? %>
         <div class="fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg">
@@ -259,12 +269,10 @@
           <% end %>
         </div>
       <% end %>
-
       <!-- Contenido Principal -->
-      <main class="main-content">
+      <main class="flex-1">
         <%= yield %>
       </main>
-
       <!-- Footer Global -->
       <% unless controller_name == 'form_fills' && action_name == 'show' %>
         <footer class="bg-white/5 backdrop-blur-sm border-t border-white/10 py-6 mt-12">
@@ -273,35 +281,81 @@
               <!-- Información de la empresa -->
               <div class="text-center lg:text-left">
                 <p class="text-slate-400 text-sm">
-                  © <%= Date.current.year %> AES  - Professional solution for inspections
+                  © <%= Date.current.year %> AES - Professional solution for inspections
+                </p>
+                <!-- Connection Status in Footer -->
+                <p class="text-xs text-slate-500 mt-1">
+                  Estado: <span data-offline-status-target="status" class="font-medium">Online</span>
                 </p>
               </div>
               <!-- Links útiles -->
               <div class="flex space-x-6">
                 <%= link_to "Inicio", root_path, class: "text-slate-400 hover:text-white text-sm transition-colors" %>
-                <a href="#" class="text-slate-400 hover:text-white text-sm transition-colors">Soporte</a>
-                <a href="#" class="text-slate-400 hover:text-white text-sm transition-colors">Ayuda</a>
+                <a href="#" class="text-slate-400 hover:text-white text-sm transition-colors" data-requires-connection="true">Soporte</a>
+                <a href="#" class="text-slate-400 hover:text-white text-sm transition-colors" data-requires-connection="true">Ayuda</a>
               </div>
             </div>
           </div>
         </footer>
       <% end %>
-
-      <!-- PWA Install Banner -->
-      <button id="pwa-install-banner" 
-              style="display: none;"
-              data-install-target="banner"
-              data-action="click->install#install">
-        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      <!-- Sync Button (shown when there are pending changes) -->
+      <button class="fixed bottom-20 right-5 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 p-3 rounded-full shadow-lg hover:shadow-xl cursor-pointer z-50 transition-all duration-300 w-14 h-14 flex items-center justify-center hidden hover:-translate-y-0.5 md:bottom-5 md:right-5 md:w-12 md:h-12" 
+              data-offline-status-target="syncButton"
+              data-action="click->sync#triggerSync"
+        title="Sincronizar cambios pendientes">
+        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24" class="md:w-5 md:h-5">
+          <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
         </svg>
-        Instalar App
       </button>
-
       <!-- Modal para manejar duplicados de Next Inspection -->
       <% if session[:duplicate_next_inspection] %>
         <%= render 'shared/duplicate_next_inspection_modal' %>
       <% end %>
     </div>
+    <!-- Solo estilos CSS que no se pueden hacer con Tailwind -->
+    <style>
+      .connection-indicator {
+        background: rgba(16, 185, 129, 0.9);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 11px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .connection-indicator.offline {
+        background: rgba(239, 68, 68, 0.9);
+      }
+
+      .connection-indicator.online {
+        background: rgba(16, 185, 129, 0.9);
+      }
+
+      .connection-online, .connection-offline {
+        display: none;
+      }
+
+      .connection-indicator.online .connection-online {
+        display: block;
+      }
+
+      .connection-indicator.offline .connection-offline {
+        display: block;
+      }
+
+      @media (max-width: 768px) {
+        .connection-indicator {
+          font-size: 10px;
+          padding: 4px 8px;
+        }
+      }
+    </style>
   </body>
 </html>

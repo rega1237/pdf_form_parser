@@ -9,11 +9,26 @@
  * Consider organizing styles into separate files for maintainability.
  */
 
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.main-content {
+  flex: 1;
+}
+
 /* =============================================================================
    COMPONENTS - CHECKBOX BUTTON
    ============================================================================= */
 
-.checkbox-button input[type="checkbox"]:checked+.checkbox-button-label::before {
+.checkbox-button
+  input[type="checkbox"]:checked
+  + .checkbox-button-label::before {
   content: "✓";
   margin-right: 8px;
   font-size: 18px;
@@ -149,9 +164,7 @@
 
 .pagination .page-item.active .page-link {
   color: rgb(255, 255, 255);
-  background: linear-gradient(to right,
-      rgb(79, 70, 229),
-      rgb(99, 102, 241));
+  background: linear-gradient(to right, rgb(79, 70, 229), rgb(99, 102, 241));
   /* bg-gradient-to-r from-indigo-600 to-indigo-700 */
   border-color: rgb(79, 70, 229);
 }
@@ -318,7 +331,9 @@
    }*/
 
 /* Better visual hierarchy */
-[data-inspection-modal-target="intervalSelection"] .interval-category-btn span:last-of-type {
+[data-inspection-modal-target="intervalSelection"]
+  .interval-category-btn
+  span:last-of-type {
   opacity: 0.8;
 }
 
@@ -387,7 +402,6 @@ animate-scale-in {
    ============================================================================= */
 
 @keyframes pulse {
-
   0%,
   100% {
     transform: scale(1);
@@ -407,7 +421,6 @@ animate-scale-in {
    ============================================================================= */
 
 @keyframes bounceSubtle {
-
   0%,
   100% {
     transform: translateY(0);
@@ -421,7 +434,6 @@ animate-scale-in {
 .animate-bounce-subtle {
   animation: bounceSubtle 2s infinite;
 }
-
 
 /* =============================================================================
    CUSTOM GRID COLUMN CLASSES
