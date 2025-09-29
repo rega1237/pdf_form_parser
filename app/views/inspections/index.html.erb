@@ -104,13 +104,13 @@
         <table class="min-w-full">
           <thead class="bg-white/5 border-b border-white/10">
             <tr>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Actions</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Start Inspection</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Date</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Customer</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Property</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Technician</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Actions</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Start Inspection</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Customer</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Property</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Technician</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5">
@@ -118,7 +118,7 @@
               <% main_form_fill = inspection.form_fills.find { |ff| ff.form_template_id == inspection.form_template_id } %>
               <tr class="hover:bg-white/5 transition-colors duration-200">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div class="flex space-x-3">
+                  <div class="flex justify-center space-x-3">
                     <%= link_to inspection, class: 'text-blue-400 hover:text-blue-300' do %>
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     <% end %>
@@ -139,14 +139,14 @@
                     <span class="text-slate-400 italic">No form</span>
                   <% end %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-medium"><%= inspection.date.strftime('%d/%m/%Y') %></td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300"><%= inspection.property.customer.name %></td>
-                <td class="px-6 py-4 text-sm">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-white font-medium"><%= inspection.date.strftime('%d/%m/%Y') %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-slate-300"><%= inspection.property.customer.name %></td>
+                <td class="px-6 py-4 text-sm text-center">
                   <div class="text-white font-medium"><%= inspection.property.property_name %></div>
                   <div class="text-slate-400 text-xs mt-1"><%= inspection.property.address %></div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap"><%= status_badge_with_icon(inspection.status) %></td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                <td class="px-6 py-4 whitespace-nowrap text-center"><%= status_badge_with_icon(inspection.status) %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-slate-300">
                   <%= inspection.user&.display_name || 'Unassigned' %>
                 </td>
               </tr>
