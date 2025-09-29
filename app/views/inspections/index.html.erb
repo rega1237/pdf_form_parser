@@ -6,26 +6,23 @@
         <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">Inspections</h1>
         <p class="text-slate-300 text-sm lg:text-base">Manage and track all your field inspections</p>
       </div>
-
-    <div class="flex space-x-3">
-      <%= link_to calendar_inspections_path, class: "inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105" do %>
-        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-        </svg>
-        Calendar View
-      <% end %>
-
-      <% if policy(@inspections).create? %>
-        <%= link_to new_inspection_path, 
-            class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] inline-flex items-center" do %>
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+      <div class="flex space-x-3">
+        <%= link_to calendar_inspections_path, class: "inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105" do %>
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
           </svg>
-          New Inspection
+          Calendar View
         <% end %>
-      <% end %>
-    </div>
-    
+        <% if policy(@inspections).create? %>
+          <%= link_to new_inspection_path, 
+            class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] inline-flex items-center" do %>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            New Inspection
+          <% end %>
+        <% end %>
+      </div>
     </div>
     <!-- Filtros -->
     <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl mb-8 animate-slide-up">
@@ -108,12 +105,12 @@
           <thead class="bg-white/5 border-b border-white/10">
             <tr>
               <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Actions</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Start Inspection</th>
               <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Date</th>
               <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Customer</th>
               <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Property</th>
               <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Status</th>
               <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Technician</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Form</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5">
@@ -128,15 +125,19 @@
                     <%= link_to edit_inspection_path(inspection), class: 'text-emerald-400 hover:text-emerald-300' do %>
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     <% end %>
-                    <%= link_to form_fill_path(main_form_fill), class: 'text-yellow-400 hover:text-yellow-300' do %>
-                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z M8,12V14H16V12H8M8,16V18H13V16H8Z"/></svg>
-                    <% end %>
                     <% if policy(inspection).destroy? %>
                       <%= link_to inspection, data: { turbo_method: :delete, turbo_confirm: 'Are you sure?' }, class: 'text-red-400 hover:text-red-300' do %>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       <% end %>
                     <% end %>
                   </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  <% if main_form_fill %>
+                    <%= link_to 'Start Inspection', form_fill_path(main_form_fill), class: 'bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200' %>
+                  <% else %>
+                    <span class="text-slate-400 italic">No form</span>
+                  <% end %>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-medium"><%= inspection.date.strftime('%d/%m/%Y') %></td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300"><%= inspection.property.customer.name %></td>
@@ -148,7 +149,6 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   <%= inspection.user&.display_name || 'Unassigned' %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300"><%= main_form_fill&.name || 'No Form' %></td>
               </tr>
             <% end %>
           </tbody>
