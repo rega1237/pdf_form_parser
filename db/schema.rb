@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_07_221918) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_29_202752) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -40,6 +40,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_07_221918) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "contractor_infos", force: :cascade do |t|
+    t.string "name"
+    t.string "address"
+    t.string "city"
+    t.string "state"
+    t.integer "zip"
+    t.string "phone"
+    t.integer "job"
+    t.string "misc"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "customers", force: :cascade do |t|
@@ -123,6 +136,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_07_221918) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "duration_in_months"
+  end
+
+  create_table "license_infos", force: :cascade do |t|
+    t.string "license_number"
+    t.boolean "sfm"
+    t.boolean "cslb"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "next_inspections", force: :cascade do |t|
