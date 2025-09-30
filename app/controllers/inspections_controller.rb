@@ -147,6 +147,9 @@ class InspectionsController < ApplicationController
       else
         Rails.logger.warn("ADVERTENCIA: No se encontró la plantilla de formulario 'Corrected Deficiencies'.")
       end
+
+      # Llama al servicio para autocompletar el encabezado DESPUÉS de crear los formularios.
+      HeaderAutoFillerService.new(@inspection).call
     end
 
     redirect_to @inspection, notice: 'Inspection created successfully.'
