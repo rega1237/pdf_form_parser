@@ -1,0 +1,42 @@
+class ContractorInfosController < ApplicationController
+  before_action :set_contractor_info, only: [:edit, :update, :destroy]
+
+  def new
+    @contractor_info = ContractorInfo.new
+  end
+
+  def create
+    @contractor_info = ContractorInfo.new(contractor_info_params)
+    if @contractor_info.save
+      redirect_to settings_path, notice: 'Contractor info was successfully created.'
+    else
+      render :new
+    end
+  end
+
+  def edit
+  end
+
+  def update
+    if @contractor_info.update(contractor_info_params)
+      redirect_to settings_path, notice: 'Contractor info was successfully updated.'
+    else
+      render :edit
+    end
+  end
+
+  def destroy
+    @contractor_info.destroy
+    redirect_to company_settings_path, notice: 'Contractor info was successfully destroyed.'
+  end
+
+  private
+
+  def set_contractor_info
+    @contractor_info = ContractorInfo.find(params[:id])
+  end
+
+  def contractor_info_params
+    params.require(:contractor_info).permit(:name, :address, :city, :state, :zip, :phone, :job, :misc)
+  end
+end
