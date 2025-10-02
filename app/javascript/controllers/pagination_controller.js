@@ -331,7 +331,13 @@ export default class extends Controller {
 
   updateButtonStates() {
     this.backPageBtnTarget.disabled = this.currentPage === 0;
-    this.validateCurrentPage();
+
+    if (this.currentPage === this.totalPages - 1) {
+      this.nextPageBtnTarget.classList.add("hidden");
+    } else {
+      this.nextPageBtnTarget.classList.remove("hidden");
+      this.validateCurrentPage();
+    }
   }
 
   updateProgress() {
