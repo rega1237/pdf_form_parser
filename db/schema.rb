@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_29_202752) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_02_203902) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -123,6 +123,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_29_202752) do
     t.string "system_category"
     t.string "interval_category"
     t.bigint "user_id", null: false
+    t.string "job"
     t.index ["date"], name: "index_inspections_on_date"
     t.index ["form_template_id"], name: "index_inspections_on_form_template_id"
     t.index ["property_id", "date"], name: "index_inspections_on_property_id_and_date"
