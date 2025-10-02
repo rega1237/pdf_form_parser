@@ -291,7 +291,7 @@ class InspectionsController < ApplicationController
 
   def inspection_params
     params.require(:inspection).permit(:date, :property_id, :notes, :status,
-                                       :system_category, :interval_category, :user_id)
+                                       :system_category, :interval_category, :user_id, :job)
   end
 
   def load_form_data

@@ -78,6 +78,7 @@ class HeaderAutoFillerService
 
     # --- Lógica para la sección del Contratista ---
     if section.include?('contractor')
+      raw_value ||= @inspection.try(:job) if label.include?('job')
       raw_value ||= @contractor_info.try(:name)    if label.include?('name')
       raw_value ||= @contractor_info.try(:address) if label.include?('address')
       raw_value ||= @contractor_info.try(:city)    if label.include?('city')

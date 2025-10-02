@@ -147,30 +147,6 @@
           </div>
         <% end %>
       </div>
-      <!-- Job -->
-      <div>
-        <%= form.label :job, "Job Number", 
-            class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-            </svg>
-          </div>
-          <%= form.number_field :job,
-              class: ["w-full bg-white/5 border rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200",
-                     contractor_info.errors[:job].any? ? "border-red-500/50 focus:ring-red-500" : "border-white/20 focus:ring-indigo-500"],
-              placeholder: "Enter job number" %>
-        </div>
-        <% if contractor_info.errors[:job].any? %>
-          <div class="mt-2 flex items-center text-red-400 text-sm">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"/>
-            </svg>
-            <%= contractor_info.errors[:job].first %>
-          </div>
-        <% end %>
-      </div>
     </div>
     <!-- Misc Field -->
     <div class="animate-fade-in">
