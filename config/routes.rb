@@ -77,6 +77,8 @@ Rails.application.routes.draw do
   resources :interval_categories
   resources :system_categories
   resources :roles
+  resources :contractor_infos, only: [:new, :create, :edit, :update, :destroy]
+  resources :license_infos, only: [:new, :create, :edit, :update, :destroy]
 
   get 'settings', to: 'company_settings#index'
 

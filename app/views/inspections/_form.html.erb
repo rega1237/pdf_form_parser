@@ -61,6 +61,12 @@
             { class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors" } 
       %>
     </div>
+
+    <%# --- Job # --- %>
+    <div class="space-y-2">
+      <%= f.label :job, "Job #", class: "block text-sm font-medium text-slate-300" %>
+      <%= f.text_field :job, class: "w-full bg-slate-700/50 border border-white/10 rounded-lg px-4 py-2 text-white" %>
+    </div>
     <%# --- Renderizado del Modal Dinámico --- %>
     <div class="md:col-span-2 p-6 bg-slate-900/50 rounded-xl border border-white/10">
       <h3 class="text-lg font-semibold text-white mb-4">Inspection Type</h3>

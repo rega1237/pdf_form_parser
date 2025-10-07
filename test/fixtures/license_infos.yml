@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  license_number: MyString
+  sfm: false
+  cslb: false
+
+two:
+  license_number: MyString
+  sfm: false
+  cslb: false

@@ -1,0 +1,2 @@
+class LicenseInfo < ApplicationRecord
+end
