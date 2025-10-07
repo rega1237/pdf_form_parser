@@ -75,7 +75,7 @@ class NextInspectionsController < ApplicationController
       # Si hay un form_fill_id, proceder con la generación del PDF
       if form_fill_id.present?
         generate_pdf_for_form_fill(form_fill_id)
-        redirect_to form_fill_path(form_fill_id), 
+        redirect_to form_fill_path(form_fill_id),
                     notice: 'Previous inspection deleted and new one created. PDF being generated.'
       elsif current_user.role.level == 'Admin'
         # Redirigir según el rol del usuario si no hay form_fill
@@ -91,7 +91,7 @@ class NextInspectionsController < ApplicationController
       # Si hay un form_fill_id, proceder con la generación del PDF
       if form_fill_id.present?
         generate_pdf_for_form_fill(form_fill_id)
-        redirect_to form_fill_path(form_fill_id), 
+        redirect_to form_fill_path(form_fill_id),
                     notice: 'The existing next inspection was retained. PDF being generated.'
       elsif current_user.role.level == 'Admin'
         # Redirigir según el rol del usuario si no hay form_fill
@@ -168,7 +168,7 @@ class NextInspectionsController < ApplicationController
 
   def generate_pdf_for_form_fill(form_fill_id)
     form_fill = FormFill.find(form_fill_id)
-    
+
     # Verificar si ya se está generando un PDF
     return if form_fill.generating?
 
@@ -177,7 +177,7 @@ class NextInspectionsController < ApplicationController
 
     # Encolar el trabajo de generación de PDF
     GeneratePdfJob.perform_later(form_fill.id)
-    
+
     Rails.logger.info "PDF generation started for FormFill ##{form_fill.id} after duplicate resolution"
   rescue StandardError => e
     Rails.logger.error "Error starting PDF generation for FormFill ##{form_fill_id}: #{e.message}"

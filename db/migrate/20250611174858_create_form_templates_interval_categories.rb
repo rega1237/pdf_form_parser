@@ -5,9 +5,9 @@ class CreateFormTemplatesIntervalCategories < ActiveRecord::Migration[8.0]
       t.references :interval_category, null: false, foreign_key: true
       t.timestamps
     end
-  
-  add_index :form_templates_interval_categories, [:form_template_id, :interval_category_id], 
-            unique: true, 
-            name: 'index_form_templates_interval_categories_unique'
+
+    add_index :form_templates_interval_categories, [:form_template_id, :interval_category_id],
+              unique: true,
+              name: 'index_form_templates_interval_categories_unique'
   end
 end

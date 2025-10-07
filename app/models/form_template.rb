@@ -11,7 +11,7 @@ class FormTemplate < ApplicationRecord
 
   # Agregamos validación para el archivo adjunto
   validates :original_file, presence: true
-  
+
   # Método para obtener la URL del archivo
   def file_path
     if original_file.attached?
@@ -20,7 +20,6 @@ class FormTemplate < ApplicationRecord
   end
 
   private
-
 
   def update_associated_form_fills
     form_fills.each do |form_fill|
