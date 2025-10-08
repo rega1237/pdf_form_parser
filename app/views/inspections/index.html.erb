@@ -7,6 +7,30 @@
         <p class="text-slate-300 text-sm lg:text-base">Manage and track all your field inspections</p>
       </div>
       <div class="flex space-x-3">
+        <!-- Offline Status Indicator -->
+        <div class="inline-flex items-center bg-slate-700/50 px-4 py-2 rounded-xl border border-white/10" data-controller="offline-status">
+          <div id="offline-status" class="flex items-center">
+            <div class="w-2 h-2 rounded-full mr-2" data-offline-status-target="indicator"></div>
+            <span class="text-white text-sm" data-offline-status-target="text">Checking...</span>
+          </div>
+        </div>
+        <!-- Sync Button -->
+        <div class="inline-flex items-center" data-controller="sync">
+          <button data-action="click->sync#startSync" 
+                  data-sync-target="syncButton"
+                  class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105 flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Sync (<span data-sync-target="syncCount">0</span>)
+          </button>
+          <div data-sync-target="syncStatus" class="ml-4 hidden">
+            <div class="w-32 bg-slate-700 rounded-full h-2">
+              <div data-sync-target="progressBar" class="bg-orange-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div data-sync-target="progressText" class="text-xs text-slate-300 mt-1">Syncing...</div>
+          </div>
+        </div>
         <%= link_to calendar_inspections_path, class: "inline-flex items-center bg-slate-700/50 hover:bg-slate-600/50 text-white px-4 py-2 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105" do %>
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -105,6 +129,7 @@
           <thead class="bg-white/5 border-b border-white/10">
             <tr>
               <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Actions</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Offline</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Start Inspection</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Date</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">Customer</th>
@@ -116,7 +141,7 @@
           <tbody class="divide-y divide-white/5">
             <% @inspections.each do |inspection| %>
               <% main_form_fill = inspection.form_fills.find { |ff| ff.form_template_id == inspection.form_template_id } %>
-              <tr class="hover:bg-white/5 transition-colors duration-200">
+              <tr class="hover:bg-white/5 transition-colors duration-200" data-controller="inspection-download" data-inspection-download-inspection-id-value="<%= inspection.id %>" data-inspection-download-inspection-title-value="<%= inspection.form_template.original_file.filename %>">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div class="flex justify-center space-x-3">
                     <%= link_to inspection, class: 'text-blue-400 hover:text-blue-300' do %>
@@ -130,6 +155,18 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       <% end %>
                     <% end %>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  <div class="flex justify-center items-center space-x-2">
+                    <div data-inspection-download-target="statusIcon"></div>
+                    <button data-inspection-download-target="downloadButton"></button>
+                  </div>
+                  <div class="progress-container mt-2 hidden" data-inspection-download-target="progressContainer">
+                    <div class="w-full bg-slate-700 rounded-full h-2">
+                      <div data-inspection-download-target="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div data-inspection-download-target="progressText" class="text-xs text-slate-300 mt-1"></div>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-center">

@@ -89,6 +89,21 @@ Rails.application.routes.draw do
   # Health check route
   get 'up' => 'rails/health#show', as: :rails_health_check
 
+  # API routes for offline functionality
+  namespace :api do
+    namespace :v1 do
+      resources :inspections, only: [] do
+        member do
+          get :offline_data  # Endpoint para obtener datos completos de inspección para offline
+        end
+      end
+      
+      post 'sync', to: 'sync#sync_data'  # Endpoint para sincronización de datos offline
+      post 'sync/upload_photo', to: 'sync#upload_photo'  # Endpoint para subir fotos desde offline
+      get 'sync/status', to: 'sync#sync_status'  # Endpoint para verificar estado de sincronización
+    end
+  end
+
   # PWA routes - Service Worker debe estar en la raíz para scope '/'
   get 'manifest.json', to: 'pwa#manifest', as: 'pwa_manifest'
   get 'service-worker.js', to: 'pwa#service_worker', as: 'pwa_service_worker'

@@ -177,7 +177,47 @@
   </div>
   <div class="max-w-6xl mx-auto px-4 pb-12">
 
-    <div data-controller="page-navigation" data-page-navigation-pagination-outlet="#form-fill-main-form" class="w-[50%] mb-3.5">
+    <div data-controller="page-navigation offline-form" 
+         data-offline-form-form-fill-id-value="<%= @form_fill.id %>"
+         data-offline-form-inspection-id-value="<%= @form_fill.inspection_id %>"
+         data-page-navigation-pagination-outlet="#form-fill-main-form" 
+         class="w-[50%] mb-3.5">
+      
+      <!-- Offline Status and Save Indicator -->
+      <div class="flex items-center justify-between mb-4 p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2">
+            <span class="text-sm font-medium text-slate-300">Status:</span>
+            <span data-offline-form-target="status" class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
+              Checking...
+            </span>
+          </div>
+          
+          <div data-offline-form-target="saveIndicator" class="text-sm">
+            <div class="flex items-center text-slate-400">
+              <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Ready to save
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <button type="button" 
+                  data-action="click->offline-form#forceSave"
+                  class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors">
+            Save Now
+          </button>
+          
+          <button type="button" 
+                  data-action="click->offline-form#forceSync"
+                  class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors">
+            Sync
+          </button>
+        </div>
+      </div>
+      
       <select data-action="change->page-navigation#jump" class="w-full bg-slate-700 text-white font-semibold border-2 border-slate-500 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
         <option value="">Jump to a section...</option>
         <% @navigation_sections.each do |section| %>
@@ -195,7 +235,15 @@
     </div>
     
     <div data-controller="field-toggle">
-      <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json, "form-fill-data-value": @form_fill.data.to_json, "form-fill-inspection-date-value": @inspection_date&.strftime("%m/%d/%Y") }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
+      <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { 
+        controller: "pagination form-fill", 
+        turbo: false, 
+        "form-fill-form-structure-value": @form_fill.form_structure, 
+        "form-fill-form-fields-value": @form_fields.to_json, 
+        "form-fill-data-value": @form_fill.data.to_json, 
+        "form-fill-inspection-date-value": @inspection_date&.strftime("%m/%d/%Y"),
+        "offline-form-target": "form"
+      }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
         <%= form.submit "Submit", class: "hidden" %>
         <% if @form_fields.blank? %>
