@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
+import OfflineStorage from "utils/offline_storage";
 
 export default class extends Controller {
   static targets = ["formStructure"];
@@ -7,6 +8,7 @@ export default class extends Controller {
     formFields: String,
     data: Object,
     inspectionDate: String,
+    id: Number,
   };
 
   connect() {
@@ -16,6 +18,8 @@ export default class extends Controller {
       this.saveDraftIncremental.bind(this),
       3000,
     );
+    this.offlineStorage = new OfflineStorage();
+    console.log(this.offlineStorage)
 
     // Sincronizar la estructura de fotos al conectar para asegurar consistencia
     this.syncPhotoStructure();
@@ -31,6 +35,10 @@ export default class extends Controller {
 
     // Set up Pass/Fail field tracking
     this.setupPassFailTracking();
+  }
+
+  get csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').content;
   }
 
   // Setup tracking for Pass/Fail fields
@@ -249,8 +257,8 @@ export default class extends Controller {
             } else {
               // Handle date fields with inspection date
               if (field.type === "Date") {
-                if (inputElement.dataset.controller.includes('datepicker')) {
-                  inputElement.value = field.value || '';
+                if (inputElement.dataset.controller.includes("datepicker")) {
+                  inputElement.value = field.value || "";
                 } else {
                   this.loadDateField(inputElement, field);
                 }
@@ -357,19 +365,19 @@ export default class extends Controller {
 
   // Format the date to MM/DD/YY format
   getFormattedInspectionDate() {
-  if (!this.inspectionDateValue) return null;
-  
-  // Convert MM/DD/YYYY to MM/DD/YY format
-  const parts = this.inspectionDateValue.split('/');
-  if (parts.length === 3) {
-    const month = parts[0];
-    const day = parts[1];
-    const year = parts[2].slice(-2); // Get last 2 digits of year
-    return `${month}/${day}/${year}`;
+    if (!this.inspectionDateValue) return null;
+
+    // Convert MM/DD/YYYY to MM/DD/YY format
+    const parts = this.inspectionDateValue.split("/");
+    if (parts.length === 3) {
+      const month = parts[0];
+      const day = parts[1];
+      const year = parts[2].slice(-2); // Get last 2 digits of year
+      return `${month}/${day}/${year}`;
+    }
+
+    return this.inspectionDateValue; // Return as-is if format is unexpected
   }
-  
-  return this.inspectionDateValue; // Return as-is if format is unexpected
-}
 
   // Get data from the data column
   getDataFromColumn() {
@@ -860,42 +868,64 @@ export default class extends Controller {
   // Save only changed data incrementally
   async saveDraftIncremental() {
     const changedData = this.getChangedFields();
+    const formId = this.element.action.split("/").pop().split("?")[0];
 
-    // Only save if there are actual changes
     if (Object.keys(changedData).length === 0) {
       return;
     }
 
-    console.log("Saving incremental changes:", changedData);
+    if (navigator.onLine) {
+      console.log(
+        "✅ Online: Intentando guardar cambios en el servidor...",
+        changedData,
+      );
+      try {
+        const response = await fetch(`/form_fills/${formId}/bulk_update_data`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": this.csrfToken,
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            field_data: changedData,
+          }),
+        });
+
+        if (response.ok) {
+          this.changedFields.clear();
+          this.dispatchNotification(
+            "success",
+            "Cambios guardados automáticamente.",
+          );
+        } else {
+          console.warn(
+            "⚠️ Fallo al guardar en servidor. Guardando en local como respaldo.",
+          );
+          this.saveOffline(formId, changedData);
+        }
+      } catch (error) {
+        console.warn("🆘 Error de red. Guardando en local.", error);
+        this.saveOffline(formId, changedData);
+      }
+    } else {
+      console.log("🚫 Offline: Guardando cambios en IndexedDB...", changedData);
+      this.saveOffline(formId, changedData);
+    }
+  }
+
+  async saveOffline(formFillId, changedData) {
+    if (!this.offlineStorage) {
+      console.error("Offline storage no está disponible.");
+      return;
+    }
 
     try {
-      const formId = this.element.action.split("/").pop().split("?")[0];
-      const response = await fetch(`/form_fills/${formId}/bulk_update_data`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": this.csrfToken,
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          field_data: changedData,
-        }),
-      });
-
-      if (response.ok) {
-        // Clear changed fields after successful save
-        this.changedFields.clear();
-
-        // Use the existing notification system instead of custom indicator
-        this.dispatchNotification("success", "Changes saved automatically");
-      } else {
-        console.error(
-          "Failed to save incremental changes:",
-          response.statusText,
-        );
-      }
+      await this.offlineStorage.saveFormFillData(formFillId, changedData);
+      this.changedFields.clear();
+      this.dispatchNotification("info", "Cambios guardados localmente.");
     } catch (error) {
-      console.error("Error saving incremental changes:", error);
+      console.error("Error al guardar en IndexedDB:", error);
     }
   }
 
@@ -972,6 +1002,22 @@ export default class extends Controller {
     const formData = new FormData(this.element);
 
     try {
+      if (!navigator.onLine) {
+        console.log(
+          `🚫 Offline: Guardando cambios en IndexedDB...`,
+          Object.fromEntries(this.changedFields),
+        );
+        await this.offlineStorage.storeFormFill({
+          id: this.idValue,
+          data: Object.fromEntries(this.changedFields),
+        });
+        this.dispatchNotification(
+          "info",
+          "You are offline. Changes saved locally.",
+        );
+        return;
+      }
+
       const response = await fetch(this.element.action, {
         method: "PATCH",
         headers: { "X-CSRF-Token": this.csrfToken, Accept: "application/json" },

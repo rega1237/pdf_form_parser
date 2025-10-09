@@ -434,25 +434,50 @@ class OfflineStorage {
   /**
    * Almacena datos de form_fill para uso offline
    */
-  async storeFormFillData(formFillId, data) {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readwrite')
-    
+  async saveFormFillData(formFillId, changedData) {
+    if (!formFillId || Object.keys(changedData).length === 0) {
+      console.log('[OfflineStorage] No formFillId or changedData provided. Skipping save.');
+      return;
+    }
+
     try {
-      const store = tx.objectStore('form_fills')
-      const formFillData = {
-        id: formFillId,
-        ...data,
-        stored_at: new Date().toISOString()
+      const db = await this.openDB();
+      const tx = db.transaction("form_fills", "readwrite");
+      const store = tx.objectStore("form_fills");
+
+      const numericFormFillId = parseInt(formFillId, 10);
+      const formFill = await this.promisifyRequest(store.get(numericFormFillId));
+
+      if (formFill) {
+        const updatedData = { ...(formFill.data || {}), ...changedData };
+        formFill.data = updatedData;
+        formFill.has_pending_changes = true;
+        formFill.updated_at = Date.now();
+
+        await this.promisifyRequest(store.put(formFill));
+        console.log(
+          `[OfflineStorage] FormFill ID ${formFillId} updated in IndexedDB with:`,
+          changedData
+        );
+      } else {
+        console.error(
+          `[OfflineStorage] No se encontró FormFill con ID ${formFillId} en IndexedDB.`
+        );
       }
-      
-      await this.promisifyRequest(store.put(formFillData))
-      console.log(`[OfflineStorage] Stored form fill data for ${formFillId}`)
+
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = (event) => {
+          console.error('[OfflineStorage] Transaction error on saveFormFillData:', event.target.error);
+          reject(event.target.error);
+        };
+      });
     } catch (error) {
-      console.error(`[OfflineStorage] Error storing form fill data:`, error)
-      throw error
+      console.error("[OfflineStorage] Error al guardar en IndexedDB:", error);
     }
   }
+
+
 
   /**
    * Obtiene datos de form_fill almacenados offline
