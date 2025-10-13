@@ -5,7 +5,12 @@ class Api::V1::SyncController < ApplicationController
   # Endpoint para sincronizar datos offline con el servidor
   def sync_data
     begin
-      sync_items = params[:sync_items] || []
+      raw_items = params[:sync_items] || []
+      # Normalizar a Hash con claves símbolo para evitar problemas de acceso
+      sync_items = raw_items.map do |item|
+        h = item.respond_to?(:to_unsafe_h) ? item.to_unsafe_h : item
+        h.deep_symbolize_keys
+      end
       results = {
         success: [],
         errors: [],
@@ -161,31 +166,44 @@ class Api::V1::SyncController < ApplicationController
     begin
       form_fill_data = item[:data]
       
-      # Buscar el form_fill existente
-      form_fill = FormFill.find_by(id: form_fill_data[:id])
+      # Aceptar ambos formatos de payload:
+      # - Completo: { id, updated_at, data }
+      # - Parcial (patch): { form_fill_id, changes }
+      form_fill_id = form_fill_data[:id] || form_fill_data[:form_fill_id]
+      form_fill = FormFill.find_by(id: form_fill_id)
       
       if form_fill
-        # Verificar conflictos de versión
-        if form_fill.updated_at > Time.parse(form_fill_data[:updated_at])
+        if form_fill_data[:data].present?
+          # Verificar conflictos de versión solo cuando viene updated_at
+          if form_fill_data[:updated_at] && form_fill.updated_at > Time.parse(form_fill_data[:updated_at])
+            return {
+              success: false,
+              conflict: true,
+              server_id: form_fill.id,
+              conflict_data: {
+                server_version: form_fill.updated_at,
+                local_version: form_fill_data[:updated_at],
+                server_data: form_fill.data,
+                local_data: form_fill_data[:data]
+              },
+              message: 'Conflicto de versión detectado'
+            }
+          end
+          
+          # Actualizar con el dataset completo
+          form_fill.update!(
+            data: form_fill_data[:data]
+          )
+        elsif form_fill_data[:changes].present?
+          # Aplicar parches (mezclar cambios con los datos existentes)
+          form_fill.bulk_update_data(form_fill_data[:changes])
+        else
           return {
             success: false,
-            conflict: true,
-            server_id: form_fill.id,
-            conflict_data: {
-              server_version: form_fill.updated_at,
-              local_version: form_fill_data[:updated_at],
-              server_data: form_fill.form_data,
-              local_data: form_fill_data[:form_data]
-            },
-            message: 'Conflicto de versión detectado'
+            error: 'Payload de form_fill incompleto',
+            message: 'Se requiere :data o :changes en el payload'
           }
         end
-        
-        # Actualizar form_fill existente
-        form_fill.update!(
-          form_data: form_fill_data[:form_data],
-          status: form_fill_data[:status]
-        )
         
         # Sincronizar fotos si existen
         sync_photos(form_fill, form_fill_data[:photos]) if form_fill_data[:photos]
@@ -199,7 +217,7 @@ class Api::V1::SyncController < ApplicationController
         return {
           success: false,
           error: 'FormFill no encontrado',
-          message: "No se encontró el FormFill con ID #{form_fill_data[:id]}"
+          message: "No se encontró el FormFill con ID #{form_fill_id}"
         }
       end
       
@@ -288,9 +306,9 @@ class Api::V1::SyncController < ApplicationController
       )
       
       # Actualizar datos del formulario con el ID del attachment
-      form_data = form_fill.form_data || {}
-      form_data[field_name] = form_fill.photos.last.id
-      form_fill.update!(form_data: form_data)
+      data = form_fill.data || {}
+      data[field_name] = form_fill.photos.last.id
+      form_fill.update!(data: data)
       
       return {
         success: true,

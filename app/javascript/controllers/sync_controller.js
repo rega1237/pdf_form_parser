@@ -29,12 +29,12 @@ export default class extends Controller {
       }
 
       if (pendingCount > 0) {
-        this.syncButtonTarget.classList.remove('bg-gray-600')
-        this.syncButtonTarget.classList.add('bg-orange-600', 'hover:bg-orange-700')
+        this.syncButtonTarget.classList.remove('bg-slate-700/50', 'text-slate-400', 'cursor-not-allowed')
+        this.syncButtonTarget.classList.add('bg-orange-600', 'hover:bg-orange-700', 'text-white')
         this.syncButtonTarget.disabled = false
       } else {
-        this.syncButtonTarget.classList.remove('bg-orange-600', 'hover:bg-orange-700')
-        this.syncButtonTarget.classList.add('bg-gray-600')
+        this.syncButtonTarget.classList.remove('bg-orange-600', 'hover:bg-orange-700', 'text-white')
+        this.syncButtonTarget.classList.add('bg-slate-700/50', 'text-slate-400', 'cursor-not-allowed')
         this.syncButtonTarget.disabled = true
       }
     } catch (error) {
@@ -92,10 +92,22 @@ export default class extends Controller {
               last_attempt: new Date().toISOString()
             })
             
-            await this.syncItem(item)
-            await this.offlineStorage.removeSyncItem(item.id)
-            successCount++
-            success = true
+            const serverResp = await this.syncItem(item)
+            const results = serverResp?.results || {}
+            const successItem = (results.success || []).find(s => s.local_id === item.id)
+            if (successItem) {
+              await this.offlineStorage.removeSyncItem(item.id)
+              successCount++
+              success = true
+              if (item.type === 'form_fill_update' && item.form_fill_id) {
+                await this.offlineStorage.markFormFillAsSynced(item.form_fill_id)
+              }
+            } else {
+              const errorItem = (results.errors || []).find(e => e.local_id === item.id)
+              const conflictItem = (results.conflicts || []).find(c => c.local_id === item.id)
+              const message = errorItem?.message || errorItem?.error || conflictItem?.message || 'Server did not confirm item sync'
+              throw new Error(message)
+            }
           } catch (error) {
             console.error(`Failed to sync item ${item.id} (attempt ${attempts}):`, error)
             
@@ -158,7 +170,10 @@ export default class extends Controller {
   async syncItem(item) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content
     
-    const response = await fetch('/api/v1/sync/sync_data', {
+    // Map client queue types to server-expected types
+    const serverType = item.type === 'form_fill_update' ? 'form_fill' : item.type
+    
+    const response = await fetch('/api/v1/sync', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -166,7 +181,12 @@ export default class extends Controller {
         'X-CSRF-Token': csrfToken
       },
       body: JSON.stringify({
-        items: [item.data]
+        // Rails controller expects `sync_items` key and each item with `type` and `data`
+        sync_items: [{
+          type: serverType,
+          local_id: item.id,
+          data: item.payload
+        }]
       })
     })
 

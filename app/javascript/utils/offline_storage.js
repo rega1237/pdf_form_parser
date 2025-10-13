@@ -393,6 +393,15 @@ class OfflineStorage {
   /**
    * Elimina un elemento de la cola de sincronización
    */
+  /**
+   * Alias: Obtiene todos los elementos de la cola de sincronización
+   */
+  async getAllSyncItems() {
+    return await this.getSyncQueue()
+  }
+  async removeSyncItem(syncItemId) {
+    return await this.removeFromSyncQueue(syncItemId)
+  }
   async removeFromSyncQueue(syncItemId) {
     const db = await this.openDB()
     const tx = db.transaction(['sync_queue'], 'readwrite')
@@ -442,11 +451,12 @@ class OfflineStorage {
 
     try {
       const db = await this.openDB();
-      const tx = db.transaction("form_fills", "readwrite");
-      const store = tx.objectStore("form_fills");
+      const tx = db.transaction(["form_fills", "sync_queue"], "readwrite");
+      const formFillsStore = tx.objectStore("form_fills");
+      const syncQueueStore = tx.objectStore("sync_queue");
 
       const numericFormFillId = parseInt(formFillId, 10);
-      const formFill = await this.promisifyRequest(store.get(numericFormFillId));
+      const formFill = await this.promisifyRequest(formFillsStore.get(numericFormFillId));
 
       if (formFill) {
         const updatedData = { ...(formFill.data || {}), ...changedData };
@@ -454,11 +464,28 @@ class OfflineStorage {
         formFill.has_pending_changes = true;
         formFill.updated_at = Date.now();
 
-        await this.promisifyRequest(store.put(formFill));
+        await this.promisifyRequest(formFillsStore.put(formFill));
         console.log(
           `[OfflineStorage] FormFill ID ${formFillId} updated in IndexedDB with:`,
           changedData
         );
+
+        // Add to sync queue
+        const syncItem = {
+          id: this.generateUUID(),
+          type: 'form_fill_update',
+          form_fill_id: numericFormFillId,
+          payload: {
+            form_fill_id: numericFormFillId,
+            changes: changedData
+          },
+          created_at: Date.now(),
+          retry_count: 0
+        };
+
+        await this.promisifyRequest(syncQueueStore.add(syncItem));
+        console.log(`[OfflineStorage] Added form_fill_update to sync queue for form fill ${formFillId}`);
+
       } else {
         console.error(
           `[OfflineStorage] No se encontró FormFill con ID ${formFillId} en IndexedDB.`
@@ -703,22 +730,43 @@ class OfflineStorage {
    */
   async getStorageStats() {
     try {
-      const estimate = await navigator.storage.estimate()
-      const inspections = await this.getOfflineInspections()
-      const pendingFormFills = await this.getPendingFormFills()
-      const syncQueue = await this.getSyncQueue()
+      const db = await this.openDB();
+      const estimate = await navigator.storage.estimate();
+
+      const tx = db.transaction(['inspections', 'form_fills', 'sync_queue'], 'readonly');
+      const inspectionsStore = tx.objectStore('inspections');
+      const formFillsStore = tx.objectStore('form_fills');
+      const syncQueueStore = tx.objectStore('sync_queue');
+
+      const inspectionsCountPromise = this.promisifyRequest(inspectionsStore.count());
+      
+      // Get all form fills and filter for pending changes (same approach as getPendingFormFills)
+      const allFormFillsPromise = this.promisifyRequest(formFillsStore.getAll());
+
+      const syncQueueCountPromise = this.promisifyRequest(syncQueueStore.count());
+
+      const [inspectionsCount, allFormFills, syncQueueCount] = await Promise.all([
+        inspectionsCountPromise,
+        allFormFillsPromise,
+        syncQueueCountPromise
+      ]);
+
+      // Filter form fills that have pending changes (handles both boolean true and string 'true')
+      const pendingChangesCount = allFormFills.filter(formFill => 
+        formFill.has_pending_changes === true || formFill.has_pending_changes === 'true'
+      ).length;
 
       return {
         quota: estimate.quota,
         usage: estimate.usage,
         usagePercentage: ((estimate.usage / estimate.quota) * 100).toFixed(2),
-        inspectionsCount: inspections.length,
-        pendingChangesCount: pendingFormFills.length,
-        syncQueueCount: syncQueue.length
-      }
+        inspectionsCount: inspectionsCount,
+        pendingChangesCount: pendingChangesCount,
+        syncQueue: syncQueueCount
+      };
     } catch (error) {
-      console.error('[OfflineStorage] Error getting storage stats:', error)
-      throw error
+      console.error('[OfflineStorage] Error getting storage stats:', error);
+      throw error;
     }
   }
 
