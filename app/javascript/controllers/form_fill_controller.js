@@ -21,8 +21,8 @@ export default class extends Controller {
     this.offlineStorage = new OfflineStorage();
     console.log(this.offlineStorage)
 
-    // Sincronizar la estructura de fotos al conectar para asegurar consistencia
-    this.syncPhotoStructure();
+    // Offline-First: Inicializar estructura+datos desde IndexedDB
+    this.initializeFromIndexedDB()
 
     // Agregar event listener para recargar valores del formulario
     this.element.addEventListener(
@@ -35,6 +35,43 @@ export default class extends Controller {
 
     // Set up Pass/Fail field tracking
     this.setupPassFailTracking();
+  }
+
+  // Cargar estructura y datos desde IndexedDB; fallback al servidor solo si es necesario
+  async initializeFromIndexedDB() {
+    try {
+      const formId = this.element.action.split("/").pop().split("?")[0];
+      const numericFormId = parseInt(formId, 10);
+      if (!numericFormId) return;
+
+      const ff = await this.offlineStorage.getFormFillData(numericFormId);
+      if (ff) {
+        // Set structure and data on dataset for downstream consumers
+        this.element.dataset.formFillFormStructureValue = JSON.stringify(ff.form_structure || []);
+        this.element.dataset.formFillDataValue = JSON.stringify(ff.data || {});
+
+        const hiddenInput = document.getElementById("form_fill_form_structure");
+        if (hiddenInput) {
+          hiddenInput.value = this.element.dataset.formFillFormStructureValue;
+        }
+
+        // Render with local data immediately (optimistic)
+        this.loadFormValues();
+      } else {
+        // No local data found; attempt server fetch only if online
+        if (navigator.onLine) {
+          await this.syncPhotoStructure();
+        } else {
+          console.warn("[form_fill_controller] No local form_fill and offline; cannot load structure.");
+        }
+      }
+    } catch (error) {
+      console.error("[form_fill_controller] Error initializing from IndexedDB:", error);
+      // As a last resort, try server if online
+      if (navigator.onLine) {
+        await this.syncPhotoStructure();
+      }
+    }
   }
 
   get csrfToken() {
@@ -177,25 +214,45 @@ export default class extends Controller {
   // Método para sincronizar la estructura del formulario con fotos existentes
   async syncPhotoStructure() {
     try {
+      // Primero intentar cargar desde IndexedDB
       const formId = this.element.action.split("/").pop().split("?")[0];
-      const response = await fetch(`/form_fills/${formId}/structure`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": this.csrfToken,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        this.element.dataset.formFillFormStructureValue = data.form_structure;
-
-        const hiddenInput = document.getElementById("form_fill_form_structure");
-        if (hiddenInput) {
-          hiddenInput.value = data.form_structure;
+      const numericFormId = parseInt(formId, 10);
+      if (numericFormId) {
+        const ff = await this.offlineStorage.getFormFillData(numericFormId);
+        if (ff && ff.form_structure) {
+          this.element.dataset.formFillFormStructureValue = JSON.stringify(ff.form_structure);
+          const hiddenInput = document.getElementById("form_fill_form_structure");
+          if (hiddenInput) {
+            hiddenInput.value = this.element.dataset.formFillFormStructureValue;
+          }
+          this.loadFormValues();
+          return;
         }
+      }
 
-        this.loadFormValues();
+      // Fallback: si no existe en IndexedDB y estamos online, pedir al servidor
+      if (navigator.onLine) {
+        const response = await fetch(`/form_fills/${numericFormId}/structure`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": this.csrfToken,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          this.element.dataset.formFillFormStructureValue = data.form_structure;
+
+          const hiddenInput = document.getElementById("form_fill_form_structure");
+          if (hiddenInput) {
+            hiddenInput.value = data.form_structure;
+          }
+
+          this.loadFormValues();
+        }
+      } else {
+        console.warn("[form_fill_controller] No form_structure in IndexedDB and offline; skipping.");
       }
     } catch (error) {
       console.error("Error syncing photo structure:", error);
@@ -874,44 +931,10 @@ export default class extends Controller {
       return;
     }
 
-    if (navigator.onLine) {
-      console.log(
-        "✅ Online: Intentando guardar cambios en el servidor...",
-        changedData,
-      );
-      try {
-        const response = await fetch(`/form_fills/${formId}/bulk_update_data`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": this.csrfToken,
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            field_data: changedData,
-          }),
-        });
-
-        if (response.ok) {
-          this.changedFields.clear();
-          this.dispatchNotification(
-            "success",
-            "Cambios guardados automáticamente.",
-          );
-        } else {
-          console.warn(
-            "⚠️ Fallo al guardar en servidor. Guardando en local como respaldo.",
-          );
-          this.saveOffline(formId, changedData);
-        }
-      } catch (error) {
-        console.warn("🆘 Error de red. Guardando en local.", error);
-        this.saveOffline(formId, changedData);
-      }
-    } else {
-      console.log("🚫 Offline: Guardando cambios en IndexedDB...", changedData);
-      this.saveOffline(formId, changedData);
-    }
+    // Offline-First: siempre guardar en IndexedDB y dejar que el proceso
+    // de sincronización suba cambios (si online, se encola automáticamente)
+    console.log("💾 Guardando cambios en IndexedDB (offline-first)...", changedData);
+    await this.saveOffline(formId, changedData);
   }
 
   async saveOffline(formFillId, changedData) {
@@ -1007,10 +1030,23 @@ export default class extends Controller {
           `🚫 Offline: Guardando cambios en IndexedDB...`,
           Object.fromEntries(this.changedFields),
         );
-        await this.offlineStorage.storeFormFill({
-          id: this.idValue,
-          data: Object.fromEntries(this.changedFields),
-        });
+        // Guardar estructura y datos en IndexedDB
+        try {
+          const newStructure = JSON.parse(
+            formStructureHiddenInput?.value || "[]",
+          );
+          await this.offlineStorage.saveFormFillStructure(
+            this.idValue,
+            newStructure,
+          );
+        } catch (e) {
+          console.warn("No se pudo parsear la estructura para guardar offline:", e);
+        }
+
+        await this.offlineStorage.saveFormFillData(
+          this.idValue,
+          Object.fromEntries(this.changedFields),
+        );
         this.dispatchNotification(
           "info",
           "You are offline. Changes saved locally.",

@@ -118,7 +118,9 @@ class OfflineStorage {
     const db = await this.openDB()
     console.log('[OfflineStorage] Database opened successfully')
     
-    const tx = db.transaction(['inspections', 'form_fills', 'form_templates'], 'readwrite')
+    // Offline-First: sólo necesitamos almacenar inspección y form_fills con la
+    // estructura embebida; dejamos de guardar form_templates por separado
+    const tx = db.transaction(['inspections', 'form_fills'], 'readwrite')
     console.log('[OfflineStorage] Transaction created')
 
     try {
@@ -136,15 +138,17 @@ class OfflineStorage {
       )
       console.log('[OfflineStorage] Inspection stored with result:', inspectionResult)
 
-      // Almacenar form_fills
+      // Almacenar form_fills (incluyendo la estructura embebida)
       if (inspectionData.form_fills && inspectionData.form_fills.length > 0) {
         console.log(`[OfflineStorage] Storing ${inspectionData.form_fills.length} form fills`)
         const formFillsStore = tx.objectStore('form_fills')
         
         for (let i = 0; i < inspectionData.form_fills.length; i++) {
           const formFill = inspectionData.form_fills[i]
+          // Aseguramos que la estructura del formulario esté embebida
           const formFillToStore = {
             ...formFill,
+            form_structure: formFill.form_structure || null,
             photos: formFill.photos || {},
             synced_at: Date.now(),
             has_pending_changes: false
@@ -156,23 +160,8 @@ class OfflineStorage {
         }
       }
 
-      // Almacenar form_templates
-      if (inspectionData.form_templates && inspectionData.form_templates.length > 0) {
-        console.log(`[OfflineStorage] Storing ${inspectionData.form_templates.length} form templates`)
-        const formTemplatesStore = tx.objectStore('form_templates')
-        
-        for (let i = 0; i < inspectionData.form_templates.length; i++) {
-          const template = inspectionData.form_templates[i]
-          const templateToStore = {
-            ...template,
-            stored_at: Date.now()
-          }
-
-          console.log(`[OfflineStorage] Storing template ${i + 1}/${inspectionData.form_templates.length}:`, templateToStore)
-          const templateResult = await this.promisifyRequest(formTemplatesStore.put(templateToStore))
-          console.log(`[OfflineStorage] Template ${i + 1} stored with result:`, templateResult)
-        }
-      }
+      // Nota: dejamos de almacenar form_templates por separado; la estructura
+      // viene embebida en cada form_fill.
 
       console.log('[OfflineStorage] Waiting for transaction to complete...')
       // Esperar a que la transacción se complete usando el evento
@@ -191,7 +180,7 @@ class OfflineStorage {
         }
       })
       
-      console.log(`[OfflineStorage] Stored inspection ${inspectionData.inspection.id} with ${inspectionData.form_fills?.length || 0} form fills and ${inspectionData.form_templates?.length || 0} form templates`)
+      console.log(`[OfflineStorage] Stored inspection ${inspectionData.inspection.id} with ${inspectionData.form_fills?.length || 0} form fills`)
       
       return true
     } catch (error) {
@@ -289,6 +278,39 @@ class OfflineStorage {
       return formFill
     } catch (error) {
       console.error(`[OfflineStorage] Error updating form fill ${formFillId}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Actualiza la estructura (form_structure) de un form_fill en IndexedDB
+   * Nota: No se encola automáticamente en la cola de sincronización porque
+   * actualmente el backend de sync espera principalmente cambios de `data`.
+   * La sincronización de estructura puede hacerse mediante el flujo estándar
+   * (guardar borrador) cuando el usuario esté online.
+   */
+  async saveFormFillStructure(formFillId, newStructure) {
+    const db = await this.openDB()
+    const tx = db.transaction(['form_fills'], 'readwrite')
+    try {
+      const store = tx.objectStore('form_fills')
+      const numericFormFillId = parseInt(formFillId, 10)
+      const formFill = await this.promisifyRequest(store.get(numericFormFillId))
+
+      if (!formFill) {
+        throw new Error(`Form fill ${formFillId} not found`)
+      }
+
+      formFill.form_structure = newStructure
+      formFill.updated_at = Date.now()
+      formFill.has_pending_changes = true
+
+      await this.promisifyRequest(store.put(formFill))
+      console.log(`[OfflineStorage] Updated form_structure for form fill ${formFillId}`)
+
+      return formFill
+    } catch (error) {
+      console.error(`[OfflineStorage] Error updating form_structure for ${formFillId}:`, error)
       throw error
     }
   }
@@ -470,21 +492,28 @@ class OfflineStorage {
           changedData
         );
 
-        // Add to sync queue
-        const syncItem = {
-          id: this.generateUUID(),
-          type: 'form_fill_update',
-          form_fill_id: numericFormFillId,
-          payload: {
+        // Agregar a la cola de sincronización SOLO si estamos online.
+        // Cuando estamos offline, el flag has_pending_changes será consumido
+        // por el proceso de sincronización automático.
+        if (navigator.onLine) {
+          const syncItem = {
+            id: this.generateUUID(),
+            type: 'form_fill_update',
             form_fill_id: numericFormFillId,
-            changes: changedData
-          },
-          created_at: Date.now(),
-          retry_count: 0
-        };
+            payload: {
+              form_fill_id: numericFormFillId,
+              changes: changedData,
+              updated_at: new Date().toISOString()
+            },
+            created_at: Date.now(),
+            retry_count: 0
+          };
 
-        await this.promisifyRequest(syncQueueStore.add(syncItem));
-        console.log(`[OfflineStorage] Added form_fill_update to sync queue for form fill ${formFillId}`);
+          await this.promisifyRequest(syncQueueStore.add(syncItem));
+          console.log(`[OfflineStorage] Added form_fill_update to sync queue for form fill ${formFillId}`);
+        } else {
+          console.log('[OfflineStorage] Offline detected. Skipping enqueue; will sync from has_pending_changes later.')
+        }
 
       } else {
         console.error(

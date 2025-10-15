@@ -4,6 +4,9 @@ class Api::V1::InspectionsController < ApplicationController
   
   # GET /api/v1/inspections/:id/offline_data
   # Endpoint para obtener todos los datos necesarios de una inspección para uso offline
+  # MODIFICACIÓN Offline-First: Embebe form_structure dentro de cada form_fill y elimina
+  # el envío de estructuras separadas. Esto asegura que la app siempre renderice desde
+  # un único objeto (form_fill) almacenado en IndexedDB.
   def offline_data
     begin
       # Obtener datos completos de la inspección
@@ -37,8 +40,7 @@ class Api::V1::InspectionsController < ApplicationController
             name: @inspection.form_template.name
           }
         },
-        form_fills: [],
-        form_templates: []
+        form_fills: []
       }
       
       # Obtener todos los form_fills asociados con sus datos
@@ -51,6 +53,8 @@ class Api::V1::InspectionsController < ApplicationController
           data: form_fill.data,
           created_at: form_fill.created_at,
           updated_at: form_fill.updated_at,
+          # Embebemos la estructura del formulario directamente en el form_fill
+          form_structure: form_fill.form_template&.form_structure,
           photos: form_fill.photos.attached? ? form_fill.photos.map { |photo|
             {
               id: photo.id,
@@ -63,19 +67,6 @@ class Api::V1::InspectionsController < ApplicationController
         }
         
         inspection_data[:form_fills] << form_fill_data
-        
-        # Agregar template si no está ya incluido
-        template = form_fill.form_template
-        unless inspection_data[:form_templates].any? { |t| t[:id] == template.id }
-          template_data = {
-            id: template.id,
-            name: template.name,
-            form_structure: template.form_structure,
-            created_at: template.created_at,
-            updated_at: template.updated_at
-          }
-          inspection_data[:form_templates] << template_data
-        end
       end
       
       # Agregar metadatos para sincronización

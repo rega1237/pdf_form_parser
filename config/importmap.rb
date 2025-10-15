@@ -40,3 +40,4 @@ pin "controllers/searchable_select_controller", to: "controllers/searchable_sele
 pin "controllers/sync_controller", to: "controllers/sync_controller.js"
 
 pin "utils/offline_storage", to: "utils/offline_storage.js"
+pin "utils/network_status", to: "utils/network_status.js"

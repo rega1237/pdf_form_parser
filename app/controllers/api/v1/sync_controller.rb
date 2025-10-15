@@ -172,6 +172,16 @@ class Api::V1::SyncController < ApplicationController
             nil
           end
           if local_time && form_fill.updated_at > local_time
+            # Permite resolver conflictos desde el cliente
+            if form_fill_data[:resolve_strategy] == 'use_local'
+              form_fill.update!(data: form_fill_data[:data])
+              return {
+                success: true,
+                server_id: form_fill.id,
+                message: 'Conflicto resuelto conservando la versión local'
+              }
+            end
+
             return {
               success: false,
               conflict: true,
@@ -180,6 +190,8 @@ class Api::V1::SyncController < ApplicationController
                 server_version: form_fill.updated_at,
                 local_version: form_fill_data[:updated_at],
                 server_data: form_fill.data,
+                # Incluimos también la estructura del servidor para clientes Offline-First
+                server_form_structure: form_fill.form_template&.form_structure,
                 local_data: form_fill_data[:data]
               },
               message: 'Conflicto de versión detectado'
