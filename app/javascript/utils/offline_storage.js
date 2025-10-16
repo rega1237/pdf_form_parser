@@ -355,6 +355,17 @@ class OfflineStorage {
         formFill.has_pending_changes = false
         await this.promisifyRequest(store.put(formFill))
         console.log(`[OfflineStorage] Marked form fill ${formFillId} as synced`)
+
+        // Notificar inmediatamente a la UI que el estado de cambios pendientes ha cambiado
+        try {
+          const evt = new CustomEvent('sync:pending-changes', {
+            detail: { formFillId, pending: false },
+            bubbles: true
+          })
+          document.dispatchEvent(evt)
+        } catch (e) {
+          console.warn('[OfflineStorage] Failed to dispatch pending-changes event (mark synced):', e)
+        }
       }
     } catch (error) {
       console.error(`[OfflineStorage] Error marking form fill ${formFillId} as synced:`, error)
@@ -513,6 +524,17 @@ class OfflineStorage {
           console.log(`[OfflineStorage] Added form_fill_update to sync queue for form fill ${formFillId}`);
         } else {
           console.log('[OfflineStorage] Offline detected. Skipping enqueue; will sync from has_pending_changes later.')
+        }
+
+        // Notificar inmediatamente a la UI que existen cambios pendientes (sin necesidad de refrescar)
+        try {
+          const evt = new CustomEvent('sync:pending-changes', {
+            detail: { formFillId: numericFormFillId, pending: true },
+            bubbles: true
+          })
+          document.dispatchEvent(evt)
+        } catch (e) {
+          console.warn('[OfflineStorage] Failed to dispatch pending-changes event (save data):', e)
         }
 
       } else {

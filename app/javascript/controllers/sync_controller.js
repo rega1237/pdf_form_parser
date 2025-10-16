@@ -39,6 +39,26 @@ export default class extends Controller {
       }, 300)
     }
     document.addEventListener('app:online', this.handleOnline)
+
+    // Escuchar cambios pendientes para actualizar UI inmediatamente
+    this.handlePendingChanges = () => {
+      // Si OfflineStorage aún no está listo, intentar inicializar y actualizar después
+      if (!this.offlineStorage) {
+        this.initializeOfflineStorage()
+        return
+      }
+      this.updateSyncStatus()
+    }
+    document.addEventListener('sync:pending-changes', this.handlePendingChanges)
+  }
+
+  disconnect() {
+    try {
+      if (this.handleOnline) document.removeEventListener('app:online', this.handleOnline)
+      if (this.handlePendingChanges) document.removeEventListener('sync:pending-changes', this.handlePendingChanges)
+    } catch (e) {
+      console.warn('Error detaching sync_controller listeners:', e)
+    }
   }
 
   async initializeOfflineStorage() {
@@ -56,7 +76,8 @@ export default class extends Controller {
   async updateSyncStatus() {
     try {
       const stats = await this.offlineStorage.getStorageStats()
-      const pendingCount = stats.syncQueue || 0
+      // Considerar elementos en cola y cambios pendientes guardados offline
+      const pendingCount = (stats.syncQueue || 0) + (stats.pendingChangesCount || 0)
       
       if (this.hasSyncCountTarget) {
         this.syncCountTarget.textContent = pendingCount
