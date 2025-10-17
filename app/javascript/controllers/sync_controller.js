@@ -75,10 +75,28 @@ export default class extends Controller {
 
   async updateSyncStatus() {
     try {
-      const stats = await this.offlineStorage.getStorageStats()
-      // Considerar elementos en cola y cambios pendientes guardados offline
-      const pendingCount = (stats.syncQueue || 0) + (stats.pendingChangesCount || 0)
-      
+      // Obtener datos reales para calcular un conteo único por FormFill
+      const [pendingFormFills, queueItems] = await Promise.all([
+        this.offlineStorage.getPendingFormFills().catch(() => []),
+        this.offlineStorage.getAllSyncItems().catch(() => [])
+      ])
+
+      // Conjuntos únicos de FormFill IDs
+      const pendingFFIds = new Set((pendingFormFills || []).map(ff => ff?.id).filter(Boolean))
+      const queueFFIds = new Set(
+        (queueItems || [])
+          .filter(item => item?.type === 'form_fill_update' && item?.form_fill_id != null)
+          .map(item => item.form_fill_id)
+      )
+      // Unir ambos conjuntos para conteo único
+      const uniqueFFIds = new Set([...pendingFFIds, ...queueFFIds])
+
+      // Contar elementos de cola que no son form_fill_update (ej. fotos, inspección, etc.)
+      const otherQueueItemsCount = (queueItems || []).filter(item => item?.type !== 'form_fill_update').length
+
+      // Conteo total mostrado: FormFills únicos pendientes + otros items de cola
+      const pendingCount = uniqueFFIds.size + otherQueueItemsCount
+
       if (this.hasSyncCountTarget) {
         this.syncCountTarget.textContent = pendingCount
       }
@@ -123,7 +141,14 @@ export default class extends Controller {
       // Get pending form fills (implicit changes saved while offline)
       const pendingFormFills = await this.offlineStorage.getPendingFormFills()
 
-      // Transform pending form fills to ephemeral sync items
+      // Conjunto de FFs que ya tienen items en cola (para evitar duplicar con efímeros)
+      const queueFFIds = new Set(
+        (queueItems || [])
+          .filter(item => item?.type === 'form_fill_update' && item?.form_fill_id != null)
+          .map(item => item.form_fill_id)
+      )
+
+      // Transform pending form fills to ephemeral sync items (full payload)
       const ephemeralItems = (pendingFormFills || []).map(ff => ({
         id: `ephemeral-${ff.id}-${Date.now()}`,
         type: 'form_fill',
@@ -135,7 +160,10 @@ export default class extends Controller {
         },
         ephemeral: true
       }))
-      const syncItems = [...ephemeralItems, ...(queueItems || [])]
+      // Filtrar efímeros si ya existe item en cola para ese FF
+      const dedupedEphemeralItems = ephemeralItems.filter(item => !queueFFIds.has(item.form_fill_id))
+
+      const syncItems = [...dedupedEphemeralItems, ...(queueItems || [])]
       
       if (syncItems.length === 0) {
         this.showNotification('No items to sync', 'info')
