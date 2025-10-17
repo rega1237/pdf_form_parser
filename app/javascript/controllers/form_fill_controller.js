@@ -46,9 +46,104 @@ export default class extends Controller {
 
       const ff = await this.offlineStorage.getFormFillData(numericFormId);
       if (ff) {
-        // Set structure and data on dataset for downstream consumers
-        this.element.dataset.formFillFormStructureValue = JSON.stringify(ff.form_structure || []);
-        this.element.dataset.formFillDataValue = JSON.stringify(ff.data || {});
+        // Set structure and data on dataset for downstream consumers,
+        // evitando doble codificación si vienen como strings JSON.
+        try {
+          const fs = ff.form_structure;
+          let structureJSONString = "[]";
+          if (typeof fs === "string") {
+            // Ya es JSON string
+            structureJSONString = fs;
+          } else if (Array.isArray(fs)) {
+            structureJSONString = JSON.stringify(fs);
+          } else if (fs && typeof fs === "object") {
+            const arr = Array.isArray(fs.fields)
+              ? fs.fields
+              : Array.isArray(fs.form_fields)
+                ? fs.form_fields
+                : Array.isArray(fs.structure)
+                  ? fs.structure
+                  : null;
+            structureJSONString = JSON.stringify(arr || []);
+          }
+          this.element.dataset.formFillFormStructureValue = structureJSONString;
+        } catch (e) {
+          console.warn("[form_fill_controller] Failed to normalize form_structure: ", e);
+          this.element.dataset.formFillFormStructureValue = "[]";
+        }
+
+        try {
+          const dataObj = ff.data;
+          let dataJSONString = "{}";
+          if (typeof dataObj === "string") {
+            // Ya es JSON string
+            dataJSONString = dataObj;
+          } else {
+            dataJSONString = JSON.stringify(dataObj || {});
+          }
+          this.element.dataset.formFillDataValue = dataJSONString;
+        } catch (e) {
+          console.warn("[form_fill_controller] Failed to normalize data: ", e);
+          this.element.dataset.formFillDataValue = "{}";
+        }
+
+        // Ensure inspection date is available to date-fix controller when offline
+        try {
+          // Only set from IndexedDB if not already provided by server-side data attribute
+          if (!this.element.dataset.formFillInspectionDateValue) {
+            // Try to get inspection date from the stored form_fill or its inspection
+            let rawDate = null;
+            // Some payloads may include inspection_date directly on the form_fill
+            if (ff.inspection_date) {
+              rawDate = ff.inspection_date;
+            } else if (ff.inspection_id) {
+              try {
+                const inspection = await this.offlineStorage.getInspection(ff.inspection_id);
+                rawDate = inspection?.date || inspection?.inspection_date || null;
+              } catch (e) {
+                console.warn("[form_fill_controller] Failed to retrieve inspection from IndexedDB:", e);
+              }
+            }
+
+            // Normalize raw date to MM/DD/YYYY for date-fix controller
+            const toUSDate = (d) => {
+              if (!d) return null;
+              if (typeof d === "string") {
+                const isoMatch = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                if (isoMatch) {
+                  const y = isoMatch[1];
+                  const m = isoMatch[2];
+                  const day = isoMatch[3];
+                  return `${m}/${day}/${y}`;
+                }
+                // Already US format?
+                if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
+                // Try Date.parse fallback
+                const parsed = new Date(d);
+                if (!isNaN(parsed.getTime())) {
+                  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+                  const dd = String(parsed.getDate()).padStart(2, "0");
+                  const yyyy = String(parsed.getFullYear());
+                  return `${mm}/${dd}/${yyyy}`;
+                }
+                return null;
+              } else if (d instanceof Date) {
+                const mm = String(d.getMonth() + 1).padStart(2, "0");
+                const dd = String(d.getDate()).padStart(2, "0");
+                const yyyy = String(d.getFullYear());
+                return `${mm}/${dd}/${yyyy}`;
+              }
+              return null;
+            };
+
+            const usDate = toUSDate(rawDate);
+            if (usDate) {
+              this.element.dataset.formFillInspectionDateValue = usDate;
+            }
+          }
+        } catch (e) {
+          console.warn("[form_fill_controller] Failed to set inspection date dataset from IndexedDB:", e);
+        }
 
         const hiddenInput = document.getElementById("form_fill_form_structure");
         if (hiddenInput) {
@@ -278,12 +373,77 @@ export default class extends Controller {
     // First, get data from the data column
     const dataFromColumn = this.getDataFromColumn();
     console.log("Data from column:", dataFromColumn);
+    // Parse form structure robustly, handling potential double-encoded JSON or object containers
+    let formStructureData = [];
+    try {
+      const raw = this.element.dataset.formFillFormStructureValue || "[]";
+      let parsed = JSON.parse(raw);
+      if (typeof parsed === "string") {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e) {
+          console.warn("[form_fill_controller] Double-encoded structure string failed to parse:", e);
+        }
+      }
+      if (Array.isArray(parsed)) {
+        formStructureData = parsed;
+      } else if (parsed && typeof parsed === "object") {
+        if (Array.isArray(parsed.fields)) {
+          formStructureData = parsed.fields;
+        } else if (Array.isArray(parsed.form_fields)) {
+          formStructureData = parsed.form_fields;
+        } else if (Array.isArray(parsed.structure)) {
+          formStructureData = parsed.structure;
+        } else {
+          formStructureData = [];
+        }
+      }
+    } catch (e) {
+      console.warn("[form_fill_controller] Could not parse form structure:", e);
+      formStructureData = [];
+    }
 
-    const formStructureData = JSON.parse(
-      this.element.dataset.formFillFormStructureValue || "[]",
-    );
     const formElements = this.element.elements;
 
+    // Fallback: if structure is not an array, populate fields directly from data
+    if (!Array.isArray(formStructureData) || formStructureData.length === 0) {
+      console.warn("[form_fill_controller] Form structure is empty or invalid. Falling back to data-only population.");
+      try {
+        Object.keys(dataFromColumn || {}).forEach((name) => {
+          const inputElement = formElements[`form_fill[${name}]`];
+          const value = dataFromColumn[name];
+          if (!inputElement) return;
+
+          if (inputElement.type === "file") {
+            // Without structure, we can't infer attachment IDs; skip.
+            return;
+          } else if (
+            inputElement.type === "checkbox" ||
+            inputElement.type === "radio"
+          ) {
+            inputElement.checked =
+              value === inputElement.value || value === true || value === "true";
+          } else {
+            inputElement.value = value || "";
+          }
+        });
+
+        // Attempt to set pass/fail hidden fields if present
+        Object.keys(dataFromColumn || {}).forEach((name) => {
+          const value = dataFromColumn[name];
+          if (value !== undefined && value !== null) {
+            this.loadPassFailField(name, value);
+          }
+        });
+
+        this.initializeDateFields();
+      } catch (e) {
+        console.warn("[form_fill_controller] Fallback population failed:", e);
+      }
+      return;
+    }
+
+    // Normal path: we have a valid structure array
     formStructureData.forEach((field) => {
       if (field.name) {
         // For Pass/Fail fields, prioritize data from column over structure
@@ -311,17 +471,18 @@ export default class extends Controller {
                 field.value === inputElement.value ||
                 field.value === true ||
                 field.value === "true";
-            } else {
-              // Handle date fields with inspection date
-              if (field.type === "Date") {
-                if (inputElement.dataset.controller.includes("datepicker")) {
-                  inputElement.value = field.value || "";
-                } else {
-                  this.loadDateField(inputElement, field);
-                }
+          } else {
+            // Handle date fields with inspection date
+            if (field.type === "Date") {
+              if (inputElement.dataset.controller.includes("datepicker")) {
+                const valueFromData = dataFromColumn[field.name];
+                inputElement.value = valueFromData || field.value || "";
               } else {
-                inputElement.value = field.value || "";
+                this.loadDateField(inputElement, field);
               }
+            } else {
+              inputElement.value = field.value || "";
+            }
             }
           }
         }
@@ -381,59 +542,77 @@ export default class extends Controller {
 
   // Initialize all date fields with inspection date if they're empty
   initializeDateFields() {
-    const formattedInspectionDate = this.getFormattedInspectionDate();
-    if (!formattedInspectionDate) return;
+    // Cargar datos ya existentes para evitar reinsertar fechas que ya están guardadas
+    const dataFromColumn = this.getDataFromColumn() || {};
 
-    // Find all date input fields
+    // Buscar todos los campos de fecha controlados por date-fix
     const dateFields = this.element.querySelectorAll(
       'input[data-controller*="date-fix"]',
     );
 
     dateFields.forEach((dateField) => {
-      // Get the date-fix controller instance
+      // Resolver nombre del campo (clave en dataFromColumn)
+      const fieldName = this.extractFieldNameFromInput(dateField);
+
+      // Intentar recuperar valor ya guardado desde datos (offline/online)
+      const savedValue = fieldName ? dataFromColumn[fieldName] : null;
+
+      // Si el valor ya está guardado y el input está vacío, poblar SIN marcar cambios
+      if ((!dateField.value || dateField.value.trim() === "") && savedValue) {
+        let valueToSet = savedValue;
+        // Normalizar posibles valores ISO a formato US
+        if (typeof valueToSet === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)) {
+          const [y, m, d] = valueToSet.split("-");
+          valueToSet = `${m}/${d}/${y}`;
+        }
+        dateField.value = valueToSet;
+        dateField.setAttribute("value", valueToSet);
+        // No disparamos eventos ni marcamos changedFields: ya existe en datos
+        return;
+      }
+
+      // Si el campo sigue vacío, delegar en date-fix (usa fecha de inspección o actual)
       const dateFixController =
         this.application?.getControllerForElementAndIdentifier(
           dateField,
           "date-fix",
         );
 
-      if (dateFixController && dateFixController.setInspectionDateIfEmpty) {
-        // Use the date-fix controller method to set inspection date if empty
+      if ((!dateField.value || dateField.value.trim() === "") && dateFixController?.setInspectionDateIfEmpty) {
+        // Esto disparará eventos input/change y será capturado por changedFields
         dateFixController.setInspectionDateIfEmpty();
-      } else {
-        // Fallback: set directly if no controller found
-        if (!dateField.value || dateField.value === "") {
-          dateField.value = formattedInspectionDate;
+      } else if (!dateField.value || dateField.value.trim() === "") {
+        // Fallback sin controlador: usar fecha de inspección si existe o la fecha actual
+        const inspectionDate = this.getFormattedInspectionDate();
+        let valueToSet = inspectionDate;
+        if (!valueToSet) {
+          const today = new Date();
+          const month = String(today.getMonth() + 1).padStart(2, "0");
+          const day = String(today.getDate()).padStart(2, "0");
+          const year = today.getFullYear();
+          valueToSet = `${month}/${day}/${year}`;
+        }
+        dateField.value = valueToSet;
+        dateField.setAttribute("value", valueToSet);
 
-          // Extract field name and track the change
-          const fieldName = this.extractFieldNameFromInput(dateField);
-          if (fieldName) {
-            this.changedFields.set(fieldName, formattedInspectionDate);
-          }
+        // Marcar cambio para guardado incremental sólo cuando establecemos por defecto
+        if (fieldName) {
+          this.changedFields.set(fieldName, valueToSet);
         }
       }
     });
 
-    // Trigger debounced save if any date fields were set
+    // Guardar sólo si hubo cambios reales en esta inicialización
     if (this.changedFields.size > 0) {
       this.debouncedSave();
     }
   }
 
-  // Format the date to MM/DD/YY format
+  // Return inspection date in MM/DD/YYYY format (already provided by the server or normalized when offline)
   getFormattedInspectionDate() {
     if (!this.inspectionDateValue) return null;
-
-    // Convert MM/DD/YYYY to MM/DD/YY format
-    const parts = this.inspectionDateValue.split("/");
-    if (parts.length === 3) {
-      const month = parts[0];
-      const day = parts[1];
-      const year = parts[2].slice(-2); // Get last 2 digits of year
-      return `${month}/${day}/${year}`;
-    }
-
-    return this.inspectionDateValue; // Return as-is if format is unexpected
+    // Expect MM/DD/YYYY; if not, return as-is. Conversion handled earlier when setting dataset.
+    return this.inspectionDateValue;
   }
 
   // Get data from the data column
@@ -443,15 +622,35 @@ export default class extends Controller {
 
       // Try to get data from Rails via a global variable or data attribute
       if (window.formFillData) {
-        console.log("Using window.formFillData:", window.formFillData);
-        return window.formFillData;
+        try {
+          const g = window.formFillData;
+          const parsedGlobal = typeof g === "string" ? JSON.parse(g) : g;
+          console.log("Using window.formFillData:", parsedGlobal);
+          return parsedGlobal;
+        } catch (e) {
+          console.warn("[form_fill_controller] Failed to parse window.formFillData:", e);
+          return {};
+        }
       }
 
       // Try to get from form element data attribute
       const dataValue = this.element.dataset.formFillDataValue;
       if (dataValue) {
         console.log("Found data value attribute:", dataValue);
-        const parsedData = JSON.parse(dataValue);
+        let parsedData = {};
+        try {
+          parsedData = JSON.parse(dataValue);
+          if (typeof parsedData === "string") {
+            try {
+              parsedData = JSON.parse(parsedData);
+            } catch (e) {
+              console.warn("[form_fill_controller] Double-encoded data string failed to parse:", e);
+            }
+          }
+        } catch (e) {
+          console.warn("[form_fill_controller] Failed to parse dataValue:", e);
+          parsedData = {};
+        }
         console.log("Parsed data:", parsedData);
         return parsedData;
       }
@@ -738,30 +937,40 @@ export default class extends Controller {
     }
   }
 
-  get csrfToken() {
-    return document.querySelector('meta[name="csrf-token"]').content;
-  }
-
-  // Get inspection date in US format (MM/DD/YYYY)
-  get inspectionDate() {
-    return this.inspectionDateValue || null;
-  }
 
   // Load date field with inspection date as default
   loadDateField(inputElement, field) {
-    // Priority: 1. Saved value from data, 2. Inspection date, 3. Empty
-    const savedValue = field.value;
-    const inspectionDate = this.getFormattedInspectionDate(); // Use new method
+    // Priority: 1. Saved value from data (dataFromColumn), 2. Saved value from structure, 3. Inspection date, 4. Empty
+    const fieldName = this.extractFieldNameFromInput(inputElement);
+    const dataFromColumn = this.getDataFromColumn() || {};
 
-    if (savedValue && savedValue.trim() !== "") {
-      // Use saved value if it exists
-      inputElement.value = savedValue;
+    // Prefer saved value from the data column over structure
+    let savedValue = null;
+    if (fieldName && dataFromColumn && dataFromColumn[fieldName]) {
+      savedValue = dataFromColumn[fieldName];
+    } else if (field && field.value) {
+      savedValue = field.value;
+    }
+
+    const inspectionDate = this.getFormattedInspectionDate();
+
+    if (savedValue && String(savedValue).trim() !== "") {
+      // Normalizar posibles valores ISO a formato US
+      let valueToSet = savedValue;
+      if (typeof valueToSet === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)) {
+        const [y, m, d] = valueToSet.split("-");
+        valueToSet = `${m}/${d}/${y}`;
+      }
+      // Use saved value if it exists (no change tracking)
+      inputElement.value = valueToSet;
+      inputElement.setAttribute("value", valueToSet);
+      return;
     } else if (inspectionDate) {
       // Use inspection date as default if no saved value
       inputElement.value = inspectionDate;
+      inputElement.setAttribute("value", inspectionDate);
 
       // Also update the data to reflect this default
-      const fieldName = this.extractFieldNameFromInput(inputElement);
       if (fieldName) {
         this.changedFields.set(fieldName, inspectionDate);
         // Trigger debounced save to persist the default value
@@ -770,6 +979,7 @@ export default class extends Controller {
     } else {
       // No inspection date available, leave empty
       inputElement.value = "";
+      inputElement.setAttribute("value", "");
     }
   }
 

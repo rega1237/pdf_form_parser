@@ -10,13 +10,21 @@ export default class extends Controller {
     this.updateButtonStates();
     this.updateProgress();
     this.setupFieldValidation();
-    this.element.addEventListener('choice-selected', this.handleChoiceSelected.bind(this));
-    this.element.addEventListener('field-validation-changed', this.handleValidationChange.bind(this));
+    // Guardar referencias enlazadas para poder removerlas en disconnect
+    this._boundChoiceSelected = this.handleChoiceSelected.bind(this);
+    this._boundValidationChange = this.handleValidationChange.bind(this);
+    this.element.addEventListener('choice-selected', this._boundChoiceSelected);
+    this.element.addEventListener('field-validation-changed', this._boundValidationChange);
   }
 
   disconnect() {
-    this.element.removeEventListener('choice-selected', this.handleChoiceSelected.bind(this));
-    this.element.removeEventListener('field-validation-changed', this.handleValidationChange.bind(this));
+    if (this._boundChoiceSelected) {
+      this.element.removeEventListener('choice-selected', this._boundChoiceSelected);
+    }
+    if (this._boundValidationChange) {
+      this.element.removeEventListener('field-validation-changed', this._boundValidationChange);
+    }
+    clearTimeout(this.validationTimeout);
   }
 
   // Handle choice selection events (Pass/Fail buttons)
@@ -147,13 +155,7 @@ export default class extends Controller {
     setTimeout(() => this.hideValidationMessage(), 3000);
   }
 
-  handleChoiceSelected(event) {
-    setTimeout(() => { this.validateCurrentPage(); }, 100);
-  }
-
-  handleValidationChange(event) {
-    this.validateCurrentPage();
-  }
+  // (Eliminado duplicado) Mantener una sola implementación de estos métodos
 
   hideValidationMessage() {
     const existingMessage = document.getElementById("validation-message");
@@ -269,10 +271,30 @@ export default class extends Controller {
         // Try to get from form structure first
         const structureValue = formFillElement.dataset.formFillFormStructureValue;
         if (structureValue) {
-          const structure = JSON.parse(structureValue);
-          const fieldData = structure.find(field => field.name === fieldName);
-          if (fieldData && fieldData.value) {
-            return fieldData.value;
+          let structure = null;
+          try {
+            structure = JSON.parse(structureValue);
+          } catch (e) {
+            structure = null;
+          }
+          // Handle potential double-encoded JSON strings
+          if (typeof structure === 'string') {
+            try { structure = JSON.parse(structure); } catch (e2) { /* ignore */ }
+          }
+          // Only attempt to find if we have an array-like structure
+          if (Array.isArray(structure)) {
+            const fieldData = structure.find(field => field && (field.name === fieldName || field.field_name === fieldName));
+            if (fieldData && (fieldData.value !== undefined && fieldData.value !== null)) {
+              return fieldData.value;
+            }
+          } else if (structure && typeof structure === 'object') {
+            const arr = Array.isArray(structure.fields) ? structure.fields : (Array.isArray(structure.form_fields) ? structure.form_fields : null);
+            if (arr) {
+              const fieldData = arr.find(field => field && (field.name === fieldName || field.field_name === fieldName));
+              if (fieldData && (fieldData.value !== undefined && fieldData.value !== null)) {
+                return fieldData.value;
+              }
+            }
           }
         }
         
@@ -308,7 +330,8 @@ export default class extends Controller {
           return data[fieldName] || "";
       }
     } catch (error) {
-      console.error("Error getting value from data column:", error);
+      // Silenciar errores de parsing/estructura y hacer fallback a métodos basados en el DOM
+      // Esto evita ruido en consola cuando la estructura no es un array o viene doblemente codificada
       return null;
     }
   }

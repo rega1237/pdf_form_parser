@@ -14,6 +14,39 @@ class OfflineStorage {
   }
 
   /**
+   * Normaliza diferentes formatos de form_structure para que sea siempre un arreglo.
+   * Acepta:
+   * - String JSON (por ejemplo, "[{...}, {...}]") -> parsea y retorna arreglo
+   * - Array -> retorna tal cual
+   * - Objeto con propiedades contenedoras (fields | form_fields | structure) -> extrae arreglo
+   * - Otro/indefinido -> retorna null
+   */
+  normalizeFormStructure(fs) {
+    try {
+      if (!fs) return null
+      if (typeof fs === 'string') {
+        try {
+          const parsed = JSON.parse(fs)
+          return Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.fields) ? parsed.fields : (Array.isArray(parsed?.form_fields) ? parsed.form_fields : (Array.isArray(parsed?.structure) ? parsed.structure : null)))
+        } catch (e) {
+          console.warn('[OfflineStorage] Failed to parse string form_structure:', e)
+          return null
+        }
+      }
+      if (Array.isArray(fs)) return fs
+      if (typeof fs === 'object') {
+        if (Array.isArray(fs.fields)) return fs.fields
+        if (Array.isArray(fs.form_fields)) return fs.form_fields
+        if (Array.isArray(fs.structure)) return fs.structure
+      }
+      return null
+    } catch (e) {
+      console.warn('[OfflineStorage] normalizeFormStructure error:', e)
+      return null
+    }
+  }
+
+  /**
    * Almacena un form_fill individual
    */
   async storeFormFill(formFill) {
@@ -21,8 +54,10 @@ class OfflineStorage {
     const tx = db.transaction(['form_fills'], 'readwrite')
     
     try {
+      const normalizedStructure = this.normalizeFormStructure(formFill.form_structure)
       const formFillToStore = {
         ...formFill,
+        form_structure: normalizedStructure,
         photos: formFill.photos || {},
         synced_at: Date.now(),
         has_pending_changes: false
@@ -146,9 +181,10 @@ class OfflineStorage {
         for (let i = 0; i < inspectionData.form_fills.length; i++) {
           const formFill = inspectionData.form_fills[i]
           // Aseguramos que la estructura del formulario esté embebida
+          const normalizedStructure = this.normalizeFormStructure(formFill.form_structure || null)
           const formFillToStore = {
             ...formFill,
-            form_structure: formFill.form_structure || null,
+            form_structure: normalizedStructure,
             photos: formFill.photos || {},
             synced_at: Date.now(),
             has_pending_changes: false
@@ -301,7 +337,7 @@ class OfflineStorage {
         throw new Error(`Form fill ${formFillId} not found`)
       }
 
-      formFill.form_structure = newStructure
+      formFill.form_structure = this.normalizeFormStructure(newStructure)
       formFill.updated_at = Date.now()
       formFill.has_pending_changes = true
 
