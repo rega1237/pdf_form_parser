@@ -467,21 +467,37 @@ export default class extends Controller {
               inputElement.type === "checkbox" ||
               inputElement.type === "radio"
             ) {
-              inputElement.checked =
-                field.value === inputElement.value ||
-                field.value === true ||
-                field.value === "true";
+              const valueFromData = dataFromColumn[field.name];
+              if (valueFromData !== undefined && valueFromData !== null) {
+                inputElement.checked =
+                  valueFromData === inputElement.value ||
+                  valueFromData === true ||
+                  valueFromData === "true";
+              } else {
+                inputElement.checked =
+                  field.value === inputElement.value ||
+                  field.value === true ||
+                  field.value === "true";
+              }
           } else {
             // Handle date fields with inspection date
             if (field.type === "Date") {
               if (inputElement.dataset.controller.includes("datepicker")) {
                 const valueFromData = dataFromColumn[field.name];
-                inputElement.value = valueFromData || field.value || "";
+                const finalValue = valueFromData || field.value || "";
+                inputElement.value = finalValue;
+                inputElement.setAttribute("value", finalValue);
               } else {
                 this.loadDateField(inputElement, field);
               }
             } else {
-              inputElement.value = field.value || "";
+              const valueFromData = dataFromColumn[field.name];
+              const finalValue =
+                valueFromData !== undefined && valueFromData !== null
+                  ? valueFromData
+                  : field.value || "";
+              inputElement.value = finalValue;
+              inputElement.setAttribute("value", finalValue);
             }
             }
           }
