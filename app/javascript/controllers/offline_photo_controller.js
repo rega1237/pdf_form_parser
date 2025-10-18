@@ -2,41 +2,68 @@ import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
   static targets = ["input", "preview", "status", "uploadButton", "removeButton"];
-  static values = { 
+  static values = {
     photoId: String,
     formFillId: String,
-    fieldName: String
+    fieldName: String,
+    // Valores opcionales para validación; si no vienen, usar defaults
+    acceptedTypes: Array,
+    maxSize: Number
   };
 
   connect() {
     this.isOnline = navigator.onLine;
-    
+
+    // Vincular handlers para poder desregistrarlos correctamente en disconnect
+    this.handleOnlineBound = this.handleOnline.bind(this);
+    this.handleOfflineBound = this.handleOffline.bind(this);
+
     // Escuchar cambios de conectividad
-    window.addEventListener('online', this.handleOnline.bind(this));
-    window.addEventListener('offline', this.handleOffline.bind(this));
-    
+    window.addEventListener('online', this.handleOnlineBound);
+    window.addEventListener('offline', this.handleOfflineBound);
+
     // Inicializar almacenamiento offline
     this.initializeOfflineStorage();
-    
-    // Actualizar estado inicial
-    this.updateStatus();
+
+    // Reflejar estado inicial en UI
+    this.updateOnlineStatus();
   }
 
   async initializeOfflineStorage() {
-    // Wait for OfflineStorage to be available (loaded via importmap)
+    // Esperar a que OfflineStorage esté disponible (cargado vía importmap)
     if (typeof OfflineStorage === 'undefined') {
-      // If not available yet, wait and retry
       setTimeout(() => this.initializeOfflineStorage(), 100);
       return;
     }
-    
-    this.storage = new OfflineStorage();
+
+    // Usar una propiedad consistente en todo el controlador
+    this.offlineStorage = new OfflineStorage();
+
+    // Cargar foto existente (si corresponde)
     await this.loadExistingPhoto();
+
+    // Intentar cargar la última foto offline guardada para este campo
+    await this.loadLatestOfflinePhotoForField();
   }
 
   disconnect() {
-    window.removeEventListener('online', this.handleOnline.bind(this));
-    window.removeEventListener('offline', this.handleOffline.bind(this));
+    window.removeEventListener('online', this.handleOnlineBound);
+    window.removeEventListener('offline', this.handleOfflineBound);
+  }
+
+  // Handlers de conectividad
+  async handleOnline() {
+    this.isOnline = true;
+    this.updateOnlineStatus();
+    this.updateStatus('Conectado', 'info');
+    // Intentar sincronización automática si hay foto pendiente
+    await this.tryAutoSync();
+  }
+
+  handleOffline() {
+    this.isOnline = false;
+    this.updateOnlineStatus();
+    this.updateStatus('Sin conexión', 'error');
   }
 
   /**
@@ -50,7 +77,7 @@ export default class extends Controller {
     }
 
     try {
-      // Validar archivo
+      // Validar archivo (con defaults si no se configuran en valores Stimulus)
       if (!this.validateFile(file)) {
         return
       }
@@ -81,15 +108,23 @@ export default class extends Controller {
    * Valida el archivo seleccionado
    */
   validateFile(file) {
+    // Defaults si no hay configuración
+    const accepted = Array.isArray(this.acceptedTypesValue) && this.acceptedTypesValue.length
+      ? this.acceptedTypesValue
+      : ['image/jpeg', 'image/jpg', 'image/png'];
+    const maxSize = Number.isFinite(this.maxSizeValue) && this.maxSizeValue > 0
+      ? this.maxSizeValue
+      : 10 * 1024 * 1024; // 10MB
+
     // Verificar tipo
-    if (!this.acceptedTypesValue.includes(file.type)) {
-      this.updateStatus(`Tipo de archivo no válido. Use: ${this.acceptedTypesValue.join(', ')}`, 'error')
+    if (!accepted.includes(file.type)) {
+      this.updateStatus(`Tipo de archivo no válido. Use: ${accepted.join(', ')}`, 'error')
       return false
     }
 
     // Verificar tamaño
-    if (file.size > this.maxSizeValue) {
-      const maxSizeMB = (this.maxSizeValue / 1024 / 1024).toFixed(1)
+    if (file.size > maxSize) {
+      const maxSizeMB = (maxSize / 1024 / 1024).toFixed(1)
       this.updateStatus(`Archivo muy grande. Máximo: ${maxSizeMB}MB`, 'error')
       return false
     }
@@ -119,28 +154,64 @@ export default class extends Controller {
    * Actualiza el preview de la foto
    */
   async updatePreview(photoId) {
-    if (!this.hasPreviewTarget) return
+    // Encontrar elementos de imagen y contenedor
+    const imgEl = this.getPreviewImageElement();
+    const containerEl = this.getPreviewContainerElement();
+    if (!imgEl) return;
 
     try {
       // Limpiar URL anterior
       if (this.currentPhotoURL) {
-        URL.revokeObjectURL(this.currentPhotoURL)
+        URL.revokeObjectURL(this.currentPhotoURL);
       }
 
       // Crear nueva URL
-      this.currentPhotoURL = await this.offlineStorage.createPhotoURL(photoId)
+      this.currentPhotoURL = await this.offlineStorage.createPhotoURL(photoId);
       
       if (this.currentPhotoURL) {
-        this.previewTarget.src = this.currentPhotoURL
-        this.previewTarget.style.display = 'block'
-        
+        imgEl.src = this.currentPhotoURL;
+        imgEl.alt = 'Captured photo';
+        if (containerEl) {
+          containerEl.classList.remove('hidden');
+        }
         if (this.hasRemoveButtonTarget) {
-          this.removeButtonTarget.style.display = 'inline-block'
+          this.removeButtonTarget.style.display = 'inline-block';
+        }
+        // Actualizar info de archivo
+        const infoEl = (containerEl || this.element).querySelector('.file-info');
+        if (infoEl) {
+          infoEl.innerHTML = `
+            <div class="flex justify-between items-center">
+              <span class="flex items-center">
+                <svg class="w-3 h-3 mr-1 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                Offline (pendiente)
+              </span>
+              <span class="text-yellow-400">Guardada offline</span>
+            </div>
+          `;
         }
       }
     } catch (error) {
-      console.error('[OfflinePhoto] Error updating preview:', error)
+      console.error('[OfflinePhoto] Error updating preview:', error);
     }
+  }
+
+  // Helpers para obtener elementos correctos de preview
+  getPreviewImageElement() {
+    // Buscar un IMG entre los targets de preview o por data-target
+    const imgTarget = (this.previewTargets || []).find(el => el.tagName === 'IMG');
+    return imgTarget || this.element.querySelector('img[data-offline-photo-target="preview"], img[data-photo-capture-target="image"]');
+  }
+
+  getPreviewContainerElement() {
+    // Buscar el contenedor principal de preview
+    const containerTarget = (this.previewTargets || []).find(el => el.tagName !== 'IMG');
+    if (containerTarget) return containerTarget;
+    // Fallback al contenedor del photo-capture
+    const container = this.element.querySelector('[data-photo-capture-target="preview"]');
+    return container || this.element;
   }
 
   /**
@@ -162,6 +233,30 @@ export default class extends Controller {
   }
 
   /**
+   * Busca la última foto guardada offline para este form_fill y field
+   */
+  async loadLatestOfflinePhotoForField() {
+    try {
+      const allPhotos = await this.offlineStorage.getAllPhotoBlobs();
+      const candidates = (allPhotos || []).filter(p => {
+        const m = p.metadata || {};
+        return String(m.form_fill_id) === String(this.formFillIdValue) && String(m.field_name) === String(this.fieldNameValue);
+      });
+      if (candidates.length === 0) return;
+      // Ordenar por stored_at descendente
+      candidates.sort((a, b) => new Date(b.metadata?.stored_at || 0) - new Date(a.metadata?.stored_at || 0));
+      const latest = candidates[0];
+      if (latest && latest.id) {
+        this.photoIdValue = latest.id;
+        await this.updatePreview(latest.id);
+        this.updateStatus('Foto offline cargada para este campo', 'info');
+      }
+    } catch (error) {
+      console.error('[OfflinePhoto] Error loading last offline photo:', error);
+    }
+  }
+
+  /**
    * Elimina la foto
    */
   async removePhoto() {
@@ -173,10 +268,14 @@ export default class extends Controller {
       // Eliminar de IndexedDB
       await this.offlineStorage.removePhotoBlob(this.photoIdValue)
       
-      // Limpiar preview
-      if (this.hasPreviewTarget) {
-        this.previewTarget.style.display = 'none'
-        this.previewTarget.src = ''
+      // Limpiar preview y controles
+      const imgEl = this.getPreviewImageElement()
+      const containerEl = this.getPreviewContainerElement()
+      if (imgEl) {
+        imgEl.src = ''
+      }
+      if (containerEl) {
+        containerEl.classList.add('hidden')
       }
       
       if (this.hasRemoveButtonTarget) {
@@ -206,51 +305,69 @@ export default class extends Controller {
    */
   async syncPhoto() {
     if (!this.photoIdValue || !navigator.onLine) {
-      this.updateStatus('Sin conexión para sincronizar', 'error')
-      return
+      this.updateStatus('Sin conexión para sincronizar', 'error');
+      return;
     }
 
     try {
-      this.updateStatus('Sincronizando foto...', 'info')
-      
-      const photoData = await this.offlineStorage.getPhotoBlob(this.photoIdValue)
-      
+      this.updateStatus('Sincronizando foto...', 'info');
+      const photoData = await this.offlineStorage.getPhotoBlob(this.photoIdValue);
       if (!photoData) {
-        this.updateStatus('Foto no encontrada', 'error')
-        return
+        this.updateStatus('Foto no encontrada', 'error');
+        return;
       }
-
-      // Crear FormData para envío
-      const formData = new FormData()
-      formData.append('photo', photoData.blob, photoData.metadata.filename)
-      formData.append('form_fill_id', this.formFillIdValue)
-      formData.append('field_name', this.fieldNameValue)
-
-      // Enviar al servidor
-      const response = await fetch('/api/v1/photos', {
+      const formData = new FormData();
+      formData.append('photo', photoData.blob, photoData.metadata.filename);
+      formData.append('form_fill_id', this.formFillIdValue);
+      formData.append('field_name', this.fieldNameValue);
+      const response = await fetch('/api/v1/sync/upload_photo', {
         method: 'POST',
         body: formData,
-        headers: {
-          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        headers: { 'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content }
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        // Marcar como sincronizada en metadata
+        photoData.metadata.synced = true;
+        photoData.metadata.photo_attachment_id = result.photo_attachment_id;
+        await this.offlineStorage.storePhotoBlob(this.photoIdValue, photoData.blob, photoData.metadata);
+        // Actualizar data column en el DOM para reflejar el attachment
+        await this.updateDataColumnQuietly(result.photo_attachment_id, this.fieldNameValue);
+        // Actualizar info visual a "Guardada"
+        const containerEl = this.getPreviewContainerElement();
+        const infoEl = (containerEl || this.element).querySelector('.file-info');
+        if (infoEl) {
+          infoEl.innerHTML = `
+            <div class="flex justify-between items-center">
+              <span class="flex items-center">
+                <svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                ${photoData.metadata.filename}
+              </span>
+              <span class="text-green-400">Guardada</span>
+            </div>
+          `;
         }
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        
-        // Marcar como sincronizada
-        photoData.metadata.synced = true
-        photoData.metadata.server_id = result.id
-        await this.offlineStorage.storePhotoBlob(this.photoIdValue, photoData.blob, photoData.metadata)
-        
-        this.updateStatus('Foto sincronizada correctamente', 'success')
+        this.updateStatus('Foto sincronizada correctamente', 'success');
       } else {
-        throw new Error(`Error del servidor: ${response.status}`)
+        throw new Error(result.error || `Error del servidor: ${response.status}`);
       }
-      
     } catch (error) {
-      console.error('[OfflinePhoto] Error syncing photo:', error)
-      this.updateStatus('Error al sincronizar la foto', 'error')
+      console.error('[OfflinePhoto] Error syncing photo:', error);
+      this.updateStatus('Error al sincronizar la foto', 'error');
+    }
+  }
+
+  async tryAutoSync() {
+    try {
+      if (!this.photoIdValue) return;
+      const photoData = await this.offlineStorage.getPhotoBlob(this.photoIdValue);
+      if (photoData && photoData.metadata && photoData.metadata.synced === false) {
+        await this.syncPhoto();
+      }
+    } catch (error) {
+      console.error('[OfflinePhoto] Error in auto sync:', error);
     }
   }
 
@@ -271,6 +388,24 @@ export default class extends Controller {
   }
 
   /**
+   * Actualiza silenciosamente la columna de datos con el attachment id
+   */
+  async updateDataColumnQuietly(attachmentId, fieldName) {
+    try {
+      const formFillElement = document.querySelector('[data-controller*="form-fill"]');
+      if (!formFillElement) return;
+      const currentDataValue = formFillElement.dataset.formFillDataValue || '{}';
+      let currentData = {};
+      try { currentData = JSON.parse(currentDataValue); } catch(_) { currentData = {}; }
+      const key = `${fieldName}_photo_attachment_id`;
+      const updatedData = { ...currentData, [key]: attachmentId };
+      formFillElement.dataset.formFillDataValue = JSON.stringify(updatedData);
+    } catch (error) {
+      console.warn('[OfflinePhoto] Error updating form fill data locally:', error);
+    }
+  }
+
+  /**
    * Actualiza el estado de conectividad
    */
   updateOnlineStatus() {
@@ -288,7 +423,7 @@ export default class extends Controller {
   updateStatus(message, type = 'info') {
     if (!this.hasStatusTarget) return
 
-    this.statusTarget.textContent = message
+    this.statusTarget.textContent = message || ''
     this.statusTarget.className = `photo-status photo-status--${type}`
     
     // Auto-ocultar después de 3 segundos para mensajes de éxito/info

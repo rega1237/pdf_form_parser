@@ -27,6 +27,16 @@ export default class extends Controller {
 
   // Método para abrir selector de archivos/cámara
   openCamera() {
+    // Si estamos offline, usar el input del controlador offline-photo para evitar intentos de subida
+    if (!navigator.onLine) {
+      const offlineInput = this.element.querySelector('input[data-offline-photo-target="input"]');
+      if (offlineInput) {
+        offlineInput.click();
+        return;
+      }
+    }
+
+    // Online: usar el input normal asociado a photo-capture
     if (this.fileInput) {
       this.fileInput.click();
     } else {
