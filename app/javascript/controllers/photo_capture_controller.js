@@ -47,25 +47,32 @@ export default class extends Controller {
   // Método para manejar cambio de archivo
   handleFileChange(event) {
     const file = event.target.files[0];
-    if (file) {
-      // Validar que sea una imagen
-      if (!file.type.startsWith("image/")) {
-        alert("Por favor seleccione un archivo de imagen válido.");
-        this.clearFileInput();
-        return;
-      }
+    if (!file) return;
 
-      // Validar tamaño del archivo (máximo 10MB)
-      const maxSize = 10 * 1024 * 1024; // 10MB en bytes
-      if (file.size > maxSize) {
-        alert("El archivo es demasiado grande. Máximo permitido: 10MB.");
-        this.clearFileInput();
-        return;
-      }
-
-      // Mostrar vista previa
-      this.displayPhoto(file);
+    // Si estamos offline, delega a offline-photo y no intentes subir
+    if (!navigator.onLine) {
+      // No mostramos preview aquí para evitar duplicados; offline-photo lo hará
+      console.log('[PhotoCapture] Offline: se delega preview/almacenamiento al controlador offline-photo');
+      return;
     }
+
+    // Validar que sea una imagen
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor seleccione un archivo de imagen válido.');
+      this.clearFileInput();
+      return;
+    }
+
+    // Validar tamaño del archivo (máximo 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+    if (file.size > maxSize) {
+      alert('El archivo es demasiado grande. Máximo permitido: 10MB.');
+      this.clearFileInput();
+      return;
+    }
+
+    // Mostrar vista previa y subir cuando estamos online
+    this.displayPhoto(file);
   }
 
   // Método para mostrar vista previa de la foto
@@ -136,6 +143,9 @@ export default class extends Controller {
 
   // Método principal para eliminar foto (llamado desde la vista)
   removePhoto() {
+    const confirmMessage = "¿Está seguro de que desea eliminar esta foto? Esta acción no se puede deshacer.";
+    if (!confirm(confirmMessage)) return;
+
     const fieldName = this.getFieldNameFromInput();
     const hasServerPhoto = this.hasServerPhoto();
 
@@ -143,22 +153,15 @@ export default class extends Controller {
       // Hay foto en el servidor, eliminar completamente
       this.removePhotoCompletely(fieldName);
     } else {
-      // Solo hay preview local, limpiar solo la vista
+      // Solo hay preview local: solicitar al controlador offline que borre la foto en IndexedDB
+      this.dispatchConfirmedRemove();
+      // Limpiar la vista por si no existe controlador offline
       this.clearPreviewOnly();
     }
   }
 
   // Método para eliminar foto completamente del servidor
   removePhotoCompletely(fieldName) {
-    // Confirmar eliminación
-    if (
-      !confirm(
-        "¿Está seguro de que desea eliminar esta foto? Esta acción no se puede deshacer.",
-      )
-    ) {
-      return;
-    }
-
     // Mostrar estado de carga
     this.showLoadingState();
 
@@ -175,8 +178,8 @@ export default class extends Controller {
           // Mostrar mensaje de éxito
           this.showSuccessMessage("Foto eliminada exitosamente");
 
-          // Notificar al form_fill controller para actualizar la estructura
-          //this.notifyFormFillController();
+          // También eliminar cualquier copia local (thumbnail/offline) una vez confirmada la eliminación
+          this.dispatchConfirmedRemove();
         } else {
           alert(`Error al eliminar la foto: ${result.error}`);
         }
@@ -189,6 +192,11 @@ export default class extends Controller {
         // Restaurar estado del botón
         this.hideLoadingState();
       });
+  }
+
+  dispatchConfirmedRemove() {
+    const evt = new CustomEvent('photo-remove-confirmed', { bubbles: true });
+    this.element.dispatchEvent(evt);
   }
 
   // Método para solo limpiar preview (foto no guardada aún)

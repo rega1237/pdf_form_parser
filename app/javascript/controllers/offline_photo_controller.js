@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
+import OfflineStorage from "utils/offline_storage";
 
 export default class extends Controller {
   static targets = ["input", "preview", "status", "uploadButton", "removeButton"];
@@ -17,10 +18,12 @@ export default class extends Controller {
     // Vincular handlers para poder desregistrarlos correctamente en disconnect
     this.handleOnlineBound = this.handleOnline.bind(this);
     this.handleOfflineBound = this.handleOffline.bind(this);
+    this.handleRemoveConfirmedBound = this.handleRemoveConfirmed.bind(this);
 
     // Escuchar cambios de conectividad
     window.addEventListener('online', this.handleOnlineBound);
     window.addEventListener('offline', this.handleOfflineBound);
+    this.element.addEventListener('photo-remove-confirmed', this.handleRemoveConfirmedBound);
 
     // Inicializar almacenamiento offline
     this.initializeOfflineStorage();
@@ -30,25 +33,29 @@ export default class extends Controller {
   }
 
   async initializeOfflineStorage() {
-    // Esperar a que OfflineStorage esté disponible (cargado vía importmap)
-    if (typeof OfflineStorage === 'undefined') {
-      setTimeout(() => this.initializeOfflineStorage(), 100);
+    try {
+      this.offlineStorage = new OfflineStorage();
+    } catch (e) {
+      console.error('[OfflinePhoto] OfflineStorage no pudo inicializarse:', e);
       return;
     }
-
-    // Usar una propiedad consistente en todo el controlador
-    this.offlineStorage = new OfflineStorage();
 
     // Cargar foto existente (si corresponde)
     await this.loadExistingPhoto();
 
     // Intentar cargar la última foto offline guardada para este campo
     await this.loadLatestOfflinePhotoForField();
+
+    // Descargar y cachear thumbnail del servidor si hace falta
+    await this.ensureLocalThumbnailFromServerIfNeeded();
   }
 
   disconnect() {
     window.removeEventListener('online', this.handleOnlineBound);
     window.removeEventListener('offline', this.handleOfflineBound);
+    if (this.handleRemoveConfirmedBound) {
+      this.element.removeEventListener('photo-remove-confirmed', this.handleRemoveConfirmedBound);
+    }
   }
 
   // Handlers de conectividad
@@ -70,37 +77,31 @@ export default class extends Controller {
    * Maneja la selección de archivos
    */
   async handleFileSelect(event) {
-    const file = event.target.files[0]
-    
-    if (!file) {
-      return
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Asegurar OfflineStorage inicializado
+    if (!this.offlineStorage) {
+      await this.initializeOfflineStorage();
+      if (!this.offlineStorage) {
+        console.error('[OfflinePhoto] OfflineStorage no disponible al seleccionar archivo');
+        this.updateStatus('No se pudo preparar almacenamiento offline', 'error');
+        return;
+      }
     }
 
-    try {
-      // Validar archivo (con defaults si no se configuran en valores Stimulus)
-      if (!this.validateFile(file)) {
-        return
-      }
+    // Validación
+    const isValid = this.validateFile(file);
+    if (!isValid) return;
 
-      this.updateStatus('Procesando foto...', 'info')
-      
-      // Generar ID único para la foto
-      const photoId = this.generatePhotoId()
-      
-      // Almacenar foto offline
-      await this.storePhotoOffline(photoId, file)
-      
-      // Actualizar preview
-      await this.updatePreview(photoId)
-      
-      // Actualizar estado del formulario
-      this.updateFormData(photoId)
-      
-      this.updateStatus('Foto guardada offline', 'success')
-      
-    } catch (error) {
-      console.error('[OfflinePhoto] Error handling file:', error)
-      this.updateStatus('Error al procesar la foto', 'error')
+    // Almacenar offline
+    await this.storePhotoOffline(file);
+
+    // Si estamos online, intentar sincronización inmediata
+    if (navigator.onLine) {
+      await this.syncPhoto();
+    } else {
+      this.updateStatus('Guardada offline', 'success');
     }
   }
 
@@ -108,46 +109,73 @@ export default class extends Controller {
    * Valida el archivo seleccionado
    */
   validateFile(file) {
-    // Defaults si no hay configuración
-    const accepted = Array.isArray(this.acceptedTypesValue) && this.acceptedTypesValue.length
+    const accepted = Array.isArray(this.acceptedTypesValue) && this.acceptedTypesValue.length > 0
       ? this.acceptedTypesValue
       : ['image/jpeg', 'image/jpg', 'image/png'];
-    const maxSize = Number.isFinite(this.maxSizeValue) && this.maxSizeValue > 0
-      ? this.maxSizeValue
-      : 10 * 1024 * 1024; // 10MB
+
+    // Si no viene configurado, o viene 0/NaN/valor no positivo, usar 10MB por defecto
+    let maxSize = this.maxSizeValue;
+    if (!Number.isFinite(maxSize) || maxSize <= 0) {
+      maxSize = 10 * 1024 * 1024; // 10MB
+    }
 
     // Verificar tipo
-    if (!accepted.includes(file.type)) {
-      this.updateStatus(`Tipo de archivo no válido. Use: ${accepted.join(', ')}`, 'error')
-      return false
+    const isImage = file.type && file.type.startsWith('image/');
+    if (!isImage || (!accepted.includes(file.type) && accepted.length > 0)) {
+      this.updateStatus(`Tipo de archivo no válido. Use: ${accepted.join(', ')}`, 'error');
+      return false;
     }
 
     // Verificar tamaño
     if (file.size > maxSize) {
-      const maxSizeMB = (maxSize / 1024 / 1024).toFixed(1)
-      this.updateStatus(`Archivo muy grande. Máximo: ${maxSizeMB}MB`, 'error')
-      return false
+      const maxSizeMB = (maxSize / 1024 / 1024).toFixed(1);
+      this.updateStatus(`Archivo muy grande. Máximo: ${maxSizeMB}MB`, 'error');
+      return false;
     }
 
-    return true
+    return true;
   }
 
   /**
    * Almacena la foto en IndexedDB
    */
-  async storePhotoOffline(photoId, file) {
-    const metadata = {
-      form_fill_id: this.formFillIdValue,
-      field_name: this.fieldNameValue,
-      filename: file.name,
-      size: file.size,
-      type: file.type,
-      uploaded_at: new Date().toISOString(),
-      synced: false
-    }
+  async storePhotoOffline(file) {
+    try {
+      const photoId = this.generatePhotoId()
+      const formFillId = this.formFillIdValue
+      const fieldName = this.fieldNameValue
 
-    await this.offlineStorage.storePhotoFromFile(photoId, file, metadata)
-    this.photoIdValue = photoId
+      // Try to enrich metadata with inspection_id
+      let inspectionId = null
+      try {
+        const ff = await this.offlineStorage.getFormFill(formFillId)
+        inspectionId = ff?.inspection_id || null
+      } catch (_) {}
+
+      const metadata = {
+        form_fill_id: formFillId,
+        field_name: fieldName,
+        inspection_id: inspectionId,
+        synced: false,
+        type: 'original',
+        is_thumbnail: false
+      }
+
+      await this.offlineStorage.storePhotoFromFile(photoId, file, metadata)
+      // Mantener también referencia en el form_fill para depuración/consistencia
+      try {
+        await this.offlineStorage.updateFormFill(formFillId, {}, {
+          [fieldName]: { id: photoId, synced: false, is_thumbnail: false }
+        })
+      } catch (e) {
+        console.warn('[OfflinePhoto] No se pudo actualizar photos en form_fill:', e)
+      }
+
+      this.photoIdValue = photoId
+      await this.updatePreview(photoId)
+    } catch (error) {
+      console.error('[OfflinePhotoController] Error storing photo offline:', error)
+    }
   }
 
   /**
@@ -177,18 +205,23 @@ export default class extends Controller {
         if (this.hasRemoveButtonTarget) {
           this.removeButtonTarget.style.display = 'inline-block';
         }
-        // Actualizar info de archivo
+        // Actualizar info de archivo en función del estado de sincronización
+        let synced = false;
+        try {
+          const photoData = await this.offlineStorage.getPhotoBlob(photoId);
+          synced = !!photoData?.metadata?.synced;
+        } catch (_) {}
         const infoEl = (containerEl || this.element).querySelector('.file-info');
         if (infoEl) {
           infoEl.innerHTML = `
             <div class="flex justify-between items-center">
               <span class="flex items-center">
-                <svg class="w-3 h-3 mr-1 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-3 h-3 mr-1 ${synced ? 'text-green-400' : 'text-yellow-400'}" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                 </svg>
-                Offline (pendiente)
+                ${synced ? 'Sincronizada' : 'Offline (pendiente)'}
               </span>
-              <span class="text-yellow-400">Guardada offline</span>
+              <span class="${synced ? 'text-green-400' : 'text-yellow-400'}">${synced ? 'Guardada' : 'Guardada offline'}</span>
             </div>
           `;
         }
@@ -237,20 +270,12 @@ export default class extends Controller {
    */
   async loadLatestOfflinePhotoForField() {
     try {
-      const allPhotos = await this.offlineStorage.getAllPhotoBlobs();
-      const candidates = (allPhotos || []).filter(p => {
-        const m = p.metadata || {};
-        return String(m.form_fill_id) === String(this.formFillIdValue) && String(m.field_name) === String(this.fieldNameValue);
-      });
-      if (candidates.length === 0) return;
-      // Ordenar por stored_at descendente
-      candidates.sort((a, b) => new Date(b.metadata?.stored_at || 0) - new Date(a.metadata?.stored_at || 0));
-      const latest = candidates[0];
-      if (latest && latest.id) {
-        this.photoIdValue = latest.id;
-        await this.updatePreview(latest.id);
-        this.updateStatus('Foto offline cargada para este campo', 'info');
-      }
+      const latest = await this.offlineStorage.getLatestPhotoForField(this.formFillIdValue, this.fieldNameValue)
+       if (latest && latest.id) {
+         this.photoIdValue = latest.id;
+         await this.updatePreview(latest.id);
+         this.updateStatus('Foto offline cargada para este campo', 'info');
+       }
     } catch (error) {
       console.error('[OfflinePhoto] Error loading last offline photo:', error);
     }
@@ -277,17 +302,10 @@ export default class extends Controller {
       if (containerEl) {
         containerEl.classList.add('hidden')
       }
-      
       if (this.hasRemoveButtonTarget) {
         this.removeButtonTarget.style.display = 'none'
       }
-      
-      // Limpiar URL temporal
-      if (this.currentPhotoURL) {
-        URL.revokeObjectURL(this.currentPhotoURL)
-        this.currentPhotoURL = null
-      }
-      
+
       // Limpiar datos del formulario
       this.updateFormData(null)
       this.photoIdValue = ''
@@ -304,57 +322,53 @@ export default class extends Controller {
    * Sincroniza la foto con el servidor
    */
   async syncPhoto() {
-    if (!this.photoIdValue || !navigator.onLine) {
-      this.updateStatus('Sin conexión para sincronizar', 'error');
-      return;
-    }
-
     try {
-      this.updateStatus('Sincronizando foto...', 'info');
+      if (!this.photoIdValue) return;
       const photoData = await this.offlineStorage.getPhotoBlob(this.photoIdValue);
-      if (!photoData) {
-        this.updateStatus('Foto no encontrada', 'error');
-        return;
-      }
-      const formData = new FormData();
-      formData.append('photo', photoData.blob, photoData.metadata.filename);
-      formData.append('form_fill_id', this.formFillIdValue);
-      formData.append('field_name', this.fieldNameValue);
-      const response = await fetch('/api/v1/sync/upload_photo', {
-        method: 'POST',
-        body: formData,
-        headers: { 'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content }
-      });
-      const result = await response.json();
-      if (response.ok && result.success) {
-        // Marcar como sincronizada en metadata
-        photoData.metadata.synced = true;
-        photoData.metadata.photo_attachment_id = result.photo_attachment_id;
-        await this.offlineStorage.storePhotoBlob(this.photoIdValue, photoData.blob, photoData.metadata);
-        // Actualizar data column en el DOM para reflejar el attachment
-        await this.updateDataColumnQuietly(result.photo_attachment_id, this.fieldNameValue);
-        // Actualizar info visual a "Guardada"
-        const containerEl = this.getPreviewContainerElement();
-        const infoEl = (containerEl || this.element).querySelector('.file-info');
-        if (infoEl) {
-          infoEl.innerHTML = `
-            <div class="flex justify-between items-center">
-              <span class="flex items-center">
-                <svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
-                ${photoData.metadata.filename}
-              </span>
-              <span class="text-green-400">Guardada</span>
-            </div>
-          `;
+      if (!photoData?.blob) return;
+
+      // Mostrar estado de subida
+      this.updateStatus('Subiendo...', 'info');
+
+      // Subir original
+      const uploadResponse = await this.uploadPhotoToServer(photoData.blob);
+      const attachmentId = uploadResponse?.photo_attachment_id || uploadResponse?.attachment_id;
+      if (!attachmentId) throw new Error('Server did not return attachment id');
+
+      // Tras subir, reemplazar original por thumbnail para ahorrar espacio
+      let inspectionId = photoData?.metadata?.inspection_id || null;
+      try {
+        if (!inspectionId) {
+          const ff = await this.offlineStorage.getFormFill(this.formFillIdValue);
+          inspectionId = ff?.inspection_id || null;
         }
-        this.updateStatus('Foto sincronizada correctamente', 'success');
-      } else {
-        throw new Error(result.error || `Error del servidor: ${response.status}`);
+      } catch (_) {}
+
+      const thumbBlob = await this.offlineStorage.createThumbnailBlob(photoData.blob, { maxDimension: 1024, quality: 0.7 });
+      const newMeta = {
+        ...photoData.metadata,
+        synced: true,
+        type: 'thumbnail',
+        is_thumbnail: true,
+        photo_attachment_id: attachmentId,
+        inspection_id: inspectionId
+      };
+      await this.offlineStorage.storePhotoBlob(this.photoIdValue, thumbBlob, newMeta);
+      // Mantener también referencia en el form_fill para depuración/consistencia
+      try {
+        await this.offlineStorage.updateFormFill(this.formFillIdValue, {}, {
+          [this.fieldNameValue]: { id: this.photoIdValue, synced: true, is_thumbnail: true, attachment_id: attachmentId }
+        })
+      } catch (e) {
+        console.warn('[OfflinePhoto] No se pudo actualizar photos en form_fill (sync):', e)
       }
+
+      // Actualizar preview y data column en el dataset
+      await this.updatePreview(this.photoIdValue);
+      await this.updateDataColumnQuietly(attachmentId, this.fieldNameValue);
+      this.updateStatus('Guardada', 'success');
     } catch (error) {
-      console.error('[OfflinePhoto] Error syncing photo:', error);
+      console.error('[OfflinePhotoController] Error syncing photo:', error);
       this.updateStatus('Error al sincronizar la foto', 'error');
     }
   }
@@ -367,7 +381,7 @@ export default class extends Controller {
         await this.syncPhoto();
       }
     } catch (error) {
-      console.error('[OfflinePhoto] Error in auto sync:', error);
+      console.error('[OfflinePhoto] Error en auto sync:', error);
     }
   }
 
@@ -444,5 +458,144 @@ export default class extends Controller {
     const timestamp = Date.now()
     const random = Math.random().toString(36).substr(2, 9)
     return `photo_${this.formFillIdValue}_${this.fieldNameValue}_${timestamp}_${random}`
+  }
+  /**
+   * Si no hay foto local pero existe attachment de servidor y estamos online, descargar thumbnail y guardarlo
+   */
+  async ensureLocalThumbnailFromServerIfNeeded() {
+    try {
+      const latest = await this.offlineStorage.getLatestPhotoForField(this.formFillIdValue, this.fieldNameValue)
+      if (latest?.blob) return
+
+      if (!navigator.onLine) return
+      const form = this.element.closest('form')
+      const dataJson = form?.dataset?.formFillDataValue || this.element?.dataset?.formFillDataValue
+      if (!dataJson) return
+      const data = JSON.parse(dataJson)
+      const attachmentKey = `${this.fieldNameValue}_photo_attachment_id`
+      const attachmentId = data?.[attachmentKey]
+      if (!attachmentId) return
+
+      const photoUrl = await this.fetchServerPhotoUrl(this.formFillIdValue, this.fieldNameValue, attachmentId)
+      if (!photoUrl) return
+
+      const resp = await fetch(photoUrl, { credentials: 'include' })
+      if (!resp.ok) return
+      const serverBlob = await resp.blob()
+      const thumbBlob = await this.offlineStorage.createThumbnailBlob(serverBlob, { maxDimension: 1024, quality: 0.7 })
+
+      const photoId = this.generatePhotoId()
+      let inspectionId = null
+      try {
+        const ff = await this.offlineStorage.getFormFill(this.formFillIdValue)
+        inspectionId = ff?.inspection_id || null
+      } catch (_) {}
+
+      const metadata = {
+        form_fill_id: this.formFillIdValue,
+        field_name: this.fieldNameValue,
+        inspection_id: inspectionId,
+        synced: true,
+        type: 'thumbnail',
+        is_thumbnail: true,
+        photo_attachment_id: attachmentId
+      }
+      await this.offlineStorage.storePhotoBlob(photoId, thumbBlob, metadata)
+      // Mantener también referencia en el form_fill para depuración/consistencia
+      try {
+        await this.offlineStorage.updateFormFill(this.formFillIdValue, {}, {
+          [this.fieldNameValue]: { id: photoId, synced: true, is_thumbnail: true, attachment_id: attachmentId }
+        })
+      } catch (e) {
+        console.warn('[OfflinePhoto] No se pudo actualizar photos en form_fill (server thumbnail):', e)
+      }
+
+      this.photoIdValue = photoId
+      await this.updatePreview(photoId)
+      this.updateStatus('Guardada', 'success')
+    } catch (error) {
+      console.warn('[OfflinePhotoController] ensureLocalThumbnailFromServerIfNeeded error:', error)
+    }
+  }
+
+  async fetchServerPhotoUrl(formFillId, fieldName, attachmentId) {
+    try {
+      const form = this.element.closest('form')
+      const formId = form?.dataset?.formFillIdValue || formFillId
+      const url = `/form_fills/${formId}/photo_url`
+      const csrf = document.querySelector('[name="csrf-token"]')?.content || ''
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'Accept': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ field_name: fieldName, attachment_id: attachmentId })
+      })
+      if (!resp.ok) return null
+      const json = await resp.json()
+      return json?.photo_url || null
+    } catch (_) {
+      return null
+    }
+  }
+
+  // Sube la foto (Blob/File) al servidor y retorna el JSON de respuesta
+  async uploadPhotoToServer(blob) {
+    const fieldName = this.fieldNameValue;
+    if (!fieldName) {
+      console.error('[OfflinePhotoController] Could not determine field name for photo upload');
+      return null;
+    }
+
+    try {
+      // Mostrar estado de carga en UI
+      this.updateStatus('Subiendo...', 'info');
+
+      // Obtener el ID del formulario (form fill)
+      const formElement = document.querySelector('[data-controller*="form-fill"]');
+      const formId = this.formFillIdValue || (formElement ? formElement.action.split('/').pop().split('?')[0] : null);
+      if (!formId) throw new Error('Form element or formFillId not found');
+
+      // Asegurar nombre de archivo para Blob
+      const fileToSend = blob instanceof File
+        ? blob
+        : new File([blob], `${fieldName}-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+
+      // Crear FormData con la foto
+      const formData = new FormData();
+      formData.append('field_name', fieldName);
+      formData.append('photo', fileToSend);
+
+      // Subir la foto al servidor usando el endpoint que actualiza la data column
+      const csrf = document.querySelector('[name="csrf-token"]')?.content || ''
+      const response = await fetch(`/form_fills/${formId}/upload_photo`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': csrf,
+          'Accept': 'application/json'
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        return result;
+      } else {
+        throw new Error(result.error || 'Error uploading photo');
+      }
+    } catch (error) {
+      console.error('[OfflinePhotoController] Error uploading photo:', error);
+      this.updateStatus('Error al subir la foto', 'error');
+      return null;
+    }
+  }
+
+  handleRemoveConfirmed(event) {
+    // Borrar localmente solo luego de confirmación del usuario
+    this.removePhoto();
   }
 }

@@ -1014,6 +1014,8 @@ export default class extends Controller {
 
     Array.from(formElements).forEach((element) => {
       if (element.name && element.name.startsWith("form_fill[")) {
+        // Skip file inputs: they are managed by offline-photo controller to avoid storing fake paths
+        if (element.type === "file") return;
         element.addEventListener("input", this.handleFieldChange.bind(this));
         element.addEventListener("change", this.handleFieldChange.bind(this));
       }
@@ -1031,6 +1033,8 @@ export default class extends Controller {
   // Handle individual field changes
   handleFieldChange(event) {
     const element = event.target;
+    // Guard: ignore file inputs so we don't persist browser fake paths (e.g., C:\\fakepath\\file.png)
+    if (element.type === "file") return;
     const fieldName = this.extractFieldName(element);
 
     if (fieldName) {

@@ -9,7 +9,7 @@
 class OfflineStorage {
   constructor() {
     this.dbName = 'aes_pro_offline'
-    this.version = 1
+    this.version = 2
     this.db = null
   }
 
@@ -121,7 +121,35 @@ class OfflineStorage {
           const photosStore = db.createObjectStore('photos', { keyPath: 'id' })
           photosStore.createIndex('metadata.stored_at', 'metadata.stored_at', { unique: false })
           photosStore.createIndex('metadata.type', 'metadata.type', { unique: false })
+          // New indexes for robust querying
+          photosStore.createIndex('metadata.inspection_id', 'metadata.inspection_id', { unique: false })
+          photosStore.createIndex('metadata.form_fill_id', 'metadata.form_fill_id', { unique: false })
+          photosStore.createIndex('metadata.field_name', 'metadata.field_name', { unique: false })
+          photosStore.createIndex('metadata.synced', 'metadata.synced', { unique: false })
+          photosStore.createIndex('metadata.is_thumbnail', 'metadata.is_thumbnail', { unique: false })
+          photosStore.createIndex('metadata.photo_attachment_id', 'metadata.photo_attachment_id', { unique: false })
           console.log('[OfflineStorage] Created photos object store')
+        } else {
+          // Ensure new indexes exist when upgrading from older versions
+          try {
+            const tx = event.target.transaction
+            const photosStore = tx.objectStore('photos')
+            const indexNames = Array.from(photosStore.indexNames || [])
+            const ensureIndex = (name, keyPath) => {
+              if (!indexNames.includes(name)) {
+                photosStore.createIndex(name, keyPath, { unique: false })
+                console.log(`[OfflineStorage] Added index ${name} on photos store`)
+              }
+            }
+            ensureIndex('metadata.inspection_id', 'metadata.inspection_id')
+            ensureIndex('metadata.form_fill_id', 'metadata.form_fill_id')
+            ensureIndex('metadata.field_name', 'metadata.field_name')
+            ensureIndex('metadata.synced', 'metadata.synced')
+            ensureIndex('metadata.is_thumbnail', 'metadata.is_thumbnail')
+            ensureIndex('metadata.photo_attachment_id', 'metadata.photo_attachment_id')
+          } catch (e) {
+            console.warn('[OfflineStorage] Failed to ensure photos indexes on upgrade:', e)
+          }
         }
 
         // Object Store: form_templates
@@ -683,7 +711,8 @@ class OfflineStorage {
           ...metadata,
           stored_at: new Date().toISOString(),
           size: blob.size,
-          type: blob.type
+          // Preserve variant in `metadata.type` (original/thumbnail) and record MIME separately
+          mime_type: blob.type
         }
       }
       
@@ -766,6 +795,132 @@ class OfflineStorage {
       return result
     } catch (error) {
       console.error(`[OfflineStorage] Error retrieving all photo blobs:`, error)
+      throw error
+    }
+  }
+
+  // New: Get photos by inspection_id
+  async getPhotosByInspection(inspectionId) {
+    const db = await this.openDB()
+    const tx = db.transaction(['photos'], 'readonly')
+    try {
+      const store = tx.objectStore('photos')
+      let results = []
+      try {
+        const index = store.index('metadata.inspection_id')
+        results = await this.promisifyRequest(index.getAll(inspectionId))
+      } catch (_) {
+        // Fallback: filter all
+        const all = await this.promisifyRequest(store.getAll())
+        results = (all || []).filter(p => String(p?.metadata?.inspection_id) === String(inspectionId))
+      }
+      return results
+    } catch (error) {
+      console.error('[OfflineStorage] Error getting photos by inspection:', error)
+      return []
+    }
+  }
+
+  // New: Get photos by form_fill_id
+  async getPhotosByFormFill(formFillId) {
+    const db = await this.openDB()
+    const tx = db.transaction(['photos'], 'readonly')
+    try {
+      const store = tx.objectStore('photos')
+      let results = []
+      try {
+        const index = store.index('metadata.form_fill_id')
+        results = await this.promisifyRequest(index.getAll(formFillId))
+      } catch (_) {
+        const all = await this.promisifyRequest(store.getAll())
+        results = (all || []).filter(p => String(p?.metadata?.form_fill_id) === String(formFillId))
+      }
+      return results
+    } catch (error) {
+      console.error('[OfflineStorage] Error getting photos by form_fill:', error)
+      return []
+    }
+  }
+
+  // New: Get latest photo for a specific field in a form_fill
+  async getLatestPhotoForField(formFillId, fieldName) {
+    try {
+      const photos = await this.getPhotosByFormFill(formFillId)
+      const candidates = (photos || []).filter(p => String(p?.metadata?.field_name) === String(fieldName))
+      if (candidates.length === 0) return null
+      candidates.sort((a, b) => new Date(b.metadata?.stored_at || 0) - new Date(a.metadata?.stored_at || 0))
+      return candidates[0]
+    } catch (error) {
+      console.error('[OfflineStorage] Error getting latest photo for field:', error)
+      return null
+    }
+  }
+
+  // New: Remove all photos by inspection_id
+  async removePhotosByInspection(inspectionId) {
+    const db = await this.openDB()
+    const tx = db.transaction(['photos'], 'readwrite')
+    try {
+      const store = tx.objectStore('photos')
+      let toDelete = []
+      try {
+        const index = store.index('metadata.inspection_id')
+        toDelete = await this.promisifyRequest(index.getAll(inspectionId))
+      } catch (_) {
+        const all = await this.promisifyRequest(store.getAll())
+        toDelete = (all || []).filter(p => String(p?.metadata?.inspection_id) === String(inspectionId))
+      }
+      for (const p of toDelete) {
+        await this.promisifyRequest(store.delete(p.id))
+      }
+      console.log(`[OfflineStorage] Removed ${toDelete.length} photos for inspection ${inspectionId}`)
+      return toDelete.length
+    } catch (error) {
+      console.error('[OfflineStorage] Error removing photos by inspection:', error)
+      return 0
+    }
+  }
+
+  // New: Compute per-inspection storage usage (bytes) for photos
+  async getInspectionStorageUsage(inspectionId) {
+    try {
+      const photos = await this.getPhotosByInspection(inspectionId)
+      return (photos || []).reduce((sum, p) => sum + (p?.metadata?.size || p?.blob?.size || 0), 0)
+    } catch (error) {
+      console.error('[OfflineStorage] Error computing inspection storage usage:', error)
+      return 0
+    }
+  }
+
+  // New: Create a thumbnail blob from an image blob
+  async createThumbnailBlob(blob, { maxDimension = 1024, quality = 0.7, outputType = 'image/jpeg' } = {}) {
+    try {
+      const imageURL = URL.createObjectURL(blob)
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image()
+        image.onload = () => resolve(image)
+        image.onerror = (e) => reject(e)
+        image.src = imageURL
+      })
+
+      const { width, height } = img
+      const scale = Math.min(1, maxDimension / Math.max(width, height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(width * scale))
+      canvas.height = Math.max(1, Math.round(height * scale))
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(imageURL)
+
+      const thumbnailBlob = await new Promise((resolve, reject) => {
+        canvas.toBlob((b) => {
+          if (b) resolve(b)
+          else reject(new Error('Failed to create thumbnail blob'))
+        }, outputType, quality)
+      })
+      return thumbnailBlob
+    } catch (error) {
+      console.error('[OfflineStorage] Error creating thumbnail blob:', error)
       throw error
     }
   }
@@ -915,6 +1070,14 @@ class OfflineStorage {
     for (const formFill of formFills) {
       console.log('[OfflineStorage] Removing form_fill:', formFill.id)
       await this.promisifyRequest(formFillStore.delete(formFill.id))
+    }
+
+    // New: Remover fotos relacionadas a la inspección
+    try {
+      const removedCount = await this.removePhotosByInspection(inspectionId)
+      console.log(`[OfflineStorage] Also removed ${removedCount} related photos`)
+    } catch (e) {
+      console.warn('[OfflineStorage] Failed to remove photos for inspection during cleanup:', e)
     }
     
     console.log('[OfflineStorage] Inspection and related data removed:', inspectionId)

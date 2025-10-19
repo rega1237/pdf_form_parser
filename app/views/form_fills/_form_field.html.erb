@@ -19,71 +19,39 @@
   </div>
 <% elsif field['type'] == "Photo" %>
   <div>
-    <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
-    <%= form.file_field field['name'], id: field_id, accept: "image/*", capture: "environment", class: "hidden" %>
+    <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class=\"text-red-400\">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+    
     
     <!-- Controlador offline de fotos -->
-    <div data-controller="offline-photo photo-capture" 
-         data-offline-photo-photo-id-value="<%= field['photo_attachment_id'] || '' %>"
+    
+    
+    <% if field['type'] == 'Photo' %>
+    <div data-controller="offline-photo photo-capture"
          data-offline-photo-form-fill-id-value="<%= @form_fill.id %>"
          data-offline-photo-field-name-value="<%= field['name'] %>"
-         data-photo-capture-input-id-value="<%= field_id %>">
+         data-photo-capture-input-id-value="<%= field_id %>"
+         data-photo-capture-field-name-value="<%= field['name'] %>">
       
-      <!-- Status offline -->
-      <div class="mb-3 text-sm">
-        <span data-offline-photo-target="status" class="photo-status"></span>
-      </div>
+      <%= form.file_field field['name'], id: field_id, accept: "image/*", capture: "environment", class: "hidden",
+            data: { action: 'change->offline-photo#handleFileSelect', offline_photo_target: 'input' } %>
       
-      <!-- Botón principal de captura -->
       <button type="button" data-action="click->photo-capture#openCamera" class="w-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-6 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-purple-400">
         <svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
         <span class="text-lg"><% if field['photo_attachment_id'].present? %>Change Photo<% else %>Take Photo<% end %></span>
       </button>
       
-      <!-- Input file oculto para offline -->
-      <input type="file" 
-             data-offline-photo-target="input" 
-             data-action="change->offline-photo#handleFileSelect"
-             accept="image/*" 
-             capture="environment" 
-             class="hidden">
-      
-      <!-- Preview de la foto -->
-      <div id="photo-preview-<%= field_id %>" data-photo-capture-target="preview" data-offline-photo-target="preview" class="mt-4 <%= field['photo_attachment_id'].present? ? '' : 'hidden' %>">
+      <div id="photo-preview-<%= field_id %>" data-photo-capture-target="preview" class="mt-4 <%= field['photo_attachment_id'].present? ? '' : 'hidden' %>">
         <div class="relative bg-slate-700 rounded-2xl p-4 border-2 border-blue-400">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-white font-semibold text-sm">
-              <% if field['photo_attachment_id'].present? %>Saved photo:<% else %>Captured photo:<% end %>
-            </span>
+            <span class="text-white font-semibold text-sm"><% if field['photo_attachment_id'].present? %>Saved photo:<% else %>Captured photo:<% end %></span>
             <div class="flex space-x-2">
-              <!-- Botón de sincronización offline -->
-              <button type="button" 
-                      data-offline-photo-target="uploadButton"
-                      data-action="click->offline-photo#syncPhoto" 
-                      class="text-blue-400 hover:text-blue-300 transition-colors text-xs bg-blue-900/30 px-2 py-1 rounded"
-                      title="Sync photo">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-              </button>
-              
               <% if Rails.env.development? %>
                 <button type="button" data-action="click->photo-capture#debugRemovePhoto" class="text-yellow-400 hover:text-yellow-300 transition-colors text-xs">🐛</button>
               <% end %>
-              
-              <!-- Botón de eliminar -->
-              <button type="button" 
-                      data-offline-photo-target="removeButton"
-                      data-action="click->offline-photo#removePhoto click->photo-capture#removePhoto" 
-                      class="text-red-400 hover:text-red-300 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
+              <button type="button" data-offline-photo-target="removeButton" data-action="click->photo-capture#removePhoto" class="text-red-400 hover:text-red-300 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
           </div>
           
-          <!-- Imagen -->
           <% if field['photo_attachment_id'].present? %>
             <% existing_photo = @form_fill.get_photo_for_field(field['name']) %>
             <% if existing_photo.present? %>
@@ -95,27 +63,21 @@
             <img data-photo-capture-target="image" data-offline-photo-target="preview" class="w-full object-cover rounded-xl border border-slate-600" alt="Captured photo" src="">
           <% end %>
           
-          <!-- Info de archivo -->
           <% if field['photo_attachment_id'].present? %>
             <div class="file-info text-xs text-slate-300 mt-2">
-              <div class="flex justify-between items-center">
-                <span class="flex items-center">
-                  <svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                  </svg>
-                  <%= field['label_name'].presence || field['name'] %>
-                </span>
-                <span class="text-green-400">Saved</span>
-              </div>
+              <div class="flex justify-between items-center"><span class="flex items-center"><svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg><%= field['label_name'].presence || field['name'] %></span><span class="text-green-400">Saved</span></div>
             </div>
           <% end %>
+          
+          <div data-offline-photo-target="status" class="photo-status"></div>
         </div>
       </div>
     </div>
     
-    <% if Rails.env.development? && field['photo_attachment_id'].present? %>
-      <div class="mt-2 text-xs text-purple-300 bg-purple-900/20 rounded p-2">
-        <strong>Debug:</strong> photo_attachment_id: <%= field['photo_attachment_id'] %>
+    <% else %>
+      <div class="form-field">
+        <%= form.label field['name'], field['label'] %>
+        <%= form.text_field field['name'], class: 'form-control' %>
       </div>
     <% end %>
   </div>
