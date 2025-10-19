@@ -94,10 +94,7 @@ class PwaController < ApplicationController
 
       // Patrones de URL para diferentes estrategias de cache
       const API_PATTERNS = [
-        /\/api\//,
-        /\/inspections/,
-        /\/form_fills/,
-        /\/customers/
+        /\/api\//
       ];
 
       const STATIC_PATTERNS = [
@@ -181,21 +178,21 @@ class PwaController < ApplicationController
           return;
         }
 
+        // Priorizar navegaciones (páginas HTML) para asegurar fallback offline
+        if (request.mode === 'navigate') {
+          event.respondWith(networkFirstWithOfflineFallback(request));
+          return;
+        }
+
         // Estrategia para recursos estáticos (CSS, JS, imágenes)
         if (STATIC_PATTERNS.some(pattern => pattern.test(url.pathname))) {
           event.respondWith(cacheFirstStrategy(request));
           return;
         }
 
-        // Estrategia para API calls
+        // Estrategia para API calls (solo /api/)
         if (API_PATTERNS.some(pattern => pattern.test(url.pathname))) {
           event.respondWith(networkFirstStrategy(request));
-          return;
-        }
-
-        // Estrategia para navegación (páginas HTML)
-        if (request.mode === 'navigate') {
-          event.respondWith(networkFirstWithOfflineFallback(request));
           return;
         }
 
@@ -240,7 +237,12 @@ class PwaController < ApplicationController
       #{'    '}
           // Solo buscar en cache para requests GET
           if (request.method === 'GET') {
-            const cachedResponse = await caches.match(request);
+            // Intentar coincidir ignorando Vary y diferencias del Request
+            const urlForMatch = new URL(request.url);
+            let cachedResponse = await caches.match(request, { ignoreVary: true });
+            if (!cachedResponse) {
+              cachedResponse = await caches.match(urlForMatch.pathname, { ignoreVary: true });
+            }
             if (cachedResponse) {
               return cachedResponse;
             }
@@ -267,7 +269,11 @@ class PwaController < ApplicationController
       #{'    '}
           // Intentar encontrar en cache solo para GET
           if (request.method === 'GET') {
-            const cachedResponse = await caches.match(request);
+            const urlForMatch = new URL(request.url);
+            let cachedResponse = await caches.match(request, { ignoreVary: true });
+            if (!cachedResponse) {
+              cachedResponse = await caches.match(urlForMatch.pathname, { ignoreVary: true });
+            }
             if (cachedResponse) {
               return cachedResponse;
             }
@@ -275,7 +281,7 @@ class PwaController < ApplicationController
       #{'    '}
           // Fallback a página offline para navegación
           if (request.mode === 'navigate') {
-            const offlineResponse = await caches.match(OFFLINE_FALLBACK_URL);
+            const offlineResponse = await caches.match(OFFLINE_FALLBACK_URL, { ignoreVary: true });
             if (offlineResponse) {
               return offlineResponse;
             }
@@ -287,8 +293,35 @@ class PwaController < ApplicationController
 
       // Manejo de mensajes desde la aplicación
       self.addEventListener('message', event => {
-        if (event.data && event.data.type === 'SKIP_WAITING') {
+        const data = event.data || {};
+        if (data.type === 'SKIP_WAITING') {
           self.skipWaiting();
+          return;
+        }
+        
+        // Permite precachear páginas específicas (show de inspecciones y form_fills, etc.)
+        if (data.type === 'PRECACHE_URLS' && Array.isArray(data.urls)) {
+          event.waitUntil((async () => {
+            try {
+              const cache = await caches.open(CACHE_NAME);
+              for (const url of data.urls) {
+                try {
+                  const req = new Request(url, { method: 'GET', credentials: 'same-origin' });
+                  const resp = await fetch(req);
+                  if (resp.ok) {
+                    await cache.put(req, resp.clone());
+                    console.log('🧩 SW: Precached', url);
+                  } else {
+                    console.warn('⚠️ SW: Fetch failed for', url, resp.status);
+                  }
+                } catch (e) {
+                  console.warn('⚠️ SW: Error precaching', url, e);
+                }
+              }
+            } catch (e) {
+              console.warn('⚠️ SW: PRECACHE_URLS failed:', e);
+            }
+          })());
         }
       });
 

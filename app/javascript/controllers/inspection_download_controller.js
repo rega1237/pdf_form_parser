@@ -78,6 +78,9 @@ export default class extends Controller {
         // Almacenar los datos en IndexedDB
         await this.offlineStorage.storeInspection(result.data)
         
+        // Solicitar al Service Worker que precachee las páginas HTML críticas
+        await this.precacheInspectionPages(result.data)
+        
         this.showDownloadedState()
         this.showMessage('Inspección descargada exitosamente', 'success')
         
@@ -97,6 +100,42 @@ export default class extends Controller {
       console.error('Error downloading inspection:', error)
       this.showErrorState()
       this.showMessage(`Error al descargar: ${error.message}`, 'error')
+    }
+  }
+
+  // ---- NUEVO: precachear páginas HTML críticas para navegación offline consistente ----
+  async precacheInspectionPages(inspectionData) {
+    try {
+      if (!('serviceWorker' in navigator)) {
+        console.warn('[InspectionDownload] Service Worker no soportado en este navegador')
+        return
+      }
+
+      const inspectionId = inspectionData?.inspection?.id
+      const formFills = Array.isArray(inspectionData?.form_fills) ? inspectionData.form_fills : []
+      const urls = []
+
+      if (inspectionId) urls.push(`/inspections/${inspectionId}`)
+      for (const ff of formFills) {
+        if (ff?.id) urls.push(`/form_fills/${ff.id}`)
+      }
+
+      if (urls.length === 0) {
+        console.log('[InspectionDownload] No hay URLs para precachear')
+        return
+      }
+
+      // Enviar mensaje al SW activo (o al controlador) para que precachee
+      const registration = await navigator.serviceWorker.getRegistration()
+      const target = registration?.active || navigator.serviceWorker.controller
+      if (target) {
+        target.postMessage({ type: 'PRECACHE_URLS', urls })
+        console.log('[InspectionDownload] Solicitud de precache enviada al SW:', urls)
+      } else {
+        console.warn('[InspectionDownload] No hay SW activo para precachear')
+      }
+    } catch (e) {
+      console.warn('[InspectionDownload] Error solicitando precache al SW:', e)
     }
   }
 

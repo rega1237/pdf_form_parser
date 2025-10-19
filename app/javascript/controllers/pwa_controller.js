@@ -108,6 +108,11 @@ export default class extends Controller {
     }
   }
 
+  // Alias para compatibilidad con data-action="click->pwa#updateServiceWorker"
+  async updateServiceWorker() {
+    return this.updateApp()
+  }
+
   handleServiceWorkerUpdate(registration) {
     const newWorker = registration.installing
     
