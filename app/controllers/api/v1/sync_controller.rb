@@ -174,11 +174,13 @@ class Api::V1::SyncController < ApplicationController
           if local_time && form_fill.updated_at > local_time
             # Permite resolver conflictos desde el cliente
             if form_fill_data[:resolve_strategy] == 'use_local'
-              form_fill.update!(data: form_fill_data[:data])
+              # Merge local data into server data so we keep any server-only keys (e.g., photos) but let local win on overlaps
+              merged = (form_fill.data || {}).merge(form_fill_data[:data] || {})
+              form_fill.update!(data: merged)
               return {
                 success: true,
                 server_id: form_fill.id,
-                message: 'Conflicto resuelto conservando la versión local'
+                message: 'Conflicto resuelto conservando la versión local (merge)'
               }
             end
 
@@ -200,9 +202,9 @@ class Api::V1::SyncController < ApplicationController
         end
 
         # Actualizar con el dataset completo
-        form_fill.update!(
-          data: form_fill_data[:data]
-        )
+        # Merge instead of replace to preserve server-only keys
+        merged = (form_fill.data || {}).merge(form_fill_data[:data] || {})
+        form_fill.update!(data: merged)
       elsif form_fill_data[:changes].present?
         # Aplicar parches (mezclar cambios con los datos existentes)
         form_fill.bulk_update_data(form_fill_data[:changes])

@@ -178,6 +178,13 @@ class PwaController < ApplicationController
           return;
         }
 
+        // IMPORTANTE: No interceptar métodos no-GET (PATCH/POST/PUT/DELETE)
+        // Deja que la red los maneje directamente para evitar errores y asegurar mutaciones.
+        if (request.method !== 'GET') {
+          return; // no llamar respondWith: deja pasar la request a la red
+          // Alternativa explícita: event.respondWith(fetch(request)); return;
+        }
+
         // Priorizar navegaciones (páginas HTML) para asegurar fallback offline
         if (request.mode === 'navigate') {
           event.respondWith(networkFirstWithOfflineFallback(request));

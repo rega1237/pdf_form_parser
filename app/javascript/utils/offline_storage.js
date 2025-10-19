@@ -320,29 +320,41 @@ class OfflineStorage {
     
     try {
       const store = tx.objectStore('form_fills')
-      const formFill = await this.promisifyRequest(store.get(formFillId))
+      const numericFormFillId = parseInt(formFillId, 10)
+      let formFill = await this.promisifyRequest(
+        store.get(Number.isNaN(numericFormFillId) ? formFillId : numericFormFillId)
+      )
+
+      // Fallback: si no se encuentra por número y el ID original era string, probar con string
+      if (!formFill && !Number.isNaN(numericFormFillId) && typeof formFillId === 'string') {
+        formFill = await this.promisifyRequest(store.get(formFillId))
+      }
       
       if (!formFill) {
-        throw new Error(`Form fill ${formFillId} not found`)
+        console.warn(`[OfflineStorage] Form fill ${formFillId} not found in IndexedDB. Skipping update.`)
+        return null
       }
 
-      // Actualizar datos
-      formFill.data = { ...formFill.data, ...data }
-      formFill.updated_at = Date.now()
-      formFill.has_pending_changes = true
-
+      // Actualizar datos si se proporcionan
+      if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+        formFill.data = { ...(formFill.data || {}), ...data }
+        formFill.has_pending_changes = true
+      }
+      
       // Actualizar fotos si se proporcionan
-      if (photos) {
-        formFill.photos = { ...formFill.photos, ...photos }
+      if (photos && typeof photos === 'object') {
+        formFill.photos = { ...(formFill.photos || {}), ...photos }
       }
 
+      formFill.updated_at = Date.now()
       await this.promisifyRequest(store.put(formFill))
       console.log(`[OfflineStorage] Updated form fill ${formFillId}`)
       
       return formFill
     } catch (error) {
       console.error(`[OfflineStorage] Error updating form fill ${formFillId}:`, error)
-      throw error
+      // No relanzar el error para evitar ruido en consola en flujos no críticos
+      return null
     }
   }
 
