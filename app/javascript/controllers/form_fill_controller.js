@@ -504,49 +504,83 @@ export default class extends Controller {
         }
 
         if (field.type === "Deficiency") {
-          // Load the searchable-select dropdown value
+          // Prefer values from data column (offline/online), fallback to structure
           const selectElement = formElements[`form_fill[${field.name}_select]`];
+          const selectFromData = dataFromColumn?.[`${field.name}_select`];
+          const finalSelectValue = (selectFromData !== undefined && selectFromData !== null)
+            ? selectFromData
+            : (field.select || field.value || "");
           if (selectElement) {
-            selectElement.value = field.select || field.value || "";
+            selectElement.value = finalSelectValue;
+            selectElement.setAttribute("value", finalSelectValue);
           }
 
-          // Also update the searchable-select display if it exists
+          // Update the searchable-select display if it exists
           const searchableSelectContainer = this.element
             .querySelector(
               `[data-controller*="searchable-select"] input[id*="${field.name}_select"]`,
             )
             ?.closest('[data-controller*="searchable-select"]');
-          if (searchableSelectContainer && (field.select || field.value)) {
-            // Update the display text of the searchable select
+          if (searchableSelectContainer) {
             const buttonText = searchableSelectContainer.querySelector(
               '[data-searchable-select-target="buttonText"]',
             );
             if (buttonText) {
-              buttonText.textContent =
-                field.select || field.value || "Select an option";
+              buttonText.textContent = finalSelectValue || "Select an option";
             }
           }
 
-          const commentElement =
-            formElements[`form_fill[${field.name}_comment]`];
+          // Comment
+          const commentElement = formElements[`form_fill[${field.name}_comment]`];
+          const commentFromData = dataFromColumn?.[`${field.name}_comment`];
+          const finalComment = (commentFromData !== undefined && commentFromData !== null)
+            ? commentFromData
+            : (field.comment_value || "");
           if (commentElement) {
-            commentElement.value = field.comment_value || "";
+            commentElement.value = finalComment;
+            commentElement.setAttribute("value", finalComment);
           }
+
+          // Item
           const itemElement = formElements[`form_fill[${field.name}_item]`];
+          const itemFromData = dataFromColumn?.[`${field.name}_item`];
+          const finalItem = (itemFromData !== undefined && itemFromData !== null)
+            ? itemFromData
+            : (field.Item || "");
           if (itemElement) {
-            itemElement.value = field.Item || "";
+            itemElement.value = finalItem;
+            itemElement.setAttribute("value", finalItem);
           }
+
+          // Riser
           const riserElement = formElements[`form_fill[${field.name}_riser]`];
+          const riserFromData = dataFromColumn?.[`${field.name}_riser`];
+          const finalRiser = (riserFromData !== undefined && riserFromData !== null)
+            ? riserFromData
+            : (field.Riser || "");
           if (riserElement) {
-            riserElement.value = field.Riser || "";
+            riserElement.value = finalRiser;
+            riserElement.setAttribute("value", finalRiser);
           }
+
+          // C checkbox (note: deficiency C/D checkboxes are not in form_fill[], use plain names)
           const cElement = formElements[`${field.name}_c`];
+          const cFromData = dataFromColumn?.[`${field.name}_c`];
           if (cElement) {
-            cElement.checked = field.C === "Yes" || field.C === true;
+            const cChecked = (cFromData !== undefined && cFromData !== null)
+              ? (cFromData === cElement.value || cFromData === true || cFromData === "true" || cFromData === "Yes")
+              : (field.C === "Yes" || field.C === true);
+            cElement.checked = !!cChecked;
           }
+
+          // D checkbox
           const dElement = formElements[`${field.name}_d`];
+          const dFromData = dataFromColumn?.[`${field.name}_d`];
           if (dElement) {
-            dElement.checked = field.D === "Yes" || field.D === true;
+            const dChecked = (dFromData !== undefined && dFromData !== null)
+              ? (dFromData === dElement.value || dFromData === true || dFromData === "true" || dFromData === "Yes")
+              : (field.D === "Yes" || field.D === true);
+            dElement.checked = !!dChecked;
           }
         }
       }
