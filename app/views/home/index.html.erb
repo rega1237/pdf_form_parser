@@ -1,5 +1,5 @@
 <div class="container mx-auto px-4 py-8 lg:py-16">
-  <!-- Mensaje de bienvenida -->
+  <!-- Welcome message -->
   <div class="text-center mb-12 animate-fade-in">
     <h2 class="text-xl lg:text-2xl text-slate-300 mb-4 font-light">
       Welcome to your Control Panel
@@ -8,9 +8,9 @@
       Manage your inspections efficiently. Quickly access templates, forms, clients and inspection history.
     </p>
   </div>
-  <!-- Grid de botones principales -->
+  <!-- Main button grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto md:items-stretch">
-    <!-- Ver Plantillas -->
+    <!-- View Templates -->
     <% if policy(FormTemplate).index? %>
       <div class="group animate-slide-up md:h-full" style="animation-delay: 0.1s;">
         <%= link_to form_templates_path, class: "block bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-indigo-400/20 transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/25 md:h-full md:flex md:items-center" do %>
@@ -28,7 +28,7 @@
         <% end %>
       </div>
     <%end%>
-    <!-- Llenar Formularios -->
+    <!-- Fill Forms -->
     <div class="hidden group animate-slide-up md:h-full" style="animation-delay: 0.2s;">
       <%= link_to form_fills_path, class: "block bg-gradient-to-br from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-emerald-400/20 transition-all duration-300 hover:scale-105 hover:shadow-emerald-500/25 md:h-full md:flex md:items-center" do %>
         <div class="text-center md:w-full">
@@ -44,7 +44,7 @@
         </div>
       <% end %>
     </div>
-    <!-- Ver Clientes -->
+    <!-- View Customers -->
     <div class="group animate-slide-up md:h-full" style="animation-delay: 0.3s;">
       <% if policy(Customer).index? %>
         <%= link_to customers_path, class: "block bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-2xl p-6 lg:p-8 shadow-2xl border border-blue-400/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/25 md:h-full md:flex md:items-center" do %>
@@ -62,7 +62,7 @@
         <% end %>
       <%end%>
     </div>
-    <!-- Ver Inspecciones -->
+    <!-- View Inspections -->
     <div class="group animate-slide-up md:h-full" style="animation-delay: 0.4s;">
       <%= link_to inspections_path, class: "block bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-2xl p-6 lg:p-8 shadow-2xl border border-amber-400/20 transition-all duration-300 hover:scale-105 hover:shadow-orange-500/25 md:h-full md:flex md:items-center" do %>
         <div class="text-center md:w-full">
@@ -79,7 +79,7 @@
       <% end %>
     </div>
   </div>
-  <!-- Información adicional para móviles -->
+  <!-- Additional information for mobile -->
   <div class="mt-12 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in lg:hidden">
     <div class="flex items-center space-x-3 mb-3">
       <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">

@@ -62,7 +62,7 @@ export default class extends Controller {
   async handleOnline() {
     this.isOnline = true;
     this.updateOnlineStatus();
-    this.updateStatus('Conectado', 'info');
+    this.updateStatus('Online', 'info');
     // Intentar sincronización automática si hay foto pendiente
     await this.tryAutoSync();
   }
@@ -70,7 +70,7 @@ export default class extends Controller {
   handleOffline() {
     this.isOnline = false;
     this.updateOnlineStatus();
-    this.updateStatus('Sin conexión', 'error');
+    this.updateStatus('Offline', 'error');
   }
 
   /**
@@ -85,7 +85,7 @@ export default class extends Controller {
       await this.initializeOfflineStorage();
       if (!this.offlineStorage) {
         console.error('[OfflinePhoto] OfflineStorage no disponible al seleccionar archivo');
-        this.updateStatus('No se pudo preparar almacenamiento offline', 'error');
+        this.updateStatus('Could not prepare offline storage', 'error');
         return;
       }
     }
@@ -101,7 +101,7 @@ export default class extends Controller {
     if (navigator.onLine) {
       await this.syncPhoto();
     } else {
-      this.updateStatus('Guardada offline', 'success');
+      this.updateStatus('Saved offline', 'success');
     }
   }
 
@@ -219,9 +219,9 @@ export default class extends Controller {
                 <svg class="w-3 h-3 mr-1 ${synced ? 'text-green-400' : 'text-yellow-400'}" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                 </svg>
-                ${synced ? 'Sincronizada' : 'Offline (pendiente)'}
+                ${synced ? 'Synced' : 'Offline (pending)'}
               </span>
-              <span class="${synced ? 'text-green-400' : 'text-yellow-400'}">${synced ? 'Guardada' : 'Guardada offline'}</span>
+              <span class="${synced ? 'text-green-400' : 'text-yellow-400'}">${synced ? 'Saved' : 'Saved offline'}</span>
             </div>
           `;
         }
@@ -258,7 +258,7 @@ export default class extends Controller {
       
       if (hasPhoto) {
         await this.updatePreview(this.photoIdValue)
-        this.updateStatus('Foto cargada desde almacenamiento offline', 'info')
+        this.updateStatus('Photo loaded from offline storage', 'info')
       }
     } catch (error) {
       console.error('[OfflinePhoto] Error loading existing photo:', error)
@@ -274,7 +274,7 @@ export default class extends Controller {
        if (latest && latest.id) {
          this.photoIdValue = latest.id;
          await this.updatePreview(latest.id);
-         this.updateStatus('Foto offline cargada para este campo', 'info');
+         this.updateStatus('Offline photo loaded for this field', 'info');
        }
     } catch (error) {
       console.error('[OfflinePhoto] Error loading last offline photo:', error);
@@ -288,7 +288,7 @@ export default class extends Controller {
     if (!this.photoIdValue) return
 
     try {
-      this.updateStatus('Eliminando foto...', 'info')
+      this.updateStatus('Deleting photo...', 'info')
       
       // Eliminar de IndexedDB
       await this.offlineStorage.removePhotoBlob(this.photoIdValue)
@@ -310,11 +310,11 @@ export default class extends Controller {
       this.updateFormData(null)
       this.photoIdValue = ''
       
-      this.updateStatus('Foto eliminada', 'success')
+      this.updateStatus('Photo deleted', 'success')
       
     } catch (error) {
       console.error('[OfflinePhoto] Error removing photo:', error)
-      this.updateStatus('Error al eliminar la foto', 'error')
+      this.updateStatus('Error deleting photo', 'error')
     }
   }
 
@@ -328,7 +328,7 @@ export default class extends Controller {
       if (!photoData?.blob) return;
 
       // Mostrar estado de subida
-      this.updateStatus('Subiendo...', 'info');
+      this.updateStatus('Uploading...', 'info');
 
       // Subir original
       const uploadResponse = await this.uploadPhotoToServer(photoData.blob);
@@ -366,10 +366,10 @@ export default class extends Controller {
       // Actualizar preview y data column en el dataset
       await this.updatePreview(this.photoIdValue);
       await this.updateDataColumnQuietly(attachmentId, this.fieldNameValue);
-      this.updateStatus('Guardada', 'success');
+      this.updateStatus('Saved', 'success');
     } catch (error) {
       console.error('[OfflinePhotoController] Error syncing photo:', error);
-      this.updateStatus('Error al sincronizar la foto', 'error');
+      this.updateStatus('Error syncing photo', 'error');
     }
   }
 
@@ -427,7 +427,7 @@ export default class extends Controller {
     
     if (this.hasUploadButtonTarget) {
       this.uploadButtonTarget.disabled = !isOnline
-      this.uploadButtonTarget.title = isOnline ? 'Subir foto' : 'Sin conexión'
+      this.uploadButtonTarget.title = isOnline ? 'Upload photo' : 'Offline'
     }
   }
 
@@ -512,7 +512,7 @@ export default class extends Controller {
 
       this.photoIdValue = photoId
       await this.updatePreview(photoId)
-      this.updateStatus('Guardada', 'success')
+      this.updateStatus('Saved', 'success')
     } catch (error) {
       console.warn('[OfflinePhotoController] ensureLocalThumbnailFromServerIfNeeded error:', error)
     }
@@ -548,7 +548,7 @@ export default class extends Controller {
 
     try {
       // Mostrar estado de carga en UI
-      this.updateStatus('Subiendo...', 'info');
+      this.updateStatus('Uploading...', 'info');
 
       // Obtener el ID del formulario (form fill)
       const formElement = document.querySelector('[data-controller*="form-fill"]');
@@ -589,7 +589,7 @@ export default class extends Controller {
       }
     } catch (error) {
       console.error('[OfflinePhotoController] Error uploading photo:', error);
-      this.updateStatus('Error al subir la foto', 'error');
+      this.updateStatus('Error uploading photo', 'error');
       return null;
     }
   }

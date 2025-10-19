@@ -942,7 +942,7 @@ export default class extends Controller {
     // Confirmar eliminación
     if (
       confirm(
-        `¿Está seguro de que desea eliminar el campo "${fieldToDelete.name}"?\n\nEsta acción no se puede deshacer.`,
+        `Are you sure you want to delete the field "${fieldToDelete.name}"?\n\nThis action cannot be undone.`,
       )
     ) {
       try {
@@ -958,7 +958,7 @@ export default class extends Controller {
 
         // Mostrar notificación de éxito usando notification controller
         this.sendNotification(
-          `Campo "${fieldToDelete.name}" eliminado exitosamente`,
+          `Field "${fieldToDelete.name}" deleted successfully`,
           "success",
         );
 
@@ -973,7 +973,7 @@ export default class extends Controller {
           }
         }
       } catch (error) {
-        this.sendNotification("Error al eliminar el campo", "error");
+        this.sendNotification("Error deleting field", "error");
       }
     }
   }
@@ -1068,14 +1068,14 @@ export default class extends Controller {
 
       // Mostrar notificación de éxito usando notification controller
       this.sendNotification(
-        `Campo "${newField.name}" agregado exitosamente`,
+        `Field "${newField.name}" added successfully`,
         "success",
       );
 
       // Incrementar contador para el próximo campo
       this.fieldCounter++;
     } catch (error) {
-      this.sendNotification("Error al agregar el campo", "error");
+      this.sendNotification("Error adding field", "error");
     }
   }
 

@@ -143,7 +143,7 @@ export default class extends Controller {
 
   // Método principal para eliminar foto (llamado desde la vista)
   removePhoto() {
-    const confirmMessage = "¿Está seguro de que desea eliminar esta foto? Esta acción no se puede deshacer.";
+    const confirmMessage = "Are you sure you want to delete this photo? This action cannot be undone.";
     if (!confirm(confirmMessage)) return;
 
     const fieldName = this.getFieldNameFromInput();
@@ -173,20 +173,20 @@ export default class extends Controller {
           this.clearPreviewAndInput();
 
           // Actualizar el botón
-          this.updateButtonText("Tomar Foto");
+          this.updateButtonText("Take Photo");
 
           // Mostrar mensaje de éxito
-          this.showSuccessMessage("Foto eliminada exitosamente");
+          this.showSuccessMessage("Photo deleted successfully");
 
           // También eliminar cualquier copia local (thumbnail/offline) una vez confirmada la eliminación
           this.dispatchConfirmedRemove();
         } else {
-          alert(`Error al eliminar la foto: ${result.error}`);
+          alert(`Error deleting photo: ${result.error}`);
         }
       })
       .catch((error) => {
         console.error("Error removing photo:", error);
-        alert("Error de conexión al eliminar la foto");
+        alert("Connection error when deleting photo");
       })
       .finally(() => {
         // Restaurar estado del botón
@@ -286,7 +286,7 @@ export default class extends Controller {
     // Método 1: Buscar el indicador "Guardada" en el texto
     const fileInfoElement = this.previewTarget.querySelector(".file-info");
     if (fileInfoElement) {
-      const guardadaText = fileInfoElement.textContent.includes("Guardada");
+      const guardadaText = fileInfoElement.textContent.includes("Guardada") || fileInfoElement.textContent.includes("Saved");
       if (guardadaText) return true;
     }
 
@@ -294,7 +294,7 @@ export default class extends Controller {
     const greenElements =
       this.previewTarget.querySelectorAll(".text-green-400");
     for (let element of greenElements) {
-      if (element.textContent.includes("Guardada")) {
+      if (element.textContent.includes("Guardada") || element.textContent.includes("Saved")) {
         return true;
       }
     }
@@ -450,7 +450,7 @@ export default class extends Controller {
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        Procesando...
+        Processing...
       `;
       button.disabled = true;
     }
@@ -494,7 +494,7 @@ export default class extends Controller {
           </svg>
           ${fileName}
         </span>
-        <span class="text-green-400">Guardada</span>
+        <span class="text-green-400">Saved</span>
       </div>
     `;
 
@@ -554,13 +554,13 @@ export default class extends Controller {
         await this.updateDataColumnQuietly(result.attachment_id, fieldName);
 
         // Mostrar mensaje de éxito
-        this.showSuccessMessage("Foto guardada exitosamente");
+        this.showSuccessMessage("Photo saved successfully");
       } else {
         throw new Error(result.error || "Error uploading photo");
       }
     } catch (error) {
       console.error("Error uploading photo:", error);
-      alert(`Error al subir la foto: ${error.message}`);
+      alert(`Error uploading photo: ${error.message}`);
 
       // En caso de error, limpiar la vista previa
       this.clearPreviewOnly();
@@ -581,9 +581,9 @@ export default class extends Controller {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Subiendo...
+            Uploading...
           </span>
-          <span class="text-blue-400">Procesando</span>
+          <span class="text-blue-400">Processing...</span>
         </div>
       `;
     }
@@ -606,7 +606,7 @@ export default class extends Controller {
             </svg>
             ${fileName}
           </span>
-          <span class="text-green-400">Guardada</span>
+          <span class="text-green-400">Saved</span>
         </div>
       `;
     }

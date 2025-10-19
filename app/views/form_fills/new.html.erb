@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
   <div class="container mx-auto px-4 py-6 lg:py-12">
     
-    <!-- Header con navegación -->
+    <!-- Header with navigation -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div class="mb-4 sm:mb-0">
         <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">New Form Fill</h1>
@@ -15,11 +15,11 @@
       <% end %>
     </div>
 
-    <!-- Contenido principal -->
+    <!-- Main content -->
     <div class="max-w-2xl mx-auto">
       <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
         
-        <!-- Manejo de errores -->
+        <!-- Error handling -->
         <% if @form_fill.errors.any? %>
           <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-6 animate-slide-up">
             <div class="flex items-center mb-3">
@@ -41,7 +41,7 @@
 
         <%= form_with model: @form_fill, url: form_fills_path, local: true, class: "space-y-6" do |form| %>
           
-          <!-- Campo Name -->
+          <!-- Name field -->
           <div class="space-y-2">
             <%= form.label :name, "Form Fill Name", class: "block text-white font-semibold text-sm lg:text-base" %>
             <div class="relative">
@@ -54,7 +54,7 @@
             </div>
           </div>
 
-          <!-- Campo Form Template -->
+          <!-- Form Template field -->
           <div class="space-y-2">
             <%= form.label :form_template_id, "Form Template", class: "block text-white font-semibold text-sm lg:text-base" %>
             <div class="relative">
@@ -70,7 +70,7 @@
             </div>
           </div>
 
-          <!-- Campo Inspection -->
+          <!-- Inspection field -->
           <div class="space-y-2">
             <%= form.label :inspection_id, "Inspection", class: "block text-white font-semibold text-sm lg:text-base" %>
             <div class="relative">
@@ -86,12 +86,12 @@
             </div>
           </div>
           
-          <!-- Hidden field para inspection_id si viene por parámetro -->
+          <!-- Hidden field for inspection_id if provided via parameter -->
           <% if params[:inspection_id].present? %>
             <%= form.hidden_field :inspection_id, value: params[:inspection_id] %>
           <% end %>
 
-          <!-- Sección informativa -->
+          <!-- Informational section -->
           <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in">
             <div class="flex items-start space-x-3">
               <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mt-1">
@@ -106,7 +106,7 @@
             </div>
           </div>
 
-          <!-- Botones de acción -->
+          <!-- Action buttons -->
           <div class="flex flex-col sm:flex-row gap-4 pt-4">
             <%= form.submit 'Create Form Fill', 
                 class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center" %>

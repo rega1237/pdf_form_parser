@@ -1197,22 +1197,22 @@ export default class extends Controller {
 
     // Offline-First: siempre guardar en IndexedDB y dejar que el proceso
     // de sincronización suba cambios (si online, se encola automáticamente)
-    console.log("💾 Guardando cambios en IndexedDB (offline-first)...", changedData);
+    console.log("💾 Saving changes to IndexedDB (offline-first)...", changedData);
     await this.saveOffline(formId, changedData);
   }
 
   async saveOffline(formFillId, changedData) {
     if (!this.offlineStorage) {
-      console.error("Offline storage no está disponible.");
+      console.error("Offline storage is not available.");
       return;
     }
 
     try {
       await this.offlineStorage.saveFormFillData(formFillId, changedData);
       this.changedFields.clear();
-      this.dispatchNotification("info", "Cambios guardados localmente.");
+      this.dispatchNotification("info", "Changes saved locally.");
     } catch (error) {
-      console.error("Error al guardar en IndexedDB:", error);
+      console.error("Error saving to IndexedDB:", error);
     }
   }
 
@@ -1291,7 +1291,7 @@ export default class extends Controller {
     try {
       if (!navigator.onLine) {
         console.log(
-          `🚫 Offline: Guardando cambios en IndexedDB...`,
+          `🚫 Offline: Saving changes to IndexedDB...`,
           Object.fromEntries(this.changedFields),
         );
         // Guardar estructura y datos en IndexedDB
@@ -1421,7 +1421,7 @@ export default class extends Controller {
             </svg>
             ${fileName}
           </span>
-          <span class="text-green-400">Guardada</span>
+          <span class="text-green-400">Saved</span>
         </div>
       `;
     } else {
@@ -1436,7 +1436,7 @@ export default class extends Controller {
             </svg>
             ${fileName}
           </span>
-          <span class="text-green-400">Guardada</span>
+          <span class="text-green-400">Saved</span>
         </div>
       `;
       previewContainer.appendChild(newInfoElement);

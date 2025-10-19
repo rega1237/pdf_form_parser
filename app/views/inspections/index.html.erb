@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
   <div class="container mx-auto px-4 py-6 lg:py-12">
-    <!-- Header con navegación -->
+    <!-- Header with navigation -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div class="mb-4 sm:mb-0">
         <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">Inspections</h1>
@@ -48,7 +48,7 @@
         <% end %>
       </div>
     </div>
-    <!-- Filtros -->
+    <!-- Filters -->
     <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl mb-8 animate-slide-up">
       <div class="flex items-center mb-6">
         <div class="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center mr-3">
@@ -122,7 +122,7 @@
         </div>
       <% end %>
     </div>
-    <!-- Tabla de Inspecciones -->
+    <!-- Inspections Table -->
     <div class="bg-white/10 backdrop-blur-sm rounded-3xl border border-white/20 shadow-2xl overflow-hidden animate-slide-up animate-stagger">
       <div class="overflow-x-auto">
         <table class="min-w-full">
@@ -204,7 +204,7 @@
         </table>
       </div>
     </div>
-    <!-- Estado vacío -->
+    <!-- Empty State -->
     <% if @inspections.empty? %>
       <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-12 border border-white/10 text-center animate-fade-in mt-8">
         <div class="w-16 h-16 bg-slate-500/20 rounded-full flex items-center justify-center mx-auto mb-6">

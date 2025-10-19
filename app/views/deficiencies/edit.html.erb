@@ -13,12 +13,12 @@
   </style>
 <% end %>
 
-<% content_for :title, "Editar Deficiencia" %>
+<% content_for :title, "Edit Deficiency" %>
 
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
   <div class="container mx-auto px-4 py-6 lg:py-12">
     
-    <!-- Header con navegación -->
+    <!-- Header with navigation -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div class="mb-4 sm:mb-0">
         <div class="flex items-center mb-2">
@@ -34,7 +34,7 @@
         </p>
       </div>
       
-      <!-- Botones de navegación -->
+      <!-- Navigation buttons -->
       <div class="flex flex-col sm:flex-row gap-3">
         <%= link_to settings_path, 
             class: "inline-flex items-center bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-xl transition-colors duration-200 text-sm lg:text-base" do %>
@@ -46,11 +46,11 @@
       </div>
     </div>
 
-    <!-- Contenido principal -->
+    <!-- Main content -->
     <div class="max-w-2xl mx-auto">
       <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
         
-        <!-- Información de la deficiencia actual -->
+        <!-- Current deficiency information -->
         <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-4 mb-6 border border-white/10">
           <div class="flex items-center">
             <div class="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center mr-3">
@@ -59,13 +59,13 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-white font-semibold text-sm">Editando deficiencia</h3>
-              <p class="text-slate-300 text-xs">ID: <%= @deficiency.id %> • Creada: <%= @deficiency.created_at.strftime("%d/%m/%Y") %></p>
+              <h3 class="text-white font-semibold text-sm">Editing deficiency</h3>
+              <p class="text-slate-300 text-xs">ID: <%= @deficiency.id %> • Created: <%= @deficiency.created_at.strftime("%d/%m/%Y") %></p>
             </div>
           </div>
         </div>
         
-        <!-- Formulario -->
+        <!-- Form -->
         <%= render "form", deficiency: @deficiency %>
         
       </div>
