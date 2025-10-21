@@ -149,6 +149,13 @@ export default class extends Controller {
     const fieldName = this.getFieldNameFromInput();
     const hasServerPhoto = this.hasServerPhoto();
 
+    // Si estamos offline, nunca intentes eliminar en servidor. Delega a offline.
+    if (!navigator.onLine) {
+      this.dispatchConfirmedRemove();
+      this.clearPreviewOnly();
+      return;
+    }
+
     if (hasServerPhoto && fieldName) {
       // Hay foto en el servidor, eliminar completamente
       this.removePhotoCompletely(fieldName);
@@ -283,6 +290,19 @@ export default class extends Controller {
       return false;
     }
 
+    const fieldName = this.getFieldNameFromInput();
+
+    // Primero: verificar por datos explícitos del formulario (attachment id en data column)
+    if (fieldName) {
+      const hasAttachmentId = this.checkFormStructureForPhoto(fieldName);
+      if (hasAttachmentId) return true;
+    }
+
+    // Si estamos offline y no hay attachment id explícito, asumimos que NO hay foto de servidor
+    if (!navigator.onLine) {
+      return false;
+    }
+
     // Método 1: Buscar el indicador "Guardada" en el texto
     const fileInfoElement = this.previewTarget.querySelector(".file-info");
     if (fileInfoElement) {
@@ -291,32 +311,25 @@ export default class extends Controller {
     }
 
     // Método 2: Buscar elementos con class text-green-400 que contengan "Guardada"
-    const greenElements =
-      this.previewTarget.querySelectorAll(".text-green-400");
+    const greenElements = this.previewTarget.querySelectorAll(".text-green-400");
     for (let element of greenElements) {
       if (element.textContent.includes("Guardada") || element.textContent.includes("Saved")) {
         return true;
       }
     }
 
-    // Método 3: Verificar si la imagen tiene src que no está vacío y no es data: URL
+    // Método 3: Verificar si la imagen tiene src de servidor (http/https o ruta) y NO es blob: ni data:
     if (this.hasImageTarget && this.imageTarget.src) {
-      const isDataUrl = this.imageTarget.src.startsWith("data:");
-      const hasValidSrc = this.imageTarget.src.length > 0 && !isDataUrl;
+      const src = this.imageTarget.src;
+      const isDataUrl = src.startsWith("data:");
+      const isBlobUrl = src.startsWith("blob:");
+      const isHttpUrl = src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/");
+      const hasValidServerSrc = isHttpUrl && !isDataUrl && !isBlobUrl && src.length > 0;
 
-      // Si tiene src válido pero no es data URL, probablemente es del servidor
-      if (hasValidSrc) {
-        // Verificar también que no esté oculto el preview
+      if (hasValidServerSrc) {
         const isVisible = !this.previewTarget.classList.contains("hidden");
         return isVisible;
       }
-    }
-
-    // Método 4: Verificar desde la estructura del formulario
-    const fieldName = this.getFieldNameFromInput();
-    if (fieldName) {
-      const hasAttachmentId = this.checkFormStructureForPhoto(fieldName);
-      if (hasAttachmentId) return true;
     }
 
     return false;
@@ -325,39 +338,24 @@ export default class extends Controller {
   // método para verificar la data column para fotos
   checkFormStructureForPhoto(fieldName) {
     try {
-      const formFillElement = document.querySelector(
-        '[data-controller*="form-fill"]',
-      );
+      const formFillElement = document.querySelector('[data-controller*="form-fill"]');
       if (!formFillElement) return false;
 
-      // Check data column first (new approach)
       const dataValue = formFillElement.dataset.formFillDataValue;
       if (dataValue) {
         const data = JSON.parse(dataValue);
-        const attachmentKey = `${fieldName}_attachment_id`;
-        if (data[attachmentKey] && data[attachmentKey].trim() !== "") {
+        // Preferir la clave moderna con sufijo _photo_attachment_id, con fallback a _attachment_id
+        const keyNew = `${fieldName}_photo_attachment_id`;
+        const keyOld = `${fieldName}_attachment_id`;
+        const att = data[keyNew] ?? data[keyOld];
+        if (att && String(att).trim() !== "") {
           return true;
         }
       }
 
-      // Fallback to structure column (legacy support)
-      const structureValue = formFillElement.dataset.formFillFormStructureValue;
-      if (structureValue) {
-        const structure = JSON.parse(structureValue);
-        const field = structure.find(
-          (f) => f.name === fieldName && f.type === "Photo",
-        );
-
-        return (
-          field &&
-          field.photo_attachment_id &&
-          field.photo_attachment_id.trim() !== ""
-        );
-      }
-
       return false;
     } catch (error) {
-      console.error("Error checking form data for photo:", error);
+      console.warn("Error checking form structure for photo:", error);
       return false;
     }
   }

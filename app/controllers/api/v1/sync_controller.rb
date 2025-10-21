@@ -22,6 +22,8 @@ class Api::V1::SyncController < ApplicationController
                  sync_form_fill(item)
                when 'inspection'
                  sync_inspection(item)
+               when 'photo_delete'
+                 sync_photo_delete(item)
                else
                  { success: false, error: "Tipo de sincronización no soportado: #{item[:type]}" }
                end
@@ -298,25 +300,20 @@ class Api::V1::SyncController < ApplicationController
     max_size = 10.megabytes
     return { success: false, error: 'El archivo es demasiado grande (máximo 10MB)' } if photo_file.size > max_size
 
-    # Remover foto existente para este campo si existe
-    form_fill.remove_photos_for_field(field_name) if form_fill.respond_to?(:remove_photos_for_field)
+    # Usar la API del modelo para adjuntar de forma consistente y limpiar duplicados
+    attach_result = form_fill.attach_photo_for_field(field_name, photo_file)
 
-    # Adjuntar nueva foto
-    attachment = form_fill.photos.attach(
-      io: photo_file,
-      filename: "#{field_name}_#{Time.current.to_i}#{File.extname(photo_file.original_filename)}",
-      content_type: photo_file.content_type
-    )
-
-    # Actualizar datos del formulario con el ID del attachment
-    data = form_fill.data || {}
-    data[field_name] = form_fill.photos.last.id
-    form_fill.update!(data: data)
-
-    {
-      success: true,
-      attachment_id: form_fill.photos.last.id
-    }
+    if attach_result[:success]
+      {
+        success: true,
+        attachment_id: attach_result[:attachment_id]
+      }
+    else
+      {
+        success: false,
+        error: attach_result[:error] || 'Error al adjuntar la foto'
+      }
+    end
   rescue StandardError => e
     Rails.logger.error "Error procesando subida de foto: #{e.message}"
     {
@@ -353,6 +350,34 @@ class Api::V1::SyncController < ApplicationController
       rescue StandardError => e
         Rails.logger.error "Error sincronizando foto: #{e.message}"
       end
+    end
+  end
+
+  def sync_photo_delete(item)
+    data = item[:data] || item[:payload] || {}
+    form_fill_id = data[:form_fill_id] || data['form_fill_id'] || item[:form_fill_id] || item['form_fill_id']
+    field_name = data[:field_name] || data['field_name']
+
+    unless form_fill_id.present? && field_name.present?
+      return { success: false, message: 'Missing form_fill_id or field_name for photo_delete' }
+    end
+
+    form_fill = FormFill.find_by(id: form_fill_id)
+    return { success: false, message: 'FormFill not found' } unless form_fill
+
+    # Authorization: follow same pattern used for other sync actions if Pundit is included
+    begin
+      authorize(form_fill, :update?) if defined?(authorize)
+    rescue StandardError
+      # If no authorization mechanism, proceed
+    end
+
+    removal = form_fill.remove_photo_for_field(field_name)
+
+    if removal.is_a?(Hash) && removal[:success]
+      { success: true, server_id: form_fill.id, message: 'Photo deleted' }
+    else
+      { success: false, server_id: form_fill.id, message: (removal.is_a?(Hash) ? removal[:message] : 'Photo delete failed') }
     end
   end
 end

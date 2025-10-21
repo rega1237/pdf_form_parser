@@ -148,7 +148,7 @@ export default class extends Controller {
       // Try to enrich metadata with inspection_id
       let inspectionId = null
       try {
-        const ff = await this.offlineStorage.getFormFill(formFillId)
+        const ff = await this.offlineStorage.getFormFillData(formFillId)
         inspectionId = ff?.inspection_id || null
       } catch (_) {}
 
@@ -308,6 +308,21 @@ export default class extends Controller {
 
       // Limpiar datos del formulario
       this.updateFormData(null)
+      // También limpiar la data column local (attachment id) para este campo
+      await this.updateDataColumnQuietly(null, this.fieldNameValue)
+      
+      // Persistir cambio en IndexedDB cuando estamos offline (sin encolar parches innecesarios)
+      if (!navigator.onLine && this.offlineStorage) {
+        const changedData = {}
+        changedData[`${this.fieldNameValue}_photo_attachment_id`] = null
+        changedData[this.fieldNameValue] = ''
+        try {
+          await this.offlineStorage.saveFormFillData(this.formFillIdValue, changedData)
+        } catch (e) {
+          console.warn('[OfflinePhoto] Failed to persist delete in IndexedDB:', e)
+        }
+      }
+
       this.photoIdValue = ''
       
       this.updateStatus('Photo deleted', 'success')
@@ -339,7 +354,7 @@ export default class extends Controller {
       let inspectionId = photoData?.metadata?.inspection_id || null;
       try {
         if (!inspectionId) {
-          const ff = await this.offlineStorage.getFormFill(this.formFillIdValue);
+          const ff = await this.offlineStorage.getFormFillData(this.formFillIdValue);
           inspectionId = ff?.inspection_id || null;
         }
       } catch (_) {}
@@ -412,8 +427,32 @@ export default class extends Controller {
       let currentData = {};
       try { currentData = JSON.parse(currentDataValue); } catch(_) { currentData = {}; }
       const key = `${fieldName}_photo_attachment_id`;
-      const updatedData = { ...currentData, [key]: attachmentId };
-      formFillElement.dataset.formFillDataValue = JSON.stringify(updatedData);
+      // Si tenemos attachmentId válido, guardarlo; si no, eliminar la clave
+      if (attachmentId) {
+        currentData[key] = attachmentId;
+      } else {
+        delete currentData[key];
+      }
+      formFillElement.dataset.formFillDataValue = JSON.stringify(currentData);
+
+      // También marcar el cambio en el controlador form-fill (para guardado incremental)
+      try {
+        let controller = null;
+        if (this.application) {
+          controller = this.application.getControllerForElementAndIdentifier(formFillElement, 'form-fill');
+        }
+        if (!controller && formFillElement.formFillController) {
+          controller = formFillElement.formFillController;
+        }
+        if (!controller && window.Stimulus && window.Stimulus.getControllerForElementAndIdentifier) {
+          controller = window.Stimulus.getControllerForElementAndIdentifier(formFillElement, 'form-fill');
+        }
+        if (controller && controller.changedFields) {
+          controller.changedFields.set(key, attachmentId || '');
+        }
+      } catch (e) {
+        console.warn('[OfflinePhoto] Could not set changedFields for form-fill controller:', e);
+      }
     } catch (error) {
       console.warn('[OfflinePhoto] Error updating form fill data locally:', error);
     }
@@ -487,7 +526,7 @@ export default class extends Controller {
       const photoId = this.generatePhotoId()
       let inspectionId = null
       try {
-        const ff = await this.offlineStorage.getFormFill(this.formFillIdValue)
+        const ff = await this.offlineStorage.getFormFillData(this.formFillIdValue)
         inspectionId = ff?.inspection_id || null
       } catch (_) {}
 
@@ -594,8 +633,44 @@ export default class extends Controller {
     }
   }
 
-  handleRemoveConfirmed(event) {
+  async handleRemoveConfirmed(event) {
+    // Determinar si existía foto en servidor antes de borrar localmente
+    let hadServerAttachment = false;
+    try {
+      const form = this.element.closest('form')
+      const dataJson = form?.dataset?.formFillDataValue || this.element?.dataset?.formFillDataValue
+      if (dataJson) {
+        const data = JSON.parse(dataJson)
+        const attachmentKey = `${this.fieldNameValue}_photo_attachment_id`
+        const att = data?.[attachmentKey]
+        hadServerAttachment = !!(att && String(att).trim() !== '')
+      }
+    } catch (_) {}
+
     // Borrar localmente solo luego de confirmación del usuario
-    this.removePhoto();
+    await this.removePhoto();
+
+    // Si estamos offline y había foto en servidor, encolar eliminación para sincronización
+    if (!navigator.onLine && hadServerAttachment && this.offlineStorage) {
+      const numericFormFillId = parseInt(this.formFillIdValue, 10)
+      let inspectionId = null
+      try {
+        const ff = await this.offlineStorage.getFormFillData(numericFormFillId)
+        inspectionId = ff?.inspection_id || null
+      } catch (e) {
+        console.warn('[OfflinePhoto] Could not fetch form fill for inspection_id:', e)
+      }
+      const payload = { form_fill_id: numericFormFillId, field_name: this.fieldNameValue }
+      try {
+        await this.offlineStorage.addToSyncQueue('photo_delete', inspectionId, numericFormFillId, payload)
+        // Opcional: notificar a UI de que hay cambios pendientes
+        try {
+          const evt = new CustomEvent('sync:pending-changes', { detail: { formFillId: numericFormFillId, pending: true }, bubbles: true })
+          document.dispatchEvent(evt)
+        } catch (e) {}
+      } catch (e) {
+        console.warn('[OfflinePhoto] Failed to enqueue photo_delete:', e)
+      }
+    }
   }
 }

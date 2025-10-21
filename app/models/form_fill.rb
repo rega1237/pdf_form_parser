@@ -152,16 +152,39 @@ class FormFill < ApplicationRecord
       safe_section_name = field_section.gsub('|', '__')
       parameterized_name = safe_section_name.parameterize.underscore
 
-      # Buscar todas las fotos que coincidan con el patrón del campo
+      # Buscar todas las fotos que coincidan con el patrón del campo (nuevo esquema con inspection + section)
       field_pattern = "inspection_#{inspection.id}_#{parameterized_name}_"
 
       photos_to_remove = photos.select do |photo|
         photo.filename.to_s.include?(field_pattern)
       end
 
+      # Fallback 1: si existe un attachment_id guardado en data, eliminar por prefijo de filename
+      begin
+        stored_attachment_id = get_field_value("#{field_name}_photo_attachment_id")
+      rescue StandardError
+        stored_attachment_id = nil
+      end
+      if stored_attachment_id.present?
+        photos_to_remove += photos.select { |photo| photo.filename.to_s.start_with?(stored_attachment_id) }
+      end
+
+      # Fallback 2 (legado): si data[field_name] guarda el id del attachment de ActiveStorage, eliminar esa foto directamente
+      begin
+        legacy_attachment_record_id = get_field_value(field_name)
+      rescue StandardError
+        legacy_attachment_record_id = nil
+      end
+      if legacy_attachment_record_id.present?
+        photos_to_remove += photos.select { |photo| photo.id.to_s == legacy_attachment_record_id.to_s }
+      end
+
+      # Asegurar unicidad
+      photos_to_remove = photos_to_remove.uniq
+
       # Eliminar todas las fotos encontradas
       photos_to_remove.each do |photo|
-        Rails.logger.info "Removing duplicate photo: #{photo.filename}"
+        Rails.logger.info "Removing photo for field '#{field_name}': #{photo.filename} (id=#{photo.id})"
         photo.purge
       end
 
