@@ -63,8 +63,9 @@ class PwaController < ApplicationController
     # Lista de recursos críticos para cachear
     app_shell_urls = [
       '/',
-      '/inspections',
-      '/form_fills',
+      # IMPORTANTE: no incluir rutas protegidas que requieran sesión (evita cachear login)
+      # '/inspections',
+      # '/form_fills',
       view_context.asset_path('application.js'),
       view_context.asset_path('application.css'),
       '/icon.svg',
