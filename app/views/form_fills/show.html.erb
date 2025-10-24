@@ -289,7 +289,7 @@
               </svg>
             </button>
           </div>
-            <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
+            <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg relative z-20">
               <div class="flex items-start space-x-4 mb-6">
                 <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
                 <div>
@@ -333,9 +333,9 @@
                   </svg>
                   PDF Generation Failed
                 </div>
-                <%= button_tag 'Retry Generate PDF', type: 'button', class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { action: "click->form-fill#submitToPdf", confirm: "Are you sure you want to retry generating the PDF?" } %>
+                <%= button_tag 'Retry Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to retry generating the PDF?" }, aria: { label: "Retry Generate PDF" } %>
               <% else %>
-                <%= button_tag 'Generate PDF', type: 'button', class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { action: "click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." } %>
+                <%= button_tag 'Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." }, aria: { label: "Generate PDF" } %>
               <% end %>
 
               <%# --- Botón para ir al formulario principal --- %>

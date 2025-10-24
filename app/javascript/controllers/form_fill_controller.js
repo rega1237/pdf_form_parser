@@ -21,6 +21,9 @@ export default class extends Controller {
     this.offlineStorage = new OfflineStorage();
     console.log(this.offlineStorage)
 
+    // Prevent double-submit when both touchstart and click fire
+    this._pdfSubmitting = false;
+
     // Offline-First: Inicializar estructura+datos desde IndexedDB
     this.initializeFromIndexedDB()
 
@@ -1349,40 +1352,57 @@ export default class extends Controller {
   }
 
   async submitToPdf(event) {
+    // Debounce to avoid double handling between touchstart and click
+    if (this._pdfSubmitting) return;
+    this._pdfSubmitting = true;
+    setTimeout(() => { this._pdfSubmitting = false; }, 800);
+
+    // Ensure mobile browsers don't treat this as a ghost click or let any ancestor intercept
+    event.preventDefault();
     event.stopPropagation();
 
-    const confirmMessage = event.currentTarget.dataset.confirm;
-    if (!confirm(confirmMessage)) return;
+    const target = event.currentTarget || event.target;
 
-    const formStructureHiddenInput = document.getElementById(
-      "form_fill_form_structure",
-    );
-    if (formStructureHiddenInput) {
-      formStructureHiddenInput.value = this.serializeForm();
+    // Optional: reduce chance of double-tap triggering by blurring the active element
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
     }
 
-    const dynamicForm = document.createElement("form");
-    dynamicForm.method = "post";
-    dynamicForm.action = this.element.action.replace(
-      /(\/form_fills\/\d+).*/,
-      "$1/submit_form",
-    );
+    if (target?.dataset?.confirm) {
+      const ok = window.confirm(target.dataset.confirm);
+      if (!ok) return;
+    }
+
+    // Serialize current form structure and values safely
+    const serialized = this.serializeForm();
+
+    // Create a temporary form to POST to the server (works reliably across mobile browsers)
+    const tempForm = document.createElement("form");
+    tempForm.method = "POST";
+    // Preserve the existing nested resource endpoint
+    tempForm.action = this.element.action.replace(/(\/form_fills\/\d+).*/, "$1/submit_form");
+
+    // CSRF token (Rails authenticity token)
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || this.csrfToken;
 
     const csrfInput = document.createElement("input");
     csrfInput.type = "hidden";
     csrfInput.name = "authenticity_token";
-    csrfInput.value = this.csrfToken;
-    dynamicForm.appendChild(csrfInput);
+    csrfInput.value = csrfToken || "";
 
-    const structureInput = document.createElement("input");
-    structureInput.type = "hidden";
-    structureInput.name = "form_fill[form_structure]";
-    structureInput.value = formStructureHiddenInput.value;
-    dynamicForm.appendChild(structureInput);
+    const payloadInput = document.createElement("input");
+    payloadInput.type = "hidden";
+    // Match the server-expected param structure
+    payloadInput.name = "form_fill[form_structure]";
+    payloadInput.value = JSON.stringify(serialized);
 
-    document.body.appendChild(dynamicForm);
-    dynamicForm.submit();
-    document.body.removeChild(dynamicForm);
+    tempForm.appendChild(csrfInput);
+    tempForm.appendChild(payloadInput);
+
+    // Append, submit, and remove to avoid lingering nodes
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    document.body.removeChild(tempForm);
   }
 
   async reloadFormStructure() {
