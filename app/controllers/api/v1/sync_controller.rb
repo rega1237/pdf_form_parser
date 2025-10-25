@@ -377,7 +377,8 @@ class Api::V1::SyncController < ApplicationController
     if removal.is_a?(Hash) && removal[:success]
       { success: true, server_id: form_fill.id, message: 'Photo deleted' }
     else
-      { success: false, server_id: form_fill.id, message: (removal.is_a?(Hash) ? removal[:message] : 'Photo delete failed') }
+      { success: false, server_id: form_fill.id,
+        message: (removal.is_a?(Hash) ? removal[:message] : 'Photo delete failed') }
     end
   end
 end

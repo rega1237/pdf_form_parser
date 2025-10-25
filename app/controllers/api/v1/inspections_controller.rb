@@ -1,7 +1,7 @@
 class Api::V1::InspectionsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_inspection, only: [:offline_data]
-  
+
   # GET /api/v1/inspections/:id/offline_data
   # Endpoint para obtener todos los datos necesarios de una inspección para uso offline
   # MODIFICACIÓN Offline-First: Embebe form_structure dentro de cada form_fill y elimina
@@ -42,7 +42,7 @@ class Api::V1::InspectionsController < ApplicationController
         },
         form_fills: []
       }
-      
+
       # Obtener todos los form_fills asociados con sus datos
       @inspection.form_fills.includes(:form_template).each do |form_fill|
         form_fill_data = {
@@ -65,23 +65,22 @@ class Api::V1::InspectionsController < ApplicationController
             }
           } : []
         }
-        
+
         inspection_data[:form_fills] << form_fill_data
       end
-      
+
       # Agregar metadatos para sincronización
       inspection_data[:sync_metadata] = {
         downloaded_at: Time.current,
         version: 1,
         checksum: generate_checksum(inspection_data)
       }
-      
+
       render json: {
         success: true,
         data: inspection_data,
         message: 'Datos de inspección obtenidos exitosamente'
       }, status: :ok
-      
     rescue => e
       Rails.logger.error "Error obteniendo datos offline para inspección #{params[:id]}: #{e.message}"
       render json: {
@@ -91,9 +90,9 @@ class Api::V1::InspectionsController < ApplicationController
       }, status: :internal_server_error
     end
   end
-  
+
   private
-  
+
   def set_inspection
     @inspection = policy_scope(Inspection).find(params[:id])
   rescue ActiveRecord::RecordNotFound
@@ -103,7 +102,7 @@ class Api::V1::InspectionsController < ApplicationController
       message: 'La inspección solicitada no existe o no tienes permisos para acceder a ella'
     }, status: :not_found
   end
-  
+
   def generate_checksum(data)
     Digest::MD5.hexdigest(data.to_json)
   end

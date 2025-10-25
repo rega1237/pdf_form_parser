@@ -306,7 +306,7 @@ class PwaController < ApplicationController
           self.skipWaiting();
           return;
         }
-        
+      #{'  '}
         // Permite precachear páginas específicas (show de inspecciones y form_fills, etc.)
         if (data.type === 'PRECACHE_URLS' && Array.isArray(data.urls)) {
           event.waitUntil((async () => {

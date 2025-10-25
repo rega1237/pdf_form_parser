@@ -94,13 +94,13 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :inspections, only: [] do
         member do
-          get :offline_data  # Endpoint para obtener datos completos de inspección para offline
+          get :offline_data # Endpoint para obtener datos completos de inspección para offline
         end
       end
-      
-      post 'sync', to: 'sync#sync_data'  # Endpoint para sincronización de datos offline
-      post 'sync/upload_photo', to: 'sync#upload_photo'  # Endpoint para subir fotos desde offline
-      get 'sync/status', to: 'sync#sync_status'  # Endpoint para verificar estado de sincronización
+
+      post 'sync', to: 'sync#sync_data' # Endpoint para sincronización de datos offline
+      post 'sync/upload_photo', to: 'sync#upload_photo' # Endpoint para subir fotos desde offline
+      get 'sync/status', to: 'sync#sync_status' # Endpoint para verificar estado de sincronización
     end
   end
 
