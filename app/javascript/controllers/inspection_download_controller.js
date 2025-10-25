@@ -81,6 +81,9 @@ export default class extends Controller {
         // Solicitar al Service Worker que precachee las páginas HTML críticas
         await this.precacheInspectionPages(result.data)
         
+        // Descargar y guardar las fotos del servidor en IndexedDB
+        await this.downloadAndStorePhotos(result.data)
+        
         this.showDownloadedState()
         this.showMessage('Inspection downloaded successfully', 'success')
         
@@ -103,7 +106,96 @@ export default class extends Controller {
     }
   }
 
-  // ---- NUEVO: precachear páginas HTML críticas para navegación offline consistente ----
+  // ---- Descargar fotos de los form_fills y guardarlas en IndexedDB ----
+  async downloadAndStorePhotos(inspectionData) {
+    try {
+      const formFills = Array.isArray(inspectionData?.form_fills) ? inspectionData.form_fills : []
+      if (formFills.length === 0) return
+
+      // Preparar progreso
+      if (this.hasProgressContainerTarget) this.progressContainerTarget.classList.remove('hidden')
+      if (this.hasProgressTextTarget) this.progressTextTarget.textContent = 'Downloading photos...'
+
+      // Contar total de fotos a descargar
+      let totalPhotos = 0
+      for (const ff of formFills) {
+        const photosArr = Array.isArray(ff?.photos) ? ff.photos : []
+        totalPhotos += photosArr.length
+      }
+      if (totalPhotos === 0) return
+
+      let downloaded = 0
+      for (const ff of formFills) {
+        const photosArr = Array.isArray(ff?.photos) ? ff.photos : []
+        if (photosArr.length === 0) continue
+
+        // Construir mapa attachment_id -> field_name desde data
+        const data = ff?.data || {}
+        const attachmentToField = {}
+        Object.keys(data || {}).forEach((key) => {
+          if (key.endsWith('_photo_attachment_id')) {
+            const fieldName = key.replace('_photo_attachment_id', '')
+            const attId = data[key]
+            if (attId) attachmentToField[String(attId)] = fieldName
+          }
+        })
+
+        for (const photo of photosArr) {
+          try {
+            const url = photo?.url
+            if (!url) continue
+            const resp = await fetch(url, { credentials: 'include' })
+            if (!resp.ok) throw new Error(`Failed to fetch photo ${photo.id}`)
+            const blob = await resp.blob()
+
+            // Crear thumbnail para ahorrar espacio
+            const thumbBlob = await this.offlineStorage.createThumbnailBlob(blob, { maxDimension: 1024, quality: 0.7 })
+
+            // Metadatos para IndexedDB
+            const metadata = {
+              form_fill_id: ff.id,
+              field_name: attachmentToField[String(photo.id)] || null,
+              inspection_id: ff.inspection_id,
+              synced: true,
+              type: 'thumbnail',
+              is_thumbnail: true,
+              photo_attachment_id: photo.id
+            }
+
+            // Generar un id estable para la foto basada en attachment y form_fill
+            const photoId = `photo_${ff.id}_${metadata.field_name || 'attachment'}_${photo.id}`
+
+            await this.offlineStorage.storePhotoBlob(photoId, thumbBlob, metadata)
+
+            // Actualizar referencia en form_fill si tenemos field_name
+            if (metadata.field_name) {
+              try {
+                await this.offlineStorage.updateFormFill(ff.id, {}, {
+                  [metadata.field_name]: { id: photoId, synced: true, is_thumbnail: true, attachment_id: photo.id }
+                })
+              } catch (e) {
+                console.warn('[InspectionDownload] Could not update form_fill photo reference:', e)
+              }
+            }
+
+            // Actualizar progreso
+            downloaded += 1
+            const pct = Math.round((downloaded / totalPhotos) * 100)
+            if (this.hasProgressBarTarget) this.progressBarTarget.style.width = `${pct}%`
+            if (this.hasProgressTextTarget) this.progressTextTarget.textContent = `Downloading photos... (${downloaded}/${totalPhotos})`
+          } catch (e) {
+            console.warn(`[InspectionDownload] Failed to store photo ${photo?.id}:`, e)
+          }
+        }
+      }
+
+      // Ocultar barra de progreso al terminar
+      this.hideProgressBar()
+    } catch (e) {
+      console.warn('[InspectionDownload] Error downloading photos:', e)
+    }
+  }
+  // ---- precachear páginas HTML críticas para navegación offline consistente ----
   async precacheInspectionPages(inspectionData) {
     try {
       if (!('serviceWorker' in navigator)) {
