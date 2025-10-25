@@ -987,16 +987,17 @@ class OfflineStorage {
       const db = await this.openDB();
       const estimate = await navigator.storage.estimate();
 
+      const quota = (estimate && Number.isFinite(estimate.quota)) ? estimate.quota : 0;
+      const usage = (estimate && Number.isFinite(estimate.usage)) ? estimate.usage : 0;
+      const usagePercentage = quota > 0 ? ((usage / quota) * 100) : 0;
+
       const tx = db.transaction(['inspections', 'form_fills', 'sync_queue'], 'readonly');
       const inspectionsStore = tx.objectStore('inspections');
       const formFillsStore = tx.objectStore('form_fills');
       const syncQueueStore = tx.objectStore('sync_queue');
 
       const inspectionsCountPromise = this.promisifyRequest(inspectionsStore.count());
-      
-      // Get all form fills and filter for pending changes (same approach as getPendingFormFills)
       const allFormFillsPromise = this.promisifyRequest(formFillsStore.getAll());
-
       const syncQueueCountPromise = this.promisifyRequest(syncQueueStore.count());
 
       const [inspectionsCount, allFormFills, syncQueueCount] = await Promise.all([
@@ -1005,17 +1006,16 @@ class OfflineStorage {
         syncQueueCountPromise
       ]);
 
-      // Filter form fills that have pending changes (handles both boolean true and string 'true')
       const pendingChangesCount = allFormFills.filter(formFill => 
         formFill.has_pending_changes === true || formFill.has_pending_changes === 'true'
       ).length;
 
       return {
-        quota: estimate.quota,
-        usage: estimate.usage,
-        usagePercentage: ((estimate.usage / estimate.quota) * 100).toFixed(2),
-        inspectionsCount: inspectionsCount,
-        pendingChangesCount: pendingChangesCount,
+        quota,
+        usage,
+        usagePercentage: Number(usagePercentage.toFixed(2)),
+        inspectionsCount,
+        pendingChangesCount,
         syncQueue: syncQueueCount
       };
     } catch (error) {
