@@ -31,6 +31,7 @@ pin "controllers/notification_controller", to: "controllers/notification_control
 pin "controllers/offline_form_controller", to: "controllers/offline_form_controller.js"
 pin "controllers/offline_photo_controller", to: "controllers/offline_photo_controller.js"
 pin "controllers/offline_status_controller", to: "controllers/offline_status_controller.js"
+pin "controllers/online_only_controller", to: "controllers/online_only_controller.js"
 pin "controllers/page_navigation_controller", to: "controllers/page_navigation_controller.js"
 pin "controllers/pagination_controller", to: "controllers/pagination_controller.js"
 pin "controllers/pdf_status_controller", to: "controllers/pdf_status_controller.js"
