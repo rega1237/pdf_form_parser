@@ -40,6 +40,7 @@ pin "controllers/pwa_controller", to: "controllers/pwa_controller.js"
 pin "controllers/searchable_select_controller", to: "controllers/searchable_select_controller.js"
 pin "controllers/sync_controller", to: "controllers/sync_controller.js"
 pin "controllers/storage_stats_controller", to: "controllers/storage_stats_controller.js"
+pin "controllers/signature_pad_controller", to: "controllers/signature_pad_controller.js"
 
 pin "utils/offline_storage", to: "utils/offline_storage.js"
 pin "utils/network_status", to: "utils/network_status.js"
