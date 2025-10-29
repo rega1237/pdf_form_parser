@@ -32,9 +32,14 @@ class FormFill < ApplicationRecord
     return { success: false, error: 'Campo o archivo vacío' } if field_name.blank? || photo_file.blank?
 
     begin
-      # 1. Parsear la estructura para encontrar el section_name
+      # 1. Parsear la estructura para encontrar el section_name y tipo
       structure = JSON.parse(form_structure)
-      field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
+      field_data = structure.find { |field| field['name'] == field_name }
+
+      # Si el campo es de tipo Signature, redirigir a la lógica especial de firma
+      if field_data&.dig('type').to_s == 'Signature'
+        return attach_signature_for_field(field_name, photo_file)
+      end
 
       # Usar el section_name si existe, de lo contrario, usar el field_name como fallback
       field_section = field_data&.dig('section_name').presence || field_name
@@ -68,6 +73,146 @@ class FormFill < ApplicationRecord
     rescue StandardError => e
       Rails.logger.error "Error attaching photo for field #{field_name}: #{e.message}"
       { success: false, error: e.message }
+    end
+  end
+
+  # =============================
+  # FIRMA: LÓGICA ESPECIAL
+  # =============================
+  def generate_unique_signature_attachment_id(field_section)
+    return nil if field_section.blank? || inspection.blank?
+
+    # Similar a photo, pero con marcador explícito de "signature" para poder identificar y excluir en otras etapas
+    safe_section_name = field_section.gsub('|', '__')
+    parameterized_name = safe_section_name.parameterize.underscore
+    random_suffix = SecureRandom.hex(4)
+    "inspection_#{inspection.id}_signature_#{parameterized_name}_#{random_suffix}"
+  end
+
+  # Adjuntar imagen de firma para un campo de tipo Signature
+  def attach_signature_for_field(field_name, image_file)
+    return { success: false, error: 'Campo o archivo vacío' } if field_name.blank? || image_file.blank?
+
+    begin
+      structure = JSON.parse(form_structure)
+      field_data = structure.find { |field| field['name'] == field_name }
+      unless field_data&.dig('type').to_s == 'Signature'
+        return { success: false, error: 'El campo especificado no es de tipo Signature' }
+      end
+
+      # Validación de tipo MIME (solo PNG/JPEG para preservar calidad original)
+      allowed_types = ['image/png', 'image/jpeg']
+      content_type = image_file.content_type || 'image/jpeg'
+      unless allowed_types.include?(content_type)
+        return { success: false, error: 'Tipo de archivo no permitido para firma. Use PNG o JPEG.' }
+      end
+
+      # Evitar duplicados: eliminar cualquier firma previa del mismo campo
+      remove_all_signatures_for_field(field_name)
+
+      field_section = field_data&.dig('section_name').presence || field_name
+      unique_attachment_id = generate_unique_signature_attachment_id(field_section)
+      return { success: false, error: 'No se pudo generar ID único de firma' } if unique_attachment_id.blank?
+
+      # Adjuntar sin alterar el binario (mantener calidad original)
+      photos.attach(
+        io: image_file,
+        filename: "#{unique_attachment_id}#{content_type == 'image/png' ? '.png' : '.jpg'}",
+        content_type: content_type
+      )
+
+      success = update_signature_attachment_id_in_structure(field_name, unique_attachment_id)
+
+      if success
+        Rails.logger.info "Signature attached for field: #{field_name} with ID: #{unique_attachment_id}"
+        { success: true, attachment_id: unique_attachment_id }
+      else
+        { success: false, error: 'Error al actualizar estructura del formulario para la firma' }
+      end
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure (signature): #{e.message}"
+      { success: false, error: 'Error al parsear la estructura del formulario' }
+    rescue StandardError => e
+      Rails.logger.error "Error attaching signature for field #{field_name}: #{e.message}"
+      { success: false, error: e.message }
+    end
+  end
+
+  # Eliminar TODAS las firmas de un campo Signature específico
+  def remove_all_signatures_for_field(field_name)
+    return if field_name.blank? || !photos.attached?
+
+    begin
+      # Patrón por sección y marcador signature
+      structure = JSON.parse(form_structure) if form_structure.present?
+      field_data = structure&.find { |field| field['name'] == field_name }
+      field_section = field_data&.dig('section_name').presence || field_name
+      safe_section_name = field_section.gsub('|', '__')
+      parameterized_name = safe_section_name.parameterize.underscore
+      field_pattern = "inspection_#{inspection.id}_signature_#{parameterized_name}_"
+
+      signatures_to_remove = photos.select { |photo| photo.filename.to_s.include?(field_pattern) }
+
+      # Fallback: si existe un attachment_id guardado en data (clave _signature_attachment_id)
+      stored_attachment_id = begin
+        get_field_value("#{field_name}_signature_attachment_id")
+      rescue StandardError
+        nil
+      end
+      if stored_attachment_id.present?
+        signatures_to_remove += photos.select { |photo| photo.filename.to_s.start_with?(stored_attachment_id) }
+      end
+
+      signatures_to_remove.uniq.each do |sig|
+        Rails.logger.info "Removing signature for field '#{field_name}': #{sig.filename} (id=#{sig.id})"
+        sig.purge
+      end
+      Rails.logger.info "Removed #{signatures_to_remove.uniq.count} signatures for field: #{field_name}"
+    rescue StandardError => e
+      Rails.logger.error "Error removing signatures for field #{field_name}: #{e.message}"
+    end
+  end
+
+  def update_signature_attachment_id_in_structure(field_name, attachment_id)
+    return false if field_name.blank?
+
+    begin
+      signature_data_key = "#{field_name}_signature_attachment_id"
+      set_field_value(signature_data_key, attachment_id)
+      Rails.logger.info "Updated signature attachment ID for field '#{field_name}': #{attachment_id}"
+      true
+    rescue StandardError => e
+      Rails.logger.error "Error updating signature attachment ID for field #{field_name}: #{e.message}"
+      false
+    end
+  end
+
+  def get_signature_for_field(field_name)
+    return nil if field_name.blank?
+
+    begin
+      signature_data_key = "#{field_name}_signature_attachment_id"
+      attachment_id = get_field_value(signature_data_key)
+      return nil unless attachment_id.present?
+
+      photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
+    rescue StandardError => e
+      Rails.logger.error "Error getting signature for field #{field_name}: #{e.message}"
+      nil
+    end
+  end
+
+  def clear_signature_attachment_id_in_structure(field_name)
+    return false if field_name.blank?
+
+    begin
+      signature_data_key = "#{field_name}_signature_attachment_id"
+      set_field_value(signature_data_key, nil)
+      Rails.logger.info "Cleared signature attachment ID for field '#{field_name}'"
+      true
+    rescue StandardError => e
+      Rails.logger.error "Error clearing signature attachment ID for field #{field_name}: #{e.message}"
+      false
     end
   end
 

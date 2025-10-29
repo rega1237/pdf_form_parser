@@ -21,6 +21,8 @@ class PdfMergingService
     # This method works with the new data structure by receiving photo attachments directly
     # Photo attachment IDs are now stored in the data column, but this service doesn't need
     # to access them - it works with the actual photo attachments passed as parameter
+    # IMPORTANT: Excluir imágenes de firma (special-case) para evitar duplicarlas en páginas normales.
+    images = Array(images).reject { |img| img&.filename.to_s.include?('_signature_') || img&.filename.to_s.start_with?('signature_') }
     grouped_photos = group_and_process_photos(images)
     return pdf_object if grouped_photos.empty?
 

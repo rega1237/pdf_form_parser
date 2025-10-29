@@ -46,6 +46,7 @@ gem "activestorage"
 
 # File processing gems
 gem "pdf-forms" # For reading PDF forms
+gem "hexapdf", "~> 0.36" # For detecting and signing digital signature fields (PAdES)
 
 # Merge pdf
 gem "combine_pdf"

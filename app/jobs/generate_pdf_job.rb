@@ -220,13 +220,52 @@ class GeneratePdfJob < ApplicationJob
   # Keep existing helper methods
   def generate_pdf_for(form_fill, processed_fields)
     output_path = nil
-    form_fill.form_template.original_file.blob.open do |template_tempfile|
-      pdf_service = PdfFormsParserService.new(template_tempfile.path)
-      output_filename = "#{form_fill.name.parameterize}_#{Time.now.to_i}.pdf"
-      output_path = Rails.root.join('tmp', output_filename)
-      pdf_service.fill_form(output_path, processed_fields)
+
+    # Preparar imágenes de firma para campos tipo "Signature" y asignar signature_image_path
+    signature_image_tempfiles = []
+    processed_fields.each do |field|
+      next unless field.is_a?(Hash)
+      next unless field['type'].to_s == 'Signature'
+
+      field_name = field['name']
+      begin
+        signature_attachment = form_fill.get_signature_for_field(field_name)
+        if signature_attachment.present?
+          signature_attachment.blob.open do |blob_tempfile|
+            ext = File.extname(signature_attachment.filename.to_s).presence || '.png'
+            tf = Tempfile.create(["signature_#{field_name}", ext])
+            tf.binmode
+            FileUtils.cp(blob_tempfile.path, tf.path)
+            tf.flush
+            signature_image_tempfiles << tf
+            field['signature_image_path'] = tf.path
+            Rails.logger.info "Asignada imagen de firma para campo '#{field_name}': #{tf.path}"
+          end
+        else
+          Rails.logger.warn "Imagen de firma no encontrada para campo '#{field_name}' en FormFill ##{form_fill.id}"
+        end
+      rescue StandardError => e
+        Rails.logger.error "Error preparando imagen de firma para campo '#{field_name}': #{e.message}"
+      end
     end
-    output_path
+
+    begin
+      form_fill.form_template.original_file.blob.open do |template_tempfile|
+        pdf_service = PdfFormsParserService.new(template_tempfile.path)
+        output_filename = "#{form_fill.name.parameterize}_#{Time.now.to_i}.pdf"
+        output_path = Rails.root.join('tmp', output_filename)
+        pdf_service.fill_form(output_path, processed_fields)
+      end
+      output_path
+    ensure
+      signature_image_tempfiles.each do |tf|
+        begin
+          tf.close!
+        rescue StandardError
+          FileUtils.rm_f(tf.path) if tf.path
+        end
+      end
+    end
   end
 
   def update_form_fields(original_fields, processed_fields)
