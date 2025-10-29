@@ -1,4 +1,6 @@
 require 'pdf-forms'
+require 'tempfile'
+require_relative 'pdf_signature_service'
 
 class PdfFormsParserService
   def initialize(file_path)
@@ -9,19 +11,43 @@ class PdfFormsParserService
   def parse
     # Try with different encoding options
     raw_fields = get_fields_with_encoding
+    sig_map = begin
+      sigs = PdfSignatureService.list_signature_fields(@file_path)
+      map = {}
+      sigs.each do |h|
+        name = h[:name]
+        info = h[:info]&.to_h
+        map[name] = info if name
+        sanitized = sanitize_field_name(name)
+        map[sanitized] = info if sanitized && sanitized != name
+      end
+      map
+    rescue
+      {}
+    end
 
     # Map fields and filter out those with empty values
-    raw_fields.map do |field|
+    parsed = raw_fields.map do |field|
+      is_sig = signature_field?(field)
+      sig_info = is_sig ? sig_map[field.name] : nil
       {
         name: sanitize_field_name(field.name),
         original_name: field.name, # Keep original for reference
-        type: field.type,
+        type: is_sig ? 'Signature' : field.type,
         value: '', # Changed: Now always empty string instead of field.value
         options: field.options,
         human_label: generate_human_label(field.name),
-        label_name: field.value # Keep original value here for reference
+        label_name: field.value, # Keep original value here for reference
+        is_signature: is_sig,
+        signature_info: sig_info&.to_h
       }
-    end.reject { |field| field[:label_name].nil? || field[:label_name].to_s.empty? || field[:label_name] == 'Off' }
+    end
+    parsed.reject do |field|
+      # Mantener siempre los campos de firma, estén firmados o no
+      next false if field[:is_signature]
+      # Para el resto, aplicar el filtro por label
+      field[:label_name].nil? || field[:label_name].to_s.empty? || field[:label_name] == 'Off'
+    end
     # Note: Changed filtering to use label_name instead of value since value is now always empty
   rescue PdfForms::PdftkError => e
     Rails.logger.error "PdftkError while parsing #{@file_path}: #{e.message}"
@@ -35,10 +61,61 @@ class PdfFormsParserService
 
   def fill_form(output_path, field_data)
     # Convert field data and handle special characters
-    field_values = prepare_field_values(field_data)
+    normal_fields, signature_requests = partition_signature_requests(field_data)
+    field_values = prepare_field_values(normal_fields)
 
     # Try filling with original names first
-    @pdftk.fill_form(@file_path, output_path, field_values)
+    intermediate_path = output_path
+    @pdftk.fill_form(@file_path, intermediate_path, field_values)
+
+    # Apply signatures one by one on the already-filled PDF
+    signature_requests.each do |sig|
+      tmp_out = Tempfile.create(['signed_', '.pdf'])
+      tmp_out_path = tmp_out.path
+      tmp_out.close
+
+      field_name = sig['original_name'].presence || sig['name']
+      if sig['certificate_path'].present?
+        # Firma digital con certificado (si se proporciona)
+        PdfSignatureService.sign(
+          intermediate_path,
+          tmp_out_path,
+          field_name,
+          certificate_path: sig['certificate_path'],
+          certificate_password: sig['certificate_password'],
+          key_path: sig['key_path'],
+          reason: sig['reason'],
+          location: sig['location'],
+          contact_info: sig['contact_info'],
+          name: sig['signer_name'] || sig['name_label'],
+          signature_image_path: sig['signature_image_path']
+        )
+      else
+        # Sin certificado: solo estampar imagen de firma manuscrita en el campo
+        image_path = sig['signature_image_path']
+        if image_path.present? && File.exist?(image_path)
+          PdfSignatureService.stamp_signature_image(
+            intermediate_path,
+            tmp_out_path,
+            field_name,
+            image_path,
+            scale_to_fit: true,
+            margin: 0
+          )
+        else
+          Rails.logger.warn "Signature image path missing or not found for field '#{field_name}'. Skipping image stamp."
+          # Si no hay imagen, simplemente copiar el PDF intermedio sin cambios
+          FileUtils.cp(intermediate_path, tmp_out_path)
+        end
+      end
+
+      intermediate_path = tmp_out_path
+    end
+
+    if intermediate_path != output_path
+      FileUtils.cp(intermediate_path, output_path)
+    end
+
     output_path
   rescue PdfForms::PdftkError => e
     Rails.logger.error "PdftkError while filling form #{@file_path}: #{e.message}"
@@ -48,6 +125,13 @@ class PdfFormsParserService
   end
 
   private
+
+  def signature_field?(field)
+    type = field.type.to_s.downcase
+    type.include?('sig') || type.include?('signature')
+  rescue
+    false
+  end
 
   def get_fields_with_encoding
     # Try different approaches to handle special characters
@@ -161,24 +245,61 @@ class PdfFormsParserService
     # Try using system command directly
     begin
       fields = get_fields_via_dump_data
+      sig_map = begin
+        sigs = PdfSignatureService.list_signature_fields(@file_path)
+        map = {}
+        sigs.each do |h|
+          name = h[:name]
+          info = h[:info]&.to_h
+          map[name] = info if name
+          sanitized = sanitize_field_name(name)
+          map[sanitized] = info if sanitized && sanitized != name
+        end
+        map
+      rescue
+        {}
+      end
 
       # Apply the same filtering and label_name addition as in the main parse method
       fields.map do |field|
+        is_sig = signature_field?(field)
+        sig_info = is_sig ? sig_map[field.name] : nil
         field_hash = {
           name: sanitize_field_name(field.name),
           original_name: field.name,
-          type: field.type,
+          type: is_sig ? 'Signature' : field.type,
           value: '', # Changed: Now always empty string instead of field.value
           options: field.options,
           human_label: generate_human_label(field.name),
-          label_name: field.value # Keep original value here for reference
+          label_name: field.value, # Keep original value here for reference
+          is_signature: is_sig,
+          signature_info: sig_info&.to_h
         }
         field_hash
-      end.reject { |field| field[:label_name].nil? || field[:label_name].to_s.empty? }
+      end.reject { |field| field[:is_signature] ? false : (field[:label_name].nil? || field[:label_name].to_s.empty?) }
       # Note: Changed filtering to use label_name instead of value since value is now always empty
     rescue => e
       Rails.logger.error "Fallback parsing also failed: #{e.message}"
       []
     end
+  end
+
+  # Separate signature entries from normal fields.
+  def partition_signature_requests(field_data)
+    normal = []
+    signatures = []
+    field_data.each do |field|
+      if field['is_signature'] || signature_field_name?(field['name'])
+        signatures << field
+      else
+        normal << field
+      end
+    end
+    [normal, signatures]
+  end
+
+  def signature_field_name?(name)
+    return false unless name
+    name.to_s.downcase.include?('sig') || name.to_s.downcase.include?('signature')
   end
 end

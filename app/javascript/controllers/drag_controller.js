@@ -88,6 +88,17 @@ export default class extends Controller {
       '[data-field-attribute="required"]',
     );
 
+    // Signature-specific inputs
+    const signaturePadHeightInput = itemEl.querySelector(
+      '[data-field-attribute="signature_pad_height"]',
+    );
+    const signatureStrokeWidthInput = itemEl.querySelector(
+      '[data-field-attribute="signature_stroke_width"]',
+    );
+    const signatureStrokeColorInput = itemEl.querySelector(
+      '[data-field-attribute="signature_stroke_color"]',
+    );
+
     // Extraer opciones (tanto label como valor)
     const optionsContainer = itemEl.querySelector(
       '[data-field-attribute="options-container"]',
@@ -181,6 +192,21 @@ export default class extends Controller {
     // Campos específicos para System Category e Interval Category
     if (["System Category", "Interval Category"].includes(currentType)) {
       baseField.selected_categories = selectedCategories;
+    }
+
+    // Specific fields for Signature
+    if (currentType === "Signature") {
+      baseField.signature_config = {
+        pad_height: signaturePadHeightInput
+          ? parseInt(signaturePadHeightInput.value || 200, 10)
+          : 200,
+        stroke_width: signatureStrokeWidthInput
+          ? parseInt(signatureStrokeWidthInput.value || 2, 10)
+          : 2,
+        stroke_color: signatureStrokeColorInput
+          ? signatureStrokeColorInput.value || "#000000"
+          : "#000000",
+      };
     }
 
     return baseField;
@@ -285,6 +311,7 @@ export default class extends Controller {
               <option value="Choice" ${itemData.type === "Choice" ? "selected" : ""}>Choice</option>
               <option value="Button" ${itemData.type === "Button" ? "selected" : ""}>Button</option>
               <option value="Photo" ${itemData.type === "Photo" ? "selected" : ""}>Photo</option>
+              <option value="Signature" ${itemData.type === "Signature" ? "selected" : ""}>Signature</option>
               <option value="Deficiency" ${itemData.type === "Deficiency" ? "selected" : ""}>Deficiency</option>
               <option value="Pass/Fail" ${itemData.type === "Pass/Fail" ? "selected" : ""}>Pass/Fail</option>
               <option value="Radio" ${itemData.type === "Radio" ? "selected" : ""}>Radio</option>
@@ -366,6 +393,41 @@ export default class extends Controller {
               <p class="text-orange-200 text-xs">
                 <strong>Note:</strong> Fields D and C are automatically included in the JSON structure and will be filled in the form completion view.
               </p>
+            </div>
+          </div>
+        </div>
+      `
+          : ""
+      }
+
+      <!-- Signature Field Configuration -->
+      ${
+        itemData.type === "Signature"
+          ? `
+        <div class="signature-fields border-t border-white/10 pt-4 mt-4">
+          <div class="mb-4">
+            <div class="flex items-center space-x-2 mb-3">
+              <svg class="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16c1.5-1.5 3-1.5 4.5 0S14.5 17.5 16 16m-9-4c1.5-1.5 3-1.5 4.5 0S14.5 13.5 16 12m-9-4c1.5-1.5 3-1.5 4.5 0S14.5 9.5 16 8" />
+              </svg>
+              <span class="text-teal-300 font-semibold text-sm">Signature Configuration</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="space-y-2">
+                <label for="${fieldIdBase}_signature_pad_height" class="block text-white font-semibold text-sm">Pad Height (px)</label>
+                <input type="number" id="${fieldIdBase}_signature_pad_height" value="${(itemData.signature_config && itemData.signature_config.pad_height) || 200}" data-field-attribute="signature_pad_height" min="100" max="600" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200" placeholder="200">
+              </div>
+              <div class="space-y-2">
+                <label for="${fieldIdBase}_signature_stroke_width" class="block text-white font-semibold text-sm">Stroke Width (px)</label>
+                <input type="number" id="${fieldIdBase}_signature_stroke_width" value="${(itemData.signature_config && itemData.signature_config.stroke_width) || 2}" data-field-attribute="signature_stroke_width" min="1" max="10" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200" placeholder="2">
+              </div>
+              <div class="space-y-2">
+                <label for="${fieldIdBase}_signature_stroke_color" class="block text-white font-semibold text-sm">Stroke Color</label>
+                <input type="text" id="${fieldIdBase}_signature_stroke_color" value="${(itemData.signature_config && itemData.signature_config.stroke_color) || '#000000'}" data-field-attribute="signature_stroke_color" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200" placeholder="#000000">
+              </div>
+            </div>
+            <div class="mt-3 p-3 bg-teal-500/5 border border-teal-500/10 rounded-lg">
+              <p class="text-teal-200 text-xs">The signature will be captured as an image (no credentials) and can be synchronized when online.</p>
             </div>
           </div>
         </div>
