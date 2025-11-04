@@ -37,7 +37,9 @@ Rails.application.routes.draw do
       get :download_pdf        # Nueva ruta para descargar PDF directamente
       post :send_email         # Route for sending email with PDF attachment
       post :photo_url          # Endpoint para obtener URL de foto
+      post :signature_url      # Endpoint para obtener URL de firma
       delete :remove_photo     # Nuevo endpoint para eliminar foto
+      delete :remove_signature # Nuevo endpoint para eliminar firma
       get :structure           # Endpoint para obtener estructura actualizada
       post :upload_photo
       # New data-focused endpoints

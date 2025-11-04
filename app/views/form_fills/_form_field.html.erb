@@ -88,6 +88,8 @@
     <div data-controller="signature-pad offline-photo"
          data-offline-photo-form-fill-id-value="<%= @form_fill.id %>"
          data-offline-photo-field-name-value="<%= field['name'] %>"
+         data-offline-photo-kind-value="signature"
+         data-offline-photo-accepted-types-value='["image/png","image/jpeg"]'
          data-stroke-width="<%= (field['signatureStrokeWidth'] || 2).to_s %>"
          data-stroke-color="<%= field['signatureStrokeColor'].presence || '#000000' %>"
          data-pad-height="<%= (field['signaturePadHeight'] || 200).to_s %>"
@@ -97,7 +99,7 @@
         <div class="flex items-center justify-between mb-3">
           <span class="text-white font-semibold text-sm">Draw your signature</span>
           <div class="flex space-x-2">
-            <button type="button" data-signature-pad-target="clearButton" data-action="click->signature-pad#clear" class="text-yellow-300 hover:text-yellow-200 transition-colors text-xs">Clear</button>
+            <button type="button" data-signature-pad-target="clearButton" data-action="click->signature-pad#clear" class="text-slate-300 hover:text-slate-200 transition-colors text-xs">Clear</button>
             <button type="button" data-signature-pad-target="saveButton" data-action="click->signature-pad#save" class="text-green-400 hover:text-green-300 transition-colors text-xs">Save</button>
           </div>
         </div>
@@ -107,19 +109,19 @@
         <input type="hidden" data-signature-pad-target="base64Input" id="signature_base64_<%= field_id %>">
         <input type="hidden" data-signature-pad-target="fieldName" value="<%= field['name'] %>">
 
-        <div id="signature-preview-<%= field_id %>" class="mt-4 <%= field['photo_attachment_id'].present? ? '' : 'hidden' %>">
+        <div id="signature-preview-<%= field_id %>" data-offline-photo-target="preview" class="mt-4 <%= field['signature_attachment_id'].present? ? '' : 'hidden' %>">
           <div class="relative bg-slate-700 rounded-2xl p-4 border-2 border-blue-400">
             <div class="flex items-center justify-between mb-3">
-              <span class="text-white font-semibold text-sm"><% if field['photo_attachment_id'].present? %>Saved signature:<% else %>Captured signature:<% end %></span>
+              <span class="text-white font-semibold text-sm"><% if field['signature_attachment_id'].present? %>Saved signature:<% else %>Captured signature:<% end %></span>
               <div class="flex space-x-2">
-                <button type="button" data-offline-photo-target="removeButton" data-action="click->offline-photo#removePhoto" class="text-red-400 hover:text-red-300 transition-colors">
+                <button type="button" data-offline-photo-target="removeButton" data-action="click->offline-photo#handleRemoveConfirmed" data-turbo-confirm="¿Are you sure you want to delete?" class="text-red-400 hover:text-red-300 transition-colors">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
             </div>
 
-            <% if field['photo_attachment_id'].present? %>
-              <% existing_signature = @form_fill.get_photo_for_field(field['name']) %>
+            <% if field['signature_attachment_id'].present? %>
+              <% existing_signature = @form_fill.get_signature_for_field(field['name']) %>
               <% if existing_signature.present? %>
                 <%= image_tag rails_blob_path(existing_signature), data: { offline_photo_target: "preview" }, class: "w-full object-contain rounded-xl border border-slate-600 bg-white", alt: "Signature for #{field['label_name'].presence || field['name']}" %>
               <% else %>
@@ -130,7 +132,7 @@
             <% end %>
 
             <div class="file-info text-xs text-slate-300 mt-2">
-              <% if field['photo_attachment_id'].present? %>
+              <% if field['signature_attachment_id'].present? %>
                 <div class="flex justify-between items-center"><span class="flex items-center"><svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg><%= field['label_name'].presence || field['name'] %></span><span class="text-green-400">Saved</span></div>
               <% else %>
                 <div class="flex justify-between items-center"><span class="flex items-center"><svg class="w-3 h-3 mr-1 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L9 13.414l4.707-4.707z" clip-rule="evenodd"></path></svg><%= field['label_name'].presence || field['name'] %></span><span class="text-yellow-400">Offline (pending)</span></div>

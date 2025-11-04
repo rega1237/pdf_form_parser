@@ -149,7 +149,11 @@ export default class extends Controller {
             const blob = await resp.blob()
 
             // Crear thumbnail para ahorrar espacio
-            const thumbBlob = await this.offlineStorage.createThumbnailBlob(blob, { maxDimension: 1024, quality: 0.7 })
+            // Mantener PNG si la imagen original es PNG (p.ej., firmas); usar JPEG con fondo blanco para fotos
+            const isPNG = String(blob?.type || '').includes('png')
+            const outputType = isPNG ? 'image/png' : 'image/jpeg'
+            const backgroundColor = outputType === 'image/jpeg' ? '#ffffff' : null
+            const thumbBlob = await this.offlineStorage.createThumbnailBlob(blob, { maxDimension: 1024, quality: 0.7, outputType, backgroundColor })
 
             // Metadatos para IndexedDB
             const metadata = {

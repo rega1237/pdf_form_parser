@@ -24,6 +24,8 @@ class Api::V1::SyncController < ApplicationController
                  sync_inspection(item)
                when 'photo_delete'
                  sync_photo_delete(item)
+               when 'signature_delete'
+                 sync_signature_delete(item)
                else
                  { success: false, error: "Tipo de sincronización no soportado: #{item[:type]}" }
                end
@@ -379,6 +381,39 @@ class Api::V1::SyncController < ApplicationController
     else
       { success: false, server_id: form_fill.id,
         message: (removal.is_a?(Hash) ? removal[:message] : 'Photo delete failed') }
+    end
+  end
+
+  def sync_signature_delete(item)
+    data = item[:data] || item[:payload] || {}
+    form_fill_id = data[:form_fill_id] || data['form_fill_id'] || item[:form_fill_id] || item['form_fill_id']
+    field_name = data[:field_name] || data['field_name']
+
+    unless form_fill_id.present? && field_name.present?
+      return { success: false, message: 'Missing form_fill_id or field_name for signature_delete' }
+    end
+
+    form_fill = FormFill.find_by(id: form_fill_id)
+    return { success: false, message: 'FormFill not found' } unless form_fill
+
+    # Authorization: follow same pattern used for other sync actions if Pundit is included
+    begin
+      authorize(form_fill, :update?) if defined?(authorize)
+    rescue StandardError
+      # If no authorization mechanism, proceed
+    end
+
+    begin
+      form_fill.remove_all_signatures_for_field(field_name)
+      cleared = form_fill.clear_signature_attachment_id_in_structure(field_name)
+
+      if cleared
+        { success: true, server_id: form_fill.id, message: 'Signature deleted' }
+      else
+        { success: false, server_id: form_fill.id, message: 'Failed to clear signature attachment id in structure' }
+      end
+    rescue StandardError => e
+      { success: false, server_id: form_fill.id, message: "Signature delete failed: #{e.message}" }
     end
   end
 end

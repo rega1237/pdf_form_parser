@@ -155,9 +155,6 @@
       0%, 100% { text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
       50% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 30px rgba(59, 130, 246, 0.5); }
     }
-      box-shadow: none !important;
-      background-color: #4A5568;
-    }
   </style>
 <% end %>
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900" data-controller="notification" data-action="show-notification@window->notification#showNotification">
@@ -459,3 +456,31 @@
     </div>
   </div>
 </div>
+<style>
+  /* Toast de estado para fotos/firmas */
+  .photo-status {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.2;
+    color: #e2e8f0; /* slate-200 */
+    display: flex;
+    align-items: center;
+    min-height: 20px;
+    transition: opacity 0.2s ease;
+  }
+  .photo-status::before {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    margin-right: 6px;
+    background: #64748b; /* slate-500 default */
+  }
+  .photo-status.photo-status--success { color: #86efac; /* green-300 */ }
+  .photo-status.photo-status--success::before { background: #22c55e; }
+  .photo-status.photo-status--error { color: #fca5a5; /* red-300 */ }
+  .photo-status.photo-status--error::before { background: #ef4444; }
+  .photo-status.photo-status--info { color: #93c5fd; /* blue-300 */ }
+  .photo-status.photo-status--info::before { background: #3b82f6; }
+</style>

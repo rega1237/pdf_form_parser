@@ -7,6 +7,8 @@ export default class extends Controller {
     photoId: String,
     formFillId: String,
     fieldName: String,
+    // Tipo de manejo: 'photo' (por defecto) o 'signature'
+    kind: String,
     // Valores opcionales para validación; si no vienen, usar defaults
     acceptedTypes: Array,
     maxSize: Number
@@ -184,7 +186,15 @@ export default class extends Controller {
   async updatePreview(photoId) {
     // Encontrar elementos de imagen y contenedor
     const imgEl = this.getPreviewImageElement();
-    const containerEl = this.getPreviewContainerElement();
+    // Intentar obtener un contenedor de preview específico (padre del IMG con id signature-preview-...)
+    let containerEl = null;
+    if (imgEl && imgEl.closest) {
+      containerEl = imgEl.closest('[id^="signature-preview-"]');
+    }
+    // Fallback a lógica anterior si no se encontró
+    if (!containerEl) {
+      containerEl = this.getPreviewContainerElement();
+    }
     if (!imgEl) return;
 
     try {
@@ -201,6 +211,16 @@ export default class extends Controller {
         imgEl.alt = 'Captured photo';
         if (containerEl) {
           containerEl.classList.remove('hidden');
+        }
+        // Ocultar el canvas de firma cuando hay preview
+        const canvasEl = this.element.querySelector('[data-signature-pad-target="canvas"]');
+        if (canvasEl) {
+          canvasEl.classList.add('hidden');
+        }
+        // Ocultar el botón Clear cuando hay una firma/preview visible
+        const clearBtn = this.element.querySelector('[data-signature-pad-target="clearButton"]');
+        if (clearBtn) {
+          clearBtn.classList.add('hidden');
         }
         if (this.hasRemoveButtonTarget) {
           this.removeButtonTarget.style.display = 'inline-block';
@@ -302,6 +322,16 @@ export default class extends Controller {
       if (containerEl) {
         containerEl.classList.add('hidden')
       }
+      // Volver a mostrar el canvas de firma
+      const canvasEl = this.element.querySelector('[data-signature-pad-target="canvas"]');
+      if (canvasEl) {
+        canvasEl.classList.remove('hidden');
+      }
+      // Mostrar el botón Clear nuevamente cuando se regresa al canvas
+      const clearBtn = this.element.querySelector('[data-signature-pad-target="clearButton"]');
+      if (clearBtn) {
+        clearBtn.classList.remove('hidden');
+      }
       if (this.hasRemoveButtonTarget) {
         this.removeButtonTarget.style.display = 'none'
       }
@@ -314,7 +344,11 @@ export default class extends Controller {
       // Persistir cambio en IndexedDB cuando estamos offline (sin encolar parches innecesarios)
       if (!navigator.onLine && this.offlineStorage) {
         const changedData = {}
-        changedData[`${this.fieldNameValue}_photo_attachment_id`] = null
+        const kind = (this.kindValue && String(this.kindValue).trim()) || 'photo'
+        const attachmentKey = kind === 'signature'
+          ? `${this.fieldNameValue}_signature_attachment_id`
+          : `${this.fieldNameValue}_photo_attachment_id`
+        changedData[attachmentKey] = null
         changedData[this.fieldNameValue] = ''
         try {
           await this.offlineStorage.saveFormFillData(this.formFillIdValue, changedData)
@@ -359,7 +393,11 @@ export default class extends Controller {
         }
       } catch (_) {}
 
-      const thumbBlob = await this.offlineStorage.createThumbnailBlob(photoData.blob, { maxDimension: 1024, quality: 0.7 });
+      // Para firmas, preservar PNG; para fotos normales, usar JPEG con fondo blanco
+      const isSignature = ((this.kindValue && String(this.kindValue).trim()) === 'signature');
+      const outputType = isSignature ? 'image/png' : 'image/jpeg';
+      const backgroundColor = isSignature ? null : '#ffffff';
+      const thumbBlob = await this.offlineStorage.createThumbnailBlob(photoData.blob, { maxDimension: 1024, quality: 0.7, outputType, backgroundColor });
       const newMeta = {
         ...photoData.metadata,
         synced: true,
@@ -369,6 +407,8 @@ export default class extends Controller {
         inspection_id: inspectionId
       };
       await this.offlineStorage.storePhotoBlob(this.photoIdValue, thumbBlob, newMeta);
+      // Refrescar el preview para usar el nuevo blob
+      await this.updatePreview(this.photoIdValue);
       // Mantener también referencia en el form_fill para depuración/consistencia
       try {
         await this.offlineStorage.updateFormFill(this.formFillIdValue, {}, {
@@ -426,7 +466,10 @@ export default class extends Controller {
       const currentDataValue = formFillElement.dataset.formFillDataValue || '{}';
       let currentData = {};
       try { currentData = JSON.parse(currentDataValue); } catch(_) { currentData = {}; }
-      const key = `${fieldName}_photo_attachment_id`;
+      const kind = (this.kindValue && String(this.kindValue).trim()) || 'photo'
+      const key = kind === 'signature'
+        ? `${fieldName}_signature_attachment_id`
+        : `${fieldName}_photo_attachment_id`;
       // Si tenemos attachmentId válido, guardarlo; si no, eliminar la clave
       if (attachmentId) {
         currentData[key] = attachmentId;
@@ -511,7 +554,10 @@ export default class extends Controller {
       const dataJson = form?.dataset?.formFillDataValue || this.element?.dataset?.formFillDataValue
       if (!dataJson) return
       const data = JSON.parse(dataJson)
-      const attachmentKey = `${this.fieldNameValue}_photo_attachment_id`
+      const kind = (this.kindValue && String(this.kindValue).trim()) || 'photo'
+      const attachmentKey = kind === 'signature'
+        ? `${this.fieldNameValue}_signature_attachment_id`
+        : `${this.fieldNameValue}_photo_attachment_id`
       const attachmentId = data?.[attachmentKey]
       if (!attachmentId) return
 
@@ -521,7 +567,11 @@ export default class extends Controller {
       const resp = await fetch(photoUrl, { credentials: 'include' })
       if (!resp.ok) return
       const serverBlob = await resp.blob()
-      const thumbBlob = await this.offlineStorage.createThumbnailBlob(serverBlob, { maxDimension: 1024, quality: 0.7 })
+      // Elegir tipo de salida según el tipo de dato o si es firma
+      const isSignature = ((this.kindValue && String(this.kindValue).trim()) === 'signature');
+      const outputType = isSignature || (String(serverBlob?.type || '').includes('png')) ? 'image/png' : 'image/jpeg';
+      const backgroundColor = outputType === 'image/jpeg' ? '#ffffff' : null;
+      const thumbBlob = await this.offlineStorage.createThumbnailBlob(serverBlob, { maxDimension: 1024, quality: 0.7, outputType, backgroundColor })
 
       const photoId = this.generatePhotoId()
       let inspectionId = null
@@ -561,7 +611,10 @@ export default class extends Controller {
     try {
       const form = this.element.closest('form')
       const formId = form?.dataset?.formFillIdValue || formFillId
-      const url = `/form_fills/${formId}/photo_url`
+      const kind = (this.kindValue && String(this.kindValue).trim()) || 'photo'
+      const url = kind === 'signature'
+        ? `/form_fills/${formId}/signature_url`
+        : `/form_fills/${formId}/photo_url`
       const csrf = document.querySelector('[name="csrf-token"]')?.content || ''
       const resp = await fetch(url, {
         method: 'POST',
@@ -571,6 +624,9 @@ export default class extends Controller {
       })
       if (!resp.ok) return null
       const json = await resp.json()
+      if (kind === 'signature') {
+        return json?.signature_url || null
+      }
       return json?.photo_url || null
     } catch (_) {
       return null
@@ -634,6 +690,7 @@ export default class extends Controller {
   }
 
   async handleRemoveConfirmed(event) {
+    try { event?.preventDefault(); event?.stopPropagation(); } catch(_) {}
     // Determinar si existía foto en servidor antes de borrar localmente
     let hadServerAttachment = false;
     try {
@@ -641,7 +698,10 @@ export default class extends Controller {
       const dataJson = form?.dataset?.formFillDataValue || this.element?.dataset?.formFillDataValue
       if (dataJson) {
         const data = JSON.parse(dataJson)
-        const attachmentKey = `${this.fieldNameValue}_photo_attachment_id`
+        const kind = (this.kindValue && String(this.kindValue).trim()) || 'photo'
+        const attachmentKey = kind === 'signature'
+          ? `${this.fieldNameValue}_signature_attachment_id`
+          : `${this.fieldNameValue}_photo_attachment_id`
         const att = data?.[attachmentKey]
         hadServerAttachment = !!(att && String(att).trim() !== '')
       }
@@ -650,7 +710,8 @@ export default class extends Controller {
     // Borrar localmente solo luego de confirmación del usuario
     await this.removePhoto();
 
-    // Si estamos offline y había foto en servidor, encolar eliminación para sincronización
+    const kind = (this.kindValue && String(this.kindValue).trim()) || 'photo'
+    // Si estamos offline y había adjunto en servidor, encolar eliminación para sincronización
     if (!navigator.onLine && hadServerAttachment && this.offlineStorage) {
       const numericFormFillId = parseInt(this.formFillIdValue, 10)
       let inspectionId = null
@@ -662,7 +723,8 @@ export default class extends Controller {
       }
       const payload = { form_fill_id: numericFormFillId, field_name: this.fieldNameValue }
       try {
-        await this.offlineStorage.addToSyncQueue('photo_delete', inspectionId, numericFormFillId, payload)
+        const queueType = kind === 'signature' ? 'signature_delete' : 'photo_delete'
+        await this.offlineStorage.addToSyncQueue(queueType, inspectionId, numericFormFillId, payload)
         // Opcional: notificar a UI de que hay cambios pendientes
         try {
           const evt = new CustomEvent('sync:pending-changes', { detail: { formFillId: numericFormFillId, pending: true }, bubbles: true })
@@ -670,6 +732,35 @@ export default class extends Controller {
         } catch (e) {}
       } catch (e) {
         console.warn('[OfflinePhoto] Failed to enqueue photo_delete:', e)
+      }
+    }
+
+    // Si estamos online, ejecutar borrado inmediato en servidor
+    if (navigator.onLine && hadServerAttachment) {
+      try {
+        const form = this.element.closest('form')
+        const formId = form?.dataset?.formFillIdValue || this.formFillIdValue
+        const csrf = document.querySelector('[name="csrf-token"]')?.content || ''
+        const endpoint = kind === 'signature' ? 'remove_signature' : 'remove_photo'
+        const resp = await fetch(`/form_fills/${formId}/${endpoint}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'Accept': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ field_name: this.fieldNameValue })
+        })
+        if (resp.ok) {
+          const json = await resp.json()
+          if (json?.success) {
+            await this.updateDataColumnQuietly(null, this.fieldNameValue)
+            this.updateStatus('Deleted', 'success')
+          } else {
+            this.updateStatus('Server delete failed', 'error')
+          }
+        } else {
+          this.updateStatus('Server delete failed', 'error')
+        }
+      } catch (e) {
+        console.warn('[OfflinePhoto] Error deleting on server:', e)
       }
     }
   }

@@ -905,7 +905,9 @@ class OfflineStorage {
   }
 
   // New: Create a thumbnail blob from an image blob
-  async createThumbnailBlob(blob, { maxDimension = 1024, quality = 0.7, outputType = 'image/jpeg' } = {}) {
+  // For JPEG thumbnails, we fill a white background to avoid black boxes when the source has transparency.
+  // You can override the background with { backgroundColor: '#ffffff' } or set outputType to 'image/png' to preserve transparency.
+  async createThumbnailBlob(blob, { maxDimension = 1024, quality = 0.7, outputType = 'image/jpeg', backgroundColor = null } = {}) {
     try {
       const imageURL = URL.createObjectURL(blob)
       const img = await new Promise((resolve, reject) => {
@@ -921,6 +923,12 @@ class OfflineStorage {
       canvas.width = Math.max(1, Math.round(width * scale))
       canvas.height = Math.max(1, Math.round(height * scale))
       const ctx = canvas.getContext('2d')
+      // If we're outputting JPEG, draw a white background to prevent black rectangles
+      const shouldFillBg = (backgroundColor !== null) || (String(outputType).toLowerCase() === 'image/jpeg')
+      if (shouldFillBg) {
+        ctx.fillStyle = backgroundColor || '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+      }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
       URL.revokeObjectURL(imageURL)
 

@@ -3,6 +3,38 @@ class FormFillsController < ApplicationController
     @form_fills = FormFill.all
   end
 
+  # Endpoint para eliminar firma de un campo Signature
+  def remove_signature
+    @form_fill = FormFill.find(params[:id])
+
+    request_data = begin
+      JSON.parse(request.body.read)
+    rescue StandardError
+      {}
+    end
+    field_name = request_data['field_name'] || params[:field_name]
+
+    if field_name.blank?
+      render json: { success: false, error: 'Field name is required' }, status: :bad_request
+      return
+    end
+
+    begin
+      # Eliminar todas las firmas asociadas al campo y limpiar attachment_id en data
+      @form_fill.remove_all_signatures_for_field(field_name)
+      success = @form_fill.clear_signature_attachment_id_in_structure(field_name)
+
+      if success
+        render json: { success: true, message: 'Signature removed successfully', field_name: field_name }
+      else
+        render json: { success: false, error: 'Error updating form structure', field_name: field_name }, status: :unprocessable_entity
+      end
+    rescue StandardError => e
+      Rails.logger.error "Error removing signature for field #{field_name}: #{e.message}"
+      render json: { success: false, error: "Error removing signature: #{e.message}", field_name: field_name }, status: :internal_server_error
+    end
+  end
+
   def show
     @form_fill = FormFill.find(params[:id])
     @deficiencies = Deficiency.order(:name).all
@@ -232,6 +264,10 @@ class FormFillsController < ApplicationController
             # Se lee la clave estandarizada `_photo_attachment_id` desde la columna `data`.
             # Si la foto fue borrada, el valor será `nil`, y eso es lo que se enviará al frontend.
             field['photo_attachment_id'] = data["#{field_name}_photo_attachment_id"]
+          when 'Signature'
+            # --- LÓGICA AGREGADA PARA FIRMAS ---
+            # Se lee la clave estandarizada `_signature_attachment_id` desde la columna `data`.
+            field['signature_attachment_id'] = data["#{field_name}_signature_attachment_id"]
 
           when 'Deficiency'
             # La lógica para los campos de deficiencia se mantiene, ya que es correcta.
@@ -307,6 +343,42 @@ class FormFillsController < ApplicationController
       render json: {
         success: false,
         error: "Error getting photo URL: #{e.message}",
+        field_name: field_name
+      }, status: :internal_server_error
+    end
+  end
+
+  # Endpoint para obtener URL de firma específica
+  def signature_url
+    @form_fill = FormFill.find(params[:id])
+
+    request_data = begin
+      JSON.parse(request.body.read)
+    rescue StandardError
+      {}
+    end
+    field_name = request_data['field_name'] || params[:field_name]
+
+    if field_name.blank?
+      render json: { success: false, error: 'Field name is required' }, status: :bad_request
+      return
+    end
+
+    begin
+      signature = @form_fill.get_signature_for_field(field_name)
+      signature_url = signature.present? ? rails_blob_path(signature, only_path: true) : nil
+
+      render json: {
+        success: true,
+        signature_url: signature_url,
+        field_name: field_name,
+        has_signature: signature_url.present?
+      }
+    rescue StandardError => e
+      Rails.logger.error "Error getting signature URL for field #{field_name}: #{e.message}"
+      render json: {
+        success: false,
+        error: "Error getting signature URL: #{e.message}",
         field_name: field_name
       }, status: :internal_server_error
     end

@@ -6,7 +6,7 @@ import { Controller } from "@hotwired/stimulus";
 export default class extends Controller {
   static targets = ["canvas", "clearButton", "saveButton", "base64Input", "fieldName"];
 
-  connect() {
+  async connect() {
     try {
       if (!this.hasCanvasTarget) {
         console.error("[SignaturePad] Canvas target not found in DOM");
@@ -44,7 +44,11 @@ export default class extends Controller {
         this.ctx.scale(dpr, dpr);
       }
 
+      // Estados internos
       this.isDrawing = false;
+      this.isSaving = false;
+      this.isConfirmingClear = false;
+
       this.ctx.lineCap = "round";
       this.ctx.strokeStyle = this.strokeColor;
       this.ctx.lineWidth = this.strokeWidth;
@@ -83,6 +87,13 @@ export default class extends Controller {
       this.checkCanvasInteractivity();
 
       console.log("[SignaturePad] Initialized. size:", { cssWidth, cssHeight, dpr });
+
+      // Intentar precargar firma existente en el canvas sin distorsión
+      try {
+        await this.preloadExistingSignatureToCanvas();
+      } catch (e) {
+        console.warn('[SignaturePad] preloadExistingSignatureToCanvas warning:', e);
+      }
     } catch (e) {
       console.error("[SignaturePad] Initialization error:", e);
     }
@@ -109,6 +120,11 @@ export default class extends Controller {
   onPointerDown(event) {
     try {
       this.isDrawing = true;
+      this.hasStrokes = true;
+      // Al comenzar a dibujar, asegurar que el botón Clear sea visible
+      try {
+        if (this.hasClearButtonTarget) this.clearButtonTarget.classList.remove('hidden');
+      } catch (_) {}
       const { x, y } = this.pointerPos(event);
       this.ctx.beginPath();
       this.ctx.moveTo(x, y);
@@ -192,19 +208,67 @@ export default class extends Controller {
     console.log("Coordenadas del click:", { x, y });
   }
 
-  clear(event) {
+  async clear(event) {
     try { event?.preventDefault(); } catch(_) {}
     try {
+      // Confirmación usando turbo_confirm si está presente, si no, confirm() estándar
+      const confirmText = (event?.currentTarget?.dataset?.turboConfirm) || "¿Are you sure you want to delete?";
+      this.isConfirmingClear = true;
+
+      const proceed = window.confirm(confirmText);
+      if (!proceed) {
+        this.isConfirmingClear = false;
+        // Asegurar interactividad intacta si el usuario canceló
+        try {
+          this.canvasTarget.classList.remove('hidden');
+          this.canvasTarget.style.pointerEvents = 'auto';
+          this.canvasTarget.style.touchAction = 'none';
+        } catch(_) {}
+        return;
+      }
+
       const cssWidth = this.canvasTarget.clientWidth || parseInt(this.canvasTarget.style.width, 10) || 600;
       const cssHeight = Number.parseInt(this.element.dataset.padHeight || "200", 10) || 200;
       this.ctx.clearRect(0, 0, cssWidth, cssHeight);
+      // Asegurar estado de dibujo limpio y canvas visible
+      this.isDrawing = false;
+      this.hasStrokes = false;
+      try { this.canvasTarget.classList.remove('hidden'); } catch (_) {}
+      try { if (this.hasClearButtonTarget) this.clearButtonTarget.classList.remove('hidden'); } catch (_) {}
       if (this.hasBase64InputTarget) this.base64InputTarget.value = "";
+
+      // Borrar también la firma almacenada (local y servidor) usando offline-photo
+      const offlinePhotoController = this.application.getControllerForElementAndIdentifier(this.element, "offline-photo");
+      if (offlinePhotoController && typeof offlinePhotoController.handleRemoveConfirmed === "function") {
+        try {
+          await offlinePhotoController.handleRemoveConfirmed(event);
+        } catch (e) {
+          console.warn('[SignaturePad] clear -> offline-photo remove warning:', e);
+        }
+      }
+
+      // Rehabilitar interacción con el canvas
+      this.isConfirmingClear = false;
+      try {
+        this.canvasTarget.classList.remove('hidden');
+        this.canvasTarget.style.pointerEvents = 'auto';
+        this.canvasTarget.style.touchAction = 'none';
+        // En algunos navegadores, aplicar en el siguiente tick garantiza el estilo
+        setTimeout(() => {
+          try { this.checkCanvasInteractivity(); } catch(_) {}
+        }, 0);
+      } catch (_) {}
     } catch (e) { console.warn("[SignaturePad] clear error:", e); }
   }
 
   async save(event) {
     try { event?.preventDefault(); } catch(_) {}
     try {
+      // Bloquear interacción durante guardado
+      this.isSaving = true;
+      const wasPointerEvents = this.canvasTarget.style.pointerEvents;
+      this.canvasTarget.style.pointerEvents = 'none';
+
       const dataURL = this.canvasTarget.toDataURL("image/png");
       if (this.hasBase64InputTarget) {
         this.base64InputTarget.value = dataURL;
@@ -236,11 +300,24 @@ export default class extends Controller {
         const syntheticEvent = { target: { files: [file] } };
         offlinePhotoController.handleFileSelect(syntheticEvent);
         console.log("[SignaturePad] Signature saved and handed to offline-photo");
+        // UX inmediato: ocultar el canvas y mostrar contenedor de preview si existe
+        try {
+          this.canvasTarget.classList.add('hidden');
+          if (this.hasClearButtonTarget) this.clearButtonTarget.classList.add('hidden');
+          const containerEl = this.element.querySelector('[id^="signature-preview-"]');
+          if (containerEl) {
+            containerEl.classList.remove('hidden');
+          }
+        } catch (_) {}
       } else {
         console.warn("[SignaturePad] offline-photo controller not found or no blob; signature stored as base64 only.");
       }
     } catch (e) {
       console.error("[SignaturePad] save error:", e);
+    } finally {
+      // Rehabilitar interacción tras guardado
+      this.isSaving = false;
+      this.canvasTarget.style.pointerEvents = wasPointerEvents || 'auto';
     }
   }
 
@@ -291,4 +368,64 @@ export default class extends Controller {
       console.warn("[SignaturePad] checkCanvasInteractivity warning:", e);
     }
   }
+
+  // Precargar firma existente en el canvas
+  async preloadExistingSignatureToCanvas() {
+    try {
+      const fieldName = this.hasFieldNameTarget ? this.fieldNameTarget.value : this.element.dataset.fieldName;
+      if (!fieldName) return;
+
+      // Obtener formFillId del contenedor con offline-photo
+      const formFillId = this.element?.dataset?.offlinePhotoFormFillIdValue;
+      // Leer attachment_id de data column
+      const form = this.element.closest('form');
+      const dataJson = form?.dataset?.formFillDataValue || this.element?.dataset?.formFillDataValue;
+      if (!dataJson) return;
+      const data = JSON.parse(dataJson);
+      const attachmentId = data?.[`${fieldName}_signature_attachment_id`];
+      if (!attachmentId) return;
+
+      // Pedir URL de firma al servidor usando el controlador offline-photo
+      const offlinePhotoController = this.application.getControllerForElementAndIdentifier(this.element, 'offline-photo');
+      let url = null;
+      if (offlinePhotoController && typeof offlinePhotoController.fetchServerPhotoUrl === 'function') {
+        url = await offlinePhotoController.fetchServerPhotoUrl(formFillId, fieldName, attachmentId);
+      }
+      if (!url) return;
+
+      // Cargar imagen y dibujarla contenida en el canvas
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        image.onload = () => resolve(image);
+        image.onerror = (e) => reject(e);
+        image.src = url;
+      });
+
+      const cssWidth = this.canvasTarget.clientWidth || parseInt(this.canvasTarget.style.width, 10) || 600;
+      const cssHeight = Number.parseInt(this.element.dataset.padHeight || '200', 10) || 200;
+
+      // Limpiar y dibujar con "contain" manteniendo aspecto
+      this.ctx.clearRect(0, 0, cssWidth, cssHeight);
+      const imgAspect = img.width / img.height;
+      const canvasAspect = cssWidth / cssHeight;
+      let drawWidth, drawHeight;
+      if (imgAspect > canvasAspect) {
+        // Imagen más ancha: ajustar a ancho del canvas
+        drawWidth = cssWidth;
+        drawHeight = Math.round(drawWidth / imgAspect);
+      } else {
+        // Imagen más alta: ajustar a alto del canvas
+        drawHeight = cssHeight;
+        drawWidth = Math.round(drawHeight * imgAspect);
+      }
+      const dx = Math.round((cssWidth - drawWidth) / 2);
+      const dy = Math.round((cssHeight - drawHeight) / 2);
+      this.ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
+    } catch (e) {
+      console.warn('[SignaturePad] Could not preload signature:', e);
+    }
+  }
+
+  // Sin autoguardado: la firma sólo se guarda al presionar el botón "Save".
 }
