@@ -45,6 +45,7 @@ class PdfFormsParserService
     parsed.reject do |field|
       # Mantener siempre los campos de firma, estén firmados o no
       next false if field[:is_signature]
+
       # Para el resto, aplicar el filtro por label
       field[:label_name].nil? || field[:label_name].to_s.empty? || field[:label_name] == 'Off'
     end
@@ -303,6 +304,7 @@ class PdfFormsParserService
 
   def signature_field_name?(name)
     return false unless name
+
     name.to_s.downcase.include?('sig') || name.to_s.downcase.include?('signature')
   end
 end

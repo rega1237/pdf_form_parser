@@ -70,7 +70,8 @@ class PdfSignatureService
   # - certificado PEM y clave PEM (certificate_path + key_path)
   # Opciones adicionales: reason, location, contact_info, name
   # Devuelve output_path si todo va bien.
-  def self.sign(file_path, output_path, field_name, certificate_path:, certificate_password: nil, key_path: nil, reason: nil, location: nil, contact_info: nil, name: nil, signature_image_path: nil)
+  def self.sign(file_path, output_path, field_name, certificate_path:, certificate_password: nil, key_path: nil,
+                reason: nil, location: nil, contact_info: nil, name: nil, signature_image_path: nil)
     # Intento con API Ruby de HexaPDF; si falla, fallback al CLI.
     begin
       doc = HexaPDF::Document.open(file_path)
@@ -79,16 +80,16 @@ class PdfSignatureService
       signer = build_signer(certificate_path, certificate_password, key_path)
 
       appearance = if signature_image_path && File.exist?(signature_image_path)
-                      {
-                        type: :image,
-                        image: signature_image_path
-                      }
-                    else
-                      {
-                        type: :text, # apariencia simple compatible con Adobe
-                        text: build_appearance_text(name: name, reason: reason, location: location)
-                      }
-                    end
+                     {
+                       type: :image,
+                       image: signature_image_path
+                     }
+                   else
+                     {
+                       type: :text, # apariencia simple compatible con Adobe
+                       text: build_appearance_text(name: name, reason: reason, location: location)
+                     }
+                   end
 
       doc.sign(
         output_path,
@@ -166,6 +167,7 @@ class PdfSignatureService
       HexaPDF::DigitalSignature::Signer.for_pkcs12(certificate_path, certificate_password)
     else
       raise 'Se requiere key_path para certificado PEM' unless key_path
+
       HexaPDF::DigitalSignature::Signer.for_certificate_and_key(certificate_path, key_path)
     end
   end
@@ -178,7 +180,8 @@ class PdfSignatureService
     parts.empty? ? 'Documento firmado' : parts.join("\n")
   end
 
-  def self.sign_with_cli(file_path, output_path, field_name, certificate_path:, certificate_password:, key_path:, reason:, location:, contact_info:, name:, signature_image_path: nil)
+  def self.sign_with_cli(file_path, output_path, field_name, certificate_path:, certificate_password:, key_path:,
+                         reason:, location:, contact_info:, name:, signature_image_path: nil)
     cmd = %w[bundle exec hexapdf sign]
     cmd += [file_path, output_path, '--field', field_name]
     if File.extname(certificate_path).downcase == '.p12' || File.extname(certificate_path).downcase == '.pfx'
@@ -196,6 +199,7 @@ class PdfSignatureService
 
     success = system(*cmd)
     raise "Fallo al firmar vía CLI (hexapdf)" unless success
+
     output_path
   end
 
@@ -206,7 +210,8 @@ class PdfSignatureService
   # - image_path: ruta del PNG/JPG con la firma manuscrita
   # - scale_to_fit: si true, mantiene proporciones dentro del rectángulo
   # - margin: margen interno dentro del rectángulo del widget
-  def self.stamp_signature_image(file_path, output_path, field_name, image_path, scale_to_fit: true, margin: 0, allow_upscale: false)
+  def self.stamp_signature_image(file_path, output_path, field_name, image_path, scale_to_fit: true, margin: 0,
+                                 allow_upscale: false)
     raise "Imagen de firma no encontrada: #{image_path}" unless image_path && File.exist?(image_path)
 
     doc = HexaPDF::Document.open(file_path)
