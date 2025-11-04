@@ -194,8 +194,8 @@ export default class extends Controller {
       baseField.selected_categories = selectedCategories;
     }
 
-    // Specific fields for Signature
-    if (currentType === "Signature") {
+   // Specific fields for Signature
+    if (['Signature', 'Signature_Field', 'Signature_Annex'].includes(currentType)) {
       baseField.signature_config = {
         pad_height: signaturePadHeightInput
           ? parseInt(signaturePadHeightInput.value || 200, 10)
@@ -306,15 +306,16 @@ export default class extends Controller {
                    class="editable-name bg-white/10 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                    placeholder="Field Name">
             
-            <select data-field-attribute="type" class="editable-type bg-white/10 border border-white/20 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="Text" ${itemData.type === "Text" ? "selected" : ""}>Text</option>
-              <option value="Choice" ${itemData.type === "Choice" ? "selected" : ""}>Choice</option>
-              <option value="Button" ${itemData.type === "Button" ? "selected" : ""}>Button</option>
-              <option value="Photo" ${itemData.type === "Photo" ? "selected" : ""}>Photo</option>
-              <option value="Signature" ${itemData.type === "Signature" ? "selected" : ""}>Signature</option>
-              <option value="Deficiency" ${itemData.type === "Deficiency" ? "selected" : ""}>Deficiency</option>
-              <option value="Pass/Fail" ${itemData.type === "Pass/Fail" ? "selected" : ""}>Pass/Fail</option>
-              <option value="Radio" ${itemData.type === "Radio" ? "selected" : ""}>Radio</option>
+           <select data-field-attribute="type" class="editable-type bg-white/10 border border-white/20 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+             <option value="Text" ${itemData.type === "Text" ? "selected" : ""}>Text</option>
+             <option value="Choice" ${itemData.type === "Choice" ? "selected" : ""}>Choice</option>
+             <option value="Button" ${itemData.type === "Button" ? "selected" : ""}>Button</option>
+             <option value="Photo" ${itemData.type === "Photo" ? "selected" : ""}>Photo</option>
+              <option value="Signature_Field" ${['Signature', 'Signature_Field'].includes(itemData.type) ? "selected" : ""}>Signature (Technician - field)</option>
+              <option value="Signature_Annex" ${itemData.type === "Signature_Annex" ? "selected" : ""}>Signature (Client - annex page)</option>
+             <option value="Deficiency" ${itemData.type === "Deficiency" ? "selected" : ""}>Deficiency</option>
+             <option value="Pass/Fail" ${itemData.type === "Pass/Fail" ? "selected" : ""}>Pass/Fail</option>
+             <option value="Radio" ${itemData.type === "Radio" ? "selected" : ""}>Radio</option>
               <option value="Date" ${itemData.type === "Date" ? "selected" : ""}>Date</option>
               <option value="Deficiency_field" ${itemData.type === "Deficiency_field" ? "selected" : ""}>Deficiency Field</option>
               <option value="System Category" ${itemData.type === "System Category" ? "selected" : ""}>System Category</option>
@@ -400,12 +401,12 @@ export default class extends Controller {
           : ""
       }
 
-      <!-- Signature Field Configuration -->
-      ${
-        itemData.type === "Signature"
-          ? `
-        <div class="signature-fields border-t border-white/10 pt-4 mt-4">
-          <div class="mb-4">
+     <!-- Signature Field Configuration -->
+     ${
+        ['Signature', 'Signature_Field', 'Signature_Annex'].includes(itemData.type)
+         ? `
+       <div class="signature-fields border-t border-white/10 pt-4 mt-4">
+         <div class="mb-4">
             <div class="flex items-center space-x-2 mb-3">
               <svg class="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16c1.5-1.5 3-1.5 4.5 0S14.5 17.5 16 16m-9-4c1.5-1.5 3-1.5 4.5 0S14.5 13.5 16 12m-9-4c1.5-1.5 3-1.5 4.5 0S14.5 9.5 16 8" />
@@ -421,16 +422,22 @@ export default class extends Controller {
                 <label for="${fieldIdBase}_signature_stroke_width" class="block text-white font-semibold text-sm">Stroke Width (px)</label>
                 <input type="number" id="${fieldIdBase}_signature_stroke_width" value="${(itemData.signature_config && itemData.signature_config.stroke_width) || 2}" data-field-attribute="signature_stroke_width" min="1" max="10" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200" placeholder="2">
               </div>
-              <div class="space-y-2">
-                <label for="${fieldIdBase}_signature_stroke_color" class="block text-white font-semibold text-sm">Stroke Color</label>
-                <input type="text" id="${fieldIdBase}_signature_stroke_color" value="${(itemData.signature_config && itemData.signature_config.stroke_color) || '#000000'}" data-field-attribute="signature_stroke_color" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200" placeholder="#000000">
-              </div>
-            </div>
-            <div class="mt-3 p-3 bg-teal-500/5 border border-teal-500/10 rounded-lg">
-              <p class="text-teal-200 text-xs">The signature will be captured as an image (no credentials) and can be synchronized when online.</p>
-            </div>
-          </div>
-        </div>
+             <div class="space-y-2">
+               <label for="${fieldIdBase}_signature_stroke_color" class="block text-white font-semibold text-sm">Stroke Color</label>
+               <input type="text" id="${fieldIdBase}_signature_stroke_color" value="${(itemData.signature_config && itemData.signature_config.stroke_color) || '#000000'}" data-field-attribute="signature_stroke_color" class="w-full bg-white/5 border border-white/20 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200" placeholder="#000000">
+             </div>
+           </div>
+           <div class="mt-3 p-3 bg-teal-500/5 border border-teal-500/10 rounded-lg">
+              <p class="text-teal-200 text-xs">
+                ${
+                  itemData.type === 'Signature_Annex'
+                  ? 'This signature will be appended as a separate annex page in the final PDF.'
+                  : 'The signature will be stamped directly into the designated field on the PDF.'
+                }
+              </p>
+           </div>
+         </div>
+       </div>
       `
           : ""
       }

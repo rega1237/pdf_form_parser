@@ -33,7 +33,7 @@ class PdfFormsParserService
       {
         name: sanitize_field_name(field.name),
         original_name: field.name, # Keep original for reference
-        type: is_sig ? 'Signature' : field.type,
+        type: is_sig ? 'Signature_Field' : field.type,
         value: '', # Changed: Now always empty string instead of field.value
         options: field.options,
         human_label: generate_human_label(field.name),
@@ -100,7 +100,8 @@ class PdfFormsParserService
             field_name,
             image_path,
             scale_to_fit: true,
-            margin: 0
+            margin: 0,
+            allow_upscale: false
           )
         else
           Rails.logger.warn "Signature image path missing or not found for field '#{field_name}'. Skipping image stamp."
@@ -267,7 +268,7 @@ class PdfFormsParserService
         field_hash = {
           name: sanitize_field_name(field.name),
           original_name: field.name,
-          type: is_sig ? 'Signature' : field.type,
+          type: is_sig ? 'Signature_Field' : field.type,
           value: '', # Changed: Now always empty string instead of field.value
           options: field.options,
           human_label: generate_human_label(field.name),
@@ -289,7 +290,9 @@ class PdfFormsParserService
     normal = []
     signatures = []
     field_data.each do |field|
-      if field['is_signature'] || signature_field_name?(field['name'])
+      # Only treat technical field signatures as signature requests.
+      # Annex/client signatures should be handled separately in merging.
+      if field['is_signature'] || field['type'].to_s == 'Signature_Field' || field['type'].to_s == 'Signature'
         signatures << field
       else
         normal << field

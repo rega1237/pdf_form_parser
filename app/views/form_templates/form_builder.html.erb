@@ -323,7 +323,9 @@
                           <option value="Choice" <%= 'selected' if field['type'] == 'Choice' %>>Choice</option>
                           <option value="Button" <%= 'selected' if field['type'] == 'Button' %>>Button</option>
                           <option value="Photo" <%= 'selected' if field['type'] == 'Photo' %>>Photo</option>
-                          <option value="Signature" <%= 'selected' if field['type'] == 'Signature' %>>Signature</option>
+                          <!-- Signature types -->
+                          <option value="Signature_Field" <%= 'selected' if field['type'] == 'Signature_Field' || field['type'] == 'Signature' %>>Signature (Technician - field)</option>
+                          <option value="Signature_Annex" <%= 'selected' if field['type'] == 'Signature_Annex' %>>Signature (Client - annex page)</option>
                           <option value="Deficiency" <%= 'selected' if field['type'] == 'Deficiency' %>>Deficiency</option>
                           <option value="Pass/Fail" <%= 'selected' if field['type'] == 'Pass/Fail' %>>Pass/Fail</option>
                           <option value="Radio" <%= 'selected' if field['type'] == 'Radio' %>>Radio button</option>
@@ -449,7 +451,7 @@
                   <% end %>
 
                   <!-- Signature Field Configuration -->
-                  <% if field['type'] == 'Signature' %>
+                  <% if ['Signature', 'Signature_Field', 'Signature_Annex'].include?(field['type']) %>
                     <div class="signature-fields border-t border-white/10 pt-4 mt-4">
                       <div class="mb-4">
                         <div class="flex items-center space-x-2 mb-3">
@@ -496,7 +498,11 @@
                         </div>
                         <div class="mt-3 p-3 bg-teal-500/5 border border-teal-500/10 rounded-lg">
                           <p class="text-teal-200 text-xs">
-                            The signature will be captured as an image (no credentials) and can be synchronized when online.
+                            <% if field['type'] == 'Signature_Annex' %>
+                              This client signature will be appended as an additional page (annex) in the final PDF.
+                            <% else %>
+                              The technician signature will be injected into the designated PDF field.
+                            <% end %>
                           </p>
                         </div>
                       </div>

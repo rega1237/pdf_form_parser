@@ -39,9 +39,26 @@ class GeneratePdfJob < ApplicationJob
       # Merge all PDFs
       final_pdf_object = merge_all_pdfs(main_pdf_path, deficiencies_pdf_path, individual_pdfs)
 
-      # Add photos if any
+      # Add only deficiency/photo field images (exclude signatures)
       if final_pdf_object && main_form_fill.photos.attached?
-        final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, main_form_fill.photos)
+        begin
+          photos_by_field = main_form_fill.get_photos_by_field
+          photo_attachments = photos_by_field.values.map { |h| h[:photo] }.compact
+          final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, photo_attachments)
+        rescue StandardError => e
+          Rails.logger.error "Error adding photos to PDF: #{e.message}"
+        end
+      end
+
+      # Append client signature annex pages (if any Signature_Annex fields exist)
+      begin
+        annex_signatures = collect_annex_signatures(main_form_fill)
+        if final_pdf_object && annex_signatures.any?
+          final_pdf_object = PdfMergingService.add_signature_annexes(final_pdf_object, annex_signatures)
+          Rails.logger.info "Appended #{annex_signatures.count} client signature annex page(s)"
+        end
+      rescue StandardError => e
+        Rails.logger.error "Error appending signature annex pages: #{e.message}"
       end
 
       # Save final PDF
@@ -221,11 +238,12 @@ class GeneratePdfJob < ApplicationJob
   def generate_pdf_for(form_fill, processed_fields)
     output_path = nil
 
-    # Preparar imágenes de firma para campos tipo "Signature" y asignar signature_image_path
+    # Preparar imágenes de firma para campos tipo "Signature"/"Signature_Field" y asignar signature_image_path
     signature_image_tempfiles = []
     processed_fields.each do |field|
       next unless field.is_a?(Hash)
-      next unless field['type'].to_s == 'Signature'
+      type = field['type'].to_s
+      next unless ['Signature', 'Signature_Field'].include?(type)
 
       field_name = field['name']
       begin
@@ -265,6 +283,18 @@ class GeneratePdfJob < ApplicationJob
           FileUtils.rm_f(tf.path) if tf.path
         end
       end
+    end
+  end
+
+  # Recolecta firmas de cliente configuradas como anexos en el formulario principal
+  def collect_annex_signatures(form_fill)
+    return [] unless form_fill&.form_structure.present?
+
+    fields = JSON.parse(form_fill.form_structure)
+    annex_fields = fields.select { |f| f['type'].to_s == 'Signature_Annex' }
+
+    annex_fields.filter_map do |f|
+      form_fill.get_signature_for_field(f['name'])
     end
   end
 

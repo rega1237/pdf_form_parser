@@ -206,7 +206,7 @@ class PdfSignatureService
   # - image_path: ruta del PNG/JPG con la firma manuscrita
   # - scale_to_fit: si true, mantiene proporciones dentro del rectángulo
   # - margin: margen interno dentro del rectángulo del widget
-  def self.stamp_signature_image(file_path, output_path, field_name, image_path, scale_to_fit: true, margin: 0)
+  def self.stamp_signature_image(file_path, output_path, field_name, image_path, scale_to_fit: true, margin: 0, allow_upscale: false)
     raise "Imagen de firma no encontrada: #{image_path}" unless image_path && File.exist?(image_path)
 
     doc = HexaPDF::Document.open(file_path)
@@ -292,6 +292,8 @@ class PdfSignatureService
       img_w = image.width
       img_h = image.height
       scale = [inner_width / img_w.to_f, inner_height / img_h.to_f].min
+      # Para evitar borrosidad, no reescalar hacia arriba salvo que se indique
+      scale = [scale, 1.0].min unless allow_upscale
       draw_w = (img_w * scale)
       draw_h = (img_h * scale)
       # Centrar dentro del área

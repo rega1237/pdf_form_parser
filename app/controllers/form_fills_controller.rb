@@ -264,7 +264,7 @@ class FormFillsController < ApplicationController
             # Se lee la clave estandarizada `_photo_attachment_id` desde la columna `data`.
             # Si la foto fue borrada, el valor será `nil`, y eso es lo que se enviará al frontend.
             field['photo_attachment_id'] = data["#{field_name}_photo_attachment_id"]
-          when 'Signature'
+          when 'Signature', 'Signature_Field', 'Signature_Annex'
             # --- LÓGICA AGREGADA PARA FIRMAS ---
             # Se lee la clave estandarizada `_signature_attachment_id` desde la columna `data`.
             field['signature_attachment_id'] = data["#{field_name}_signature_attachment_id"]

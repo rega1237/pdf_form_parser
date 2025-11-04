@@ -74,11 +74,12 @@ class GenerateIndividualPdfJob < ApplicationJob
   def generate_individual_pdf(form_fill, form_fields)
     output_path = nil
 
-    # Preparar imágenes de firma para campos tipo "Signature"
+    # Preparar imágenes de firma para campos tipo "Signature"/"Signature_Field"
     signature_image_tempfiles = []
     form_fields.each do |field|
       next unless field.is_a?(Hash)
-      next unless field['type'].to_s == 'Signature'
+      type = field['type'].to_s
+      next unless ['Signature', 'Signature_Field'].include?(type)
 
       field_name = field['name']
       begin
@@ -109,6 +110,22 @@ class GenerateIndividualPdfJob < ApplicationJob
         output_path = Rails.root.join('tmp', output_filename)
         pdf_service.fill_form(output_path, form_fields)
       end
+      # Append client signature annex pages if present
+      begin
+        annex_signatures = collect_annex_signatures(form_fill)
+        if annex_signatures.any?
+          final_pdf = CombinePDF.load(output_path)
+          final_pdf = PdfMergingService.add_signature_annexes(final_pdf, annex_signatures)
+          appended_output_path = Rails.root.join('tmp', "#{form_fill.name.parameterize}_annex_#{Time.now.to_i}.pdf")
+          final_pdf.save(appended_output_path)
+          # Replace output_path with appended file
+          FileUtils.rm_f(output_path)
+          output_path = appended_output_path
+          Rails.logger.info "Appended #{annex_signatures.count} client signature annex page(s) (individual)"
+        end
+      rescue StandardError => e
+        Rails.logger.error "Error appending signature annex pages (individual): #{e.message}"
+      end
       output_path
     ensure
       signature_image_tempfiles.each do |tf|
@@ -118,6 +135,18 @@ class GenerateIndividualPdfJob < ApplicationJob
           FileUtils.rm_f(tf.path) if tf.path
         end
       end
+    end
+  end
+
+  # Recolecta firmas de cliente configuradas como anexos en el formulario
+  def collect_annex_signatures(form_fill)
+    return [] unless form_fill&.form_structure.present?
+
+    fields = JSON.parse(form_fill.form_structure)
+    annex_fields = fields.select { |f| f['type'].to_s == 'Signature_Annex' }
+
+    annex_fields.filter_map do |f|
+      form_fill.get_signature_for_field(f['name'])
     end
   end
 

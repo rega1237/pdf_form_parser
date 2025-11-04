@@ -36,8 +36,8 @@ class FormFill < ApplicationRecord
       structure = JSON.parse(form_structure)
       field_data = structure.find { |field| field['name'] == field_name }
 
-      # Si el campo es de tipo Signature, redirigir a la lógica especial de firma
-      if field_data&.dig('type').to_s == 'Signature'
+      # Si el campo es de tipo Signature técnico en campo o anexo de cliente, usar la lógica especial de firma
+      if ['Signature', 'Signature_Field', 'Signature_Annex'].include?(field_data&.dig('type').to_s)
         return attach_signature_for_field(field_name, photo_file)
       end
 
@@ -79,14 +79,19 @@ class FormFill < ApplicationRecord
   # =============================
   # FIRMA: LÓGICA ESPECIAL
   # =============================
-  def generate_unique_signature_attachment_id(field_section)
-    return nil if field_section.blank? || inspection.blank?
+  def generate_unique_signature_attachment_id(field_section, field_name)
+    return nil if field_section.blank? || field_name.blank? || inspection.blank?
 
-    # Similar a photo, pero con marcador explícito de "signature" para poder identificar y excluir en otras etapas
+    # Usar sección y nombre del campo para evitar colisiones entre múltiples firmas dentro de la misma sección
     safe_section_name = field_section.gsub('|', '__')
-    parameterized_name = safe_section_name.parameterize.underscore
+    parameterized_section = safe_section_name.parameterize.underscore
+
+    safe_field_name = field_name.to_s.gsub('|', '__')
+    parameterized_field = safe_field_name.parameterize.underscore
+
     random_suffix = SecureRandom.hex(4)
-    "inspection_#{inspection.id}_signature_#{parameterized_name}_#{random_suffix}"
+    # Formato: inspection_<id>_signature_<section>_<field>_<hex>
+    "inspection_#{inspection.id}_signature_#{parameterized_section}_#{parameterized_field}_#{random_suffix}"
   end
 
   # Adjuntar imagen de firma para un campo de tipo Signature
@@ -96,8 +101,9 @@ class FormFill < ApplicationRecord
     begin
       structure = JSON.parse(form_structure)
       field_data = structure.find { |field| field['name'] == field_name }
-      unless field_data&.dig('type').to_s == 'Signature'
-        return { success: false, error: 'El campo especificado no es de tipo Signature' }
+      # Aceptar tanto "Signature" como "Signature_Field" y "Signature_Annex"
+      unless ['Signature', 'Signature_Field', 'Signature_Annex'].include?(field_data&.dig('type').to_s)
+        return { success: false, error: 'El campo especificado no es de tipo Signature/Signature_Field/Signature_Annex' }
       end
 
       # Validación de tipo MIME (solo PNG/JPEG para preservar calidad original)
@@ -111,7 +117,7 @@ class FormFill < ApplicationRecord
       remove_all_signatures_for_field(field_name)
 
       field_section = field_data&.dig('section_name').presence || field_name
-      unique_attachment_id = generate_unique_signature_attachment_id(field_section)
+      unique_attachment_id = generate_unique_signature_attachment_id(field_section, field_name)
       return { success: false, error: 'No se pudo generar ID único de firma' } if unique_attachment_id.blank?
 
       # Adjuntar sin alterar el binario (mantener calidad original)
@@ -143,17 +149,9 @@ class FormFill < ApplicationRecord
     return if field_name.blank? || !photos.attached?
 
     begin
-      # Patrón por sección y marcador signature
-      structure = JSON.parse(form_structure) if form_structure.present?
-      field_data = structure&.find { |field| field['name'] == field_name }
-      field_section = field_data&.dig('section_name').presence || field_name
-      safe_section_name = field_section.gsub('|', '__')
-      parameterized_name = safe_section_name.parameterize.underscore
-      field_pattern = "inspection_#{inspection.id}_signature_#{parameterized_name}_"
+      signatures_to_remove = []
 
-      signatures_to_remove = photos.select { |photo| photo.filename.to_s.include?(field_pattern) }
-
-      # Fallback: si existe un attachment_id guardado en data (clave _signature_attachment_id)
+      # 1) Preferir eliminación por attachment_id exacto si está guardado en data
       stored_attachment_id = begin
         get_field_value("#{field_name}_signature_attachment_id")
       rescue StandardError
@@ -161,6 +159,19 @@ class FormFill < ApplicationRecord
       end
       if stored_attachment_id.present?
         signatures_to_remove += photos.select { |photo| photo.filename.to_s.start_with?(stored_attachment_id) }
+      else
+        # 2) Si no hay attachment_id, eliminar por prefijo específico de sección + nombre de campo
+        structure = JSON.parse(form_structure) if form_structure.present?
+        field_data = structure&.find { |field| field['name'] == field_name }
+        field_section = field_data&.dig('section_name').presence || field_name
+        safe_section_name = field_section.gsub('|', '__')
+        parameterized_section = safe_section_name.parameterize.underscore
+
+        safe_field_name = field_name.to_s.gsub('|', '__')
+        parameterized_field = safe_field_name.parameterize.underscore
+
+        specific_prefix = "inspection_#{inspection.id}_signature_#{parameterized_section}_#{parameterized_field}_"
+        signatures_to_remove += photos.select { |photo| photo.filename.to_s.start_with?(specific_prefix) }
       end
 
       signatures_to_remove.uniq.each do |sig|
@@ -193,9 +204,33 @@ class FormFill < ApplicationRecord
     begin
       signature_data_key = "#{field_name}_signature_attachment_id"
       attachment_id = get_field_value(signature_data_key)
-      return nil unless attachment_id.present?
+      if attachment_id.present?
+        found = photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
+        return found if found
+      end
 
-      photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
+      # Fallback: buscar por patrón basado en la sección del campo, para compatibilidad con adjuntos antiguos
+      structure = JSON.parse(form_structure) if form_structure.present?
+      field_data = structure&.find { |f| f['name'] == field_name }
+      field_section = field_data&.dig('section_name').presence || field_name
+      safe_section_name = field_section.gsub('|', '__')
+      parameterized_section = safe_section_name.parameterize.underscore
+
+      safe_field_name = field_name.to_s.gsub('|', '__')
+      parameterized_field = safe_field_name.parameterize.underscore
+
+      # Preferir adjuntos que contengan el marcador de signature
+      specific_prefix = "inspection_#{inspection.id}_signature_#{parameterized_section}_#{parameterized_field}_"
+      section_only_prefix = "inspection_#{inspection.id}_signature_#{parameterized_section}_"
+      legacy_prefix = "inspection_#{inspection.id}_#{parameterized_section}_"
+
+      # 1) Intentar por prefijo específico sección+campo (nuevo formato)
+      candidate = photos.find { |p| p.filename.to_s.start_with?(specific_prefix) }
+      # 2) Luego por prefijo sólo sección (formato antiguo con sección)
+      candidate ||= photos.find { |p| p.filename.to_s.start_with?(section_only_prefix) }
+      # 3) Finalmente por prefijo legacy sin marcador de signature
+      candidate ||= photos.find { |p| p.filename.to_s.include?(legacy_prefix) }
+      candidate
     rescue StandardError => e
       Rails.logger.error "Error getting signature for field #{field_name}: #{e.message}"
       nil
