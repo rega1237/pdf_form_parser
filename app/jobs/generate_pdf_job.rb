@@ -270,7 +270,8 @@ class GeneratePdfJob < ApplicationJob
     begin
       form_fill.form_template.original_file.blob.open do |template_tempfile|
         pdf_service = PdfFormsParserService.new(template_tempfile.path)
-        output_filename = "#{form_fill.name.parameterize}_#{Time.now.to_i}.pdf"
+        safe_name = form_fill.name.presence || form_fill.form_template&.name.presence || "form"
+        output_filename = "#{safe_name.parameterize}_#{Time.now.to_i}.pdf"
         output_path = Rails.root.join('tmp', output_filename)
         pdf_service.fill_form(output_path, processed_fields)
       end
@@ -294,7 +295,13 @@ class GeneratePdfJob < ApplicationJob
     annex_fields = fields.select { |f| f['type'].to_s == 'Signature_Annex' }
 
     annex_fields.filter_map do |f|
-      form_fill.get_signature_for_field(f['name'])
+      begin
+        att = form_fill.get_signature_for_field(f['name'])
+        att if att.present?
+      rescue StandardError => e
+        Rails.logger.error "Error collecting annex signature for field '#{f['name']}': #{e.message}"
+        nil
+      end
     end
   end
 

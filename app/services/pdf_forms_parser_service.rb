@@ -215,21 +215,27 @@ class PdfFormsParserService
     field_values = {}
 
     field_data.each do |field|
-      # Allow processing even if field['value'] is an empty string
+      # Solo procesar campos con valores NO vacíos.
+      # Pasar valores vacíos a pdftk puede degradar la estructura del AcroForm y
+      # producir estados inválidos que luego HexaPDF no puede validar.
       next unless field['name'].present?
 
-      # Try both original name and any variations
       field_name = field['name']
-      field_value = field['value'].to_s.encode('UTF-8', invalid: :replace, undef: :replace)
+      raw_value = field['value']
+      next if raw_value.nil? || raw_value.to_s.strip.empty?
 
+      field_value = raw_value.to_s.encode('UTF-8', invalid: :replace, undef: :replace)
+
+      # Asignación principal
       field_values[field_name] = field_value
 
-      # Also try with original_name if it exists
+      # También intentar con original_name si existe
       if field['original_name'].present? && field['original_name'] != field_name
         field_values[field['original_name']] = field_value
       end
     end
 
+    Rails.logger.info "PdfFormsParserService#prepare_field_values: enviando #{field_values.keys.size} campo(s) a pdftk"
     field_values
   end
 
