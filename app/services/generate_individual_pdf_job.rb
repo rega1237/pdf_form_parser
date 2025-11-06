@@ -78,7 +78,6 @@ class GenerateIndividualPdfJob < ApplicationJob
     signature_image_tempfiles = []
     form_fields.each do |field|
       next unless field.is_a?(Hash)
-
       type = field['type'].to_s
       next unless ['Signature', 'Signature_Field'].include?(type)
 

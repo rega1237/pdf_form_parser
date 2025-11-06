@@ -27,13 +27,11 @@ class FormFillsController < ApplicationController
       if success
         render json: { success: true, message: 'Signature removed successfully', field_name: field_name }
       else
-        render json: { success: false, error: 'Error updating form structure', field_name: field_name },
-               status: :unprocessable_entity
+        render json: { success: false, error: 'Error updating form structure', field_name: field_name }, status: :unprocessable_entity
       end
     rescue StandardError => e
       Rails.logger.error "Error removing signature for field #{field_name}: #{e.message}"
-      render json: { success: false, error: "Error removing signature: #{e.message}", field_name: field_name },
-             status: :internal_server_error
+      render json: { success: false, error: "Error removing signature: #{e.message}", field_name: field_name }, status: :internal_server_error
     end
   end
 

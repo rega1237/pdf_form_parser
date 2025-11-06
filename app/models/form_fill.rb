@@ -103,8 +103,7 @@ class FormFill < ApplicationRecord
       field_data = structure.find { |field| field['name'] == field_name }
       # Aceptar tanto "Signature" como "Signature_Field" y "Signature_Annex"
       unless ['Signature', 'Signature_Field', 'Signature_Annex'].include?(field_data&.dig('type').to_s)
-        return { success: false,
-                 error: 'El campo especificado no es de tipo Signature/Signature_Field/Signature_Annex' }
+        return { success: false, error: 'El campo especificado no es de tipo Signature/Signature_Field/Signature_Annex' }
       end
 
       # Validación de tipo MIME (solo PNG/JPEG para preservar calidad original)
