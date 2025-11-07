@@ -40,11 +40,36 @@ class GeneratePdfJob < ApplicationJob
       final_pdf_object = merge_all_pdfs(main_pdf_path, deficiencies_pdf_path, individual_pdfs)
 
       # Add only deficiency/photo field images (exclude signatures)
-      if final_pdf_object && main_form_fill.photos.attached?
+      # IMPORTANT: Include photos from the main form AND the 'Additional Risers' form
+      if final_pdf_object
         begin
-          photos_by_field = main_form_fill.get_photos_by_field
-          photo_attachments = photos_by_field.values.map { |h| h[:photo] }.compact
-          final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, photo_attachments)
+          combined_photo_attachments = []
+
+          # Fotos del formulario principal
+          if main_form_fill.photos.attached?
+            main_photos_by_field = main_form_fill.get_photos_by_field
+            main_photo_attachments = main_photos_by_field.values.map { |h| h[:photo] }.compact
+            combined_photo_attachments.concat(main_photo_attachments)
+            Rails.logger.info "Collected #{main_photo_attachments.size} photo(s) from main form for stamping"
+          end
+
+          # Fotos del formulario 'Additional Risers'
+          additional_risers_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
+          if additional_risers_form_fill&.photos&.attached?
+            ar_photos_by_field = additional_risers_form_fill.get_photos_by_field
+            ar_photo_attachments = ar_photos_by_field.values.map { |h| h[:photo] }.compact
+            combined_photo_attachments.concat(ar_photo_attachments)
+            Rails.logger.info "Collected #{ar_photo_attachments.size} photo(s) from Additional Risers for stamping"
+          else
+            Rails.logger.info "No photos found in Additional Risers form or form not present"
+          end
+
+          if combined_photo_attachments.any?
+            final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, combined_photo_attachments)
+            Rails.logger.info "Stamped #{combined_photo_attachments.size} photo(s) pages into final PDF"
+          else
+            Rails.logger.info 'No photo attachments to stamp into final PDF'
+          end
         rescue StandardError => e
           Rails.logger.error "Error adding photos to PDF: #{e.message}"
         end
