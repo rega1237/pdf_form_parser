@@ -74,12 +74,24 @@ class GenerateIndividualPdfJob < ApplicationJob
   def generate_individual_pdf(form_fill, form_fields)
     output_path = nil
 
-    # Preparar imágenes de firma para campos tipo "Signature"/"Signature_Field"
+    # Preparar imágenes de firma para campos de firma
     signature_image_tempfiles = []
+    # Tipos de firma permitidos por defecto
+    allowed_signature_types = ['Signature', 'Signature_Field']
+    # Caso especial: en "Corrected Deficiencies" también estampar "Signature_Annex" directamente en el campo
+    begin
+      template_name = form_fill.form_template&.name.to_s
+      if template_name.strip == 'Corrected Deficiencies'
+        allowed_signature_types << 'Signature_Annex'
+      end
+    rescue StandardError => e
+      Rails.logger.warn "No se pudo determinar el nombre del template para habilitar firmas annex: #{e.message}"
+    end
+
     form_fields.each do |field|
       next unless field.is_a?(Hash)
       type = field['type'].to_s
-      next unless ['Signature', 'Signature_Field'].include?(type)
+      next unless allowed_signature_types.include?(type)
 
       field_name = field['name']
       begin
@@ -93,6 +105,12 @@ class GenerateIndividualPdfJob < ApplicationJob
             tf.flush
             signature_image_tempfiles << tf
             field['signature_image_path'] = tf.path
+            # Si el campo es de tipo Signature_Annex y está permitido (p.ej., Corrected Deficiencies),
+            # tratarlo como Signature_Field para que PdfFormsParserService lo procese como solicitud de firma.
+            if type == 'Signature_Annex'
+              field['type'] = 'Signature_Field'
+              Rails.logger.info "Tratando campo annex '#{field_name}' como Signature_Field para estampar firma (individual)."
+            end
             Rails.logger.info "Asignada imagen de firma para campo '#{field_name}' (individual): #{tf.path}"
           end
         else
@@ -110,22 +128,9 @@ class GenerateIndividualPdfJob < ApplicationJob
         output_path = Rails.root.join('tmp', output_filename)
         pdf_service.fill_form(output_path, form_fields)
       end
-      # Append client signature annex pages if present
-      begin
-        annex_signatures = collect_annex_signatures(form_fill)
-        if annex_signatures.any?
-          final_pdf = CombinePDF.load(output_path)
-          final_pdf = PdfMergingService.add_signature_annexes(final_pdf, annex_signatures)
-          appended_output_path = Rails.root.join('tmp', "#{form_fill.name.parameterize}_annex_#{Time.now.to_i}.pdf")
-          final_pdf.save(appended_output_path)
-          # Replace output_path with appended file
-          FileUtils.rm_f(output_path)
-          output_path = appended_output_path
-          Rails.logger.info "Appended #{annex_signatures.count} client signature annex page(s) (individual)"
-        end
-      rescue StandardError => e
-        Rails.logger.error "Error appending signature annex pages (individual): #{e.message}"
-      end
+      # No anexos de firma de cliente en PDFs individuales.
+      # Los anexos (página extra con firma del cliente) solo se agregan
+      # cuando se genera el PDF completo desde el formulario principal.
       output_path
     ensure
       signature_image_tempfiles.each do |tf|
