@@ -1,6 +1,6 @@
 # app/controllers/inspections_controller.rb
 class InspectionsController < ApplicationController
-  before_action :set_inspection, only: %i[show edit update destroy]
+  before_action :set_inspection, only: %i[show edit update destroy update_status]
   before_action :load_form_data, only: %i[new create edit update]
   before_action :set_intervals, only: %i[new create edit update]
   before_action :load_form_data, only: %i[new create edit update]
@@ -166,6 +166,25 @@ class InspectionsController < ApplicationController
     else
       @selected_customer = @inspection.property.customer
       render :edit, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH /inspections/:id/update_status
+  def update_status
+    authorize @inspection, :update_status?
+
+    new_status = params[:status].presence || 'completed'
+    allowed_statuses = %w[pending in_progress completed canceled]
+
+    respond_to do |format|
+      if allowed_statuses.include?(new_status) && @inspection.update(status: new_status)
+        format.html { redirect_to inspection_path(@inspection), notice: "Inspección marcada como #{new_status}." }
+        format.json { render json: { success: true, status: @inspection.status }, status: :ok }
+      else
+        errors = ['Estado inválido.']
+        format.html { redirect_to inspection_path(@inspection), alert: 'Estado inválido.' }
+        format.json { render json: { success: false, errors: errors }, status: :unprocessable_entity }
+      end
     end
   end
 

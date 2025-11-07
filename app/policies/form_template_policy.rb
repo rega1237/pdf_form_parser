@@ -24,7 +24,7 @@ class FormTemplatePolicy < ApplicationPolicy
   def destroy?
     user && user.role&.level == 'Admin'
   end
-  
+
   def form_builder?
     user && user.role&.level == 'Admin'
   end

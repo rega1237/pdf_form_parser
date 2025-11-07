@@ -4,6 +4,7 @@
     "prettier": "^3.5.3"
   },
   "dependencies": {
-    "flatpickr": "^4.6.13"
+    "flatpickr": "^4.6.13",
+    "idb": "^8.0.3"
   }
 }

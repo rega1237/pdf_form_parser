@@ -28,7 +28,7 @@ class PropertiesController < ApplicationController
 
   def update
     @customer = @property.customer
-    
+
     if @property.update(property_params)
       redirect_to edit_customer_path(@customer), notice: '✅ Property updated successfully'
     else
@@ -38,7 +38,7 @@ class PropertiesController < ApplicationController
 
   def destroy
     @customer = @property.customer
-    
+
     if @property.destroy
       redirect_to edit_customer_path(@customer), notice: '✅ Property deleted successfully'
     else

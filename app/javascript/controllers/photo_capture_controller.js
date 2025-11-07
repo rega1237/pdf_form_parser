@@ -27,6 +27,16 @@ export default class extends Controller {
 
   // Método para abrir selector de archivos/cámara
   openCamera() {
+    // Si estamos offline, usar el input del controlador offline-photo para evitar intentos de subida
+    if (!navigator.onLine) {
+      const offlineInput = this.element.querySelector('input[data-offline-photo-target="input"]');
+      if (offlineInput) {
+        offlineInput.click();
+        return;
+      }
+    }
+
+    // Online: usar el input normal asociado a photo-capture
     if (this.fileInput) {
       this.fileInput.click();
     } else {
@@ -37,25 +47,32 @@ export default class extends Controller {
   // Método para manejar cambio de archivo
   handleFileChange(event) {
     const file = event.target.files[0];
-    if (file) {
-      // Validar que sea una imagen
-      if (!file.type.startsWith("image/")) {
-        alert("Por favor seleccione un archivo de imagen válido.");
-        this.clearFileInput();
-        return;
-      }
+    if (!file) return;
 
-      // Validar tamaño del archivo (máximo 10MB)
-      const maxSize = 10 * 1024 * 1024; // 10MB en bytes
-      if (file.size > maxSize) {
-        alert("El archivo es demasiado grande. Máximo permitido: 10MB.");
-        this.clearFileInput();
-        return;
-      }
-
-      // Mostrar vista previa
-      this.displayPhoto(file);
+    // Si estamos offline, delega a offline-photo y no intentes subir
+    if (!navigator.onLine) {
+      // No mostramos preview aquí para evitar duplicados; offline-photo lo hará
+      console.log('[PhotoCapture] Offline: se delega preview/almacenamiento al controlador offline-photo');
+      return;
     }
+
+    // Validar que sea una imagen
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor seleccione un archivo de imagen válido.');
+      this.clearFileInput();
+      return;
+    }
+
+    // Validar tamaño del archivo (máximo 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+    if (file.size > maxSize) {
+      alert('El archivo es demasiado grande. Máximo permitido: 10MB.');
+      this.clearFileInput();
+      return;
+    }
+
+    // Mostrar vista previa y subir cuando estamos online
+    this.displayPhoto(file);
   }
 
   // Método para mostrar vista previa de la foto
@@ -126,29 +143,32 @@ export default class extends Controller {
 
   // Método principal para eliminar foto (llamado desde la vista)
   removePhoto() {
+    const confirmMessage = "Are you sure you want to delete this photo? This action cannot be undone.";
+    if (!confirm(confirmMessage)) return;
+
     const fieldName = this.getFieldNameFromInput();
     const hasServerPhoto = this.hasServerPhoto();
+
+    // Si estamos offline, nunca intentes eliminar en servidor. Delega a offline.
+    if (!navigator.onLine) {
+      this.dispatchConfirmedRemove();
+      this.clearPreviewOnly();
+      return;
+    }
 
     if (hasServerPhoto && fieldName) {
       // Hay foto en el servidor, eliminar completamente
       this.removePhotoCompletely(fieldName);
     } else {
-      // Solo hay preview local, limpiar solo la vista
+      // Solo hay preview local: solicitar al controlador offline que borre la foto en IndexedDB
+      this.dispatchConfirmedRemove();
+      // Limpiar la vista por si no existe controlador offline
       this.clearPreviewOnly();
     }
   }
 
   // Método para eliminar foto completamente del servidor
   removePhotoCompletely(fieldName) {
-    // Confirmar eliminación
-    if (
-      !confirm(
-        "¿Está seguro de que desea eliminar esta foto? Esta acción no se puede deshacer.",
-      )
-    ) {
-      return;
-    }
-
     // Mostrar estado de carga
     this.showLoadingState();
 
@@ -160,25 +180,30 @@ export default class extends Controller {
           this.clearPreviewAndInput();
 
           // Actualizar el botón
-          this.updateButtonText("Tomar Foto");
+          this.updateButtonText("Take Photo");
 
           // Mostrar mensaje de éxito
-          this.showSuccessMessage("Foto eliminada exitosamente");
+          this.showSuccessMessage("Photo deleted successfully");
 
-          // Notificar al form_fill controller para actualizar la estructura
-          //this.notifyFormFillController();
+          // También eliminar cualquier copia local (thumbnail/offline) una vez confirmada la eliminación
+          this.dispatchConfirmedRemove();
         } else {
-          alert(`Error al eliminar la foto: ${result.error}`);
+          alert(`Error deleting photo: ${result.error}`);
         }
       })
       .catch((error) => {
         console.error("Error removing photo:", error);
-        alert("Error de conexión al eliminar la foto");
+        alert("Connection error when deleting photo");
       })
       .finally(() => {
         // Restaurar estado del botón
         this.hideLoadingState();
       });
+  }
+
+  dispatchConfirmedRemove() {
+    const evt = new CustomEvent('photo-remove-confirmed', { bubbles: true });
+    this.element.dispatchEvent(evt);
   }
 
   // Método para solo limpiar preview (foto no guardada aún)
@@ -265,40 +290,46 @@ export default class extends Controller {
       return false;
     }
 
+    const fieldName = this.getFieldNameFromInput();
+
+    // Primero: verificar por datos explícitos del formulario (attachment id en data column)
+    if (fieldName) {
+      const hasAttachmentId = this.checkFormStructureForPhoto(fieldName);
+      if (hasAttachmentId) return true;
+    }
+
+    // Si estamos offline y no hay attachment id explícito, asumimos que NO hay foto de servidor
+    if (!navigator.onLine) {
+      return false;
+    }
+
     // Método 1: Buscar el indicador "Guardada" en el texto
     const fileInfoElement = this.previewTarget.querySelector(".file-info");
     if (fileInfoElement) {
-      const guardadaText = fileInfoElement.textContent.includes("Guardada");
+      const guardadaText = fileInfoElement.textContent.includes("Guardada") || fileInfoElement.textContent.includes("Saved");
       if (guardadaText) return true;
     }
 
     // Método 2: Buscar elementos con class text-green-400 que contengan "Guardada"
-    const greenElements =
-      this.previewTarget.querySelectorAll(".text-green-400");
+    const greenElements = this.previewTarget.querySelectorAll(".text-green-400");
     for (let element of greenElements) {
-      if (element.textContent.includes("Guardada")) {
+      if (element.textContent.includes("Guardada") || element.textContent.includes("Saved")) {
         return true;
       }
     }
 
-    // Método 3: Verificar si la imagen tiene src que no está vacío y no es data: URL
+    // Método 3: Verificar si la imagen tiene src de servidor (http/https o ruta) y NO es blob: ni data:
     if (this.hasImageTarget && this.imageTarget.src) {
-      const isDataUrl = this.imageTarget.src.startsWith("data:");
-      const hasValidSrc = this.imageTarget.src.length > 0 && !isDataUrl;
+      const src = this.imageTarget.src;
+      const isDataUrl = src.startsWith("data:");
+      const isBlobUrl = src.startsWith("blob:");
+      const isHttpUrl = src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/");
+      const hasValidServerSrc = isHttpUrl && !isDataUrl && !isBlobUrl && src.length > 0;
 
-      // Si tiene src válido pero no es data URL, probablemente es del servidor
-      if (hasValidSrc) {
-        // Verificar también que no esté oculto el preview
+      if (hasValidServerSrc) {
         const isVisible = !this.previewTarget.classList.contains("hidden");
         return isVisible;
       }
-    }
-
-    // Método 4: Verificar desde la estructura del formulario
-    const fieldName = this.getFieldNameFromInput();
-    if (fieldName) {
-      const hasAttachmentId = this.checkFormStructureForPhoto(fieldName);
-      if (hasAttachmentId) return true;
     }
 
     return false;
@@ -307,39 +338,24 @@ export default class extends Controller {
   // método para verificar la data column para fotos
   checkFormStructureForPhoto(fieldName) {
     try {
-      const formFillElement = document.querySelector(
-        '[data-controller*="form-fill"]',
-      );
+      const formFillElement = document.querySelector('[data-controller*="form-fill"]');
       if (!formFillElement) return false;
 
-      // Check data column first (new approach)
       const dataValue = formFillElement.dataset.formFillDataValue;
       if (dataValue) {
         const data = JSON.parse(dataValue);
-        const attachmentKey = `${fieldName}_attachment_id`;
-        if (data[attachmentKey] && data[attachmentKey].trim() !== "") {
+        // Preferir la clave moderna con sufijo _photo_attachment_id, con fallback a _attachment_id
+        const keyNew = `${fieldName}_photo_attachment_id`;
+        const keyOld = `${fieldName}_attachment_id`;
+        const att = data[keyNew] ?? data[keyOld];
+        if (att && String(att).trim() !== "") {
           return true;
         }
       }
 
-      // Fallback to structure column (legacy support)
-      const structureValue = formFillElement.dataset.formFillFormStructureValue;
-      if (structureValue) {
-        const structure = JSON.parse(structureValue);
-        const field = structure.find(
-          (f) => f.name === fieldName && f.type === "Photo",
-        );
-
-        return (
-          field &&
-          field.photo_attachment_id &&
-          field.photo_attachment_id.trim() !== ""
-        );
-      }
-
       return false;
     } catch (error) {
-      console.error("Error checking form data for photo:", error);
+      console.warn("Error checking form structure for photo:", error);
       return false;
     }
   }
@@ -432,7 +448,7 @@ export default class extends Controller {
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        Procesando...
+        Processing...
       `;
       button.disabled = true;
     }
@@ -476,7 +492,7 @@ export default class extends Controller {
           </svg>
           ${fileName}
         </span>
-        <span class="text-green-400">Guardada</span>
+        <span class="text-green-400">Saved</span>
       </div>
     `;
 
@@ -536,13 +552,13 @@ export default class extends Controller {
         await this.updateDataColumnQuietly(result.attachment_id, fieldName);
 
         // Mostrar mensaje de éxito
-        this.showSuccessMessage("Foto guardada exitosamente");
+        this.showSuccessMessage("Photo saved successfully");
       } else {
         throw new Error(result.error || "Error uploading photo");
       }
     } catch (error) {
       console.error("Error uploading photo:", error);
-      alert(`Error al subir la foto: ${error.message}`);
+      alert(`Error uploading photo: ${error.message}`);
 
       // En caso de error, limpiar la vista previa
       this.clearPreviewOnly();
@@ -563,9 +579,9 @@ export default class extends Controller {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Subiendo...
+            Uploading...
           </span>
-          <span class="text-blue-400">Procesando</span>
+          <span class="text-blue-400">Processing...</span>
         </div>
       `;
     }
@@ -588,7 +604,7 @@ export default class extends Controller {
             </svg>
             ${fileName}
           </span>
-          <span class="text-green-400">Guardada</span>
+          <span class="text-green-400">Saved</span>
         </div>
       `;
     }

@@ -28,6 +28,11 @@ class InspectionPolicy < ApplicationPolicy
     user && user.role&.level == 'Admin'
   end
 
+  def update_status?
+    # Permite que el Admin o el dueño de la inspección cambien el estado
+    user.present? && (user.role&.level == 'Admin' || record.user_id == user.id)
+  end
+
   def destroy?
     user && user.role&.level == 'Admin'
   end

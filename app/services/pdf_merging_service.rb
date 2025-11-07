@@ -21,6 +21,17 @@ class PdfMergingService
     # This method works with the new data structure by receiving photo attachments directly
     # Photo attachment IDs are now stored in the data column, but this service doesn't need
     # to access them - it works with the actual photo attachments passed as parameter
+    # IMPORTANT: Excluir imágenes de firma (special-case) para evitar duplicarlas en páginas normales.
+    # Excluir imágenes de firma detectando patrones comunes y variantes mal escritas
+    images = Array(images).reject do |img|
+      fname = img&.filename.to_s.downcase
+      fname.include?('_signature_') ||
+        fname.start_with?('signature_') ||
+        # Variantes con errores tipográficos históricas
+        fname.include?('_siganture_') || fname.include?('sigantures') ||
+        # Palabras en español usadas para firmas
+        fname.include?('firma')
+    end
     grouped_photos = group_and_process_photos(images)
     return pdf_object if grouped_photos.empty?
 
@@ -76,6 +87,52 @@ class PdfMergingService
     end.render
 
     pdf_object << CombinePDF.parse(all_photos_pdf_data)
+    pdf_object
+  end
+
+  # Append client signature images as standalone annex pages.
+  # Accepts ActiveStorage attachments (or any object responding to `download` and `filename`).
+  # Ensures image quality by rendering at full page fit while preserving aspect ratio.
+  def self.add_signature_annexes(pdf_object, signature_images)
+    images = Array(signature_images).compact
+    return pdf_object if images.empty?
+
+    # Opción B: texto + imagen de la firma del cliente incrustada en la página.
+    # - Eliminar el título "imagen de la firma del cliente".
+    # - Incrustar la imagen de la firma centrada, ajustada al ancho disponible.
+    # - Mostrar la etiqueta inferior en inglés: "Client signature".
+    annex_pdf_data = Prawn::Document.new(page_size: 'LETTER', margin: 36) do |pdf|
+      images.each_with_index do |image, idx|
+        pdf.start_new_page if idx > 0
+
+        begin
+          # Descargar el blob de la imagen desde ActiveStorage (o equivalente)
+          data = image.respond_to?(:download) ? image.download : image
+          sio = StringIO.new(data)
+
+          # Ajustar la imagen al ancho disponible y altura razonable, manteniendo proporción.
+          # Reducimos el tamaño (ej. 30%) y reservamos el espacio de la imagen para que
+          # el texto quede SIEMPRE debajo.
+          scale_ratio = 0.3 # 30% del área disponible; ajustable si necesitas otro tamaño
+          label_height = 20
+          max_width = pdf.bounds.width * scale_ratio
+          # Cajón compacto: igualar alto del cajón al ancho máximo para acercar el texto
+          image_box_height = max_width
+
+          pdf.bounding_box([0, pdf.cursor], width: pdf.bounds.width, height: image_box_height) do
+            pdf.image(sio, fit: [max_width, image_box_height], position: :center, vposition: :bottom)
+          end
+        rescue StandardError => e
+          Rails.logger.error("No se pudo incrustar la imagen de firma en el anexo: #{e.message}")
+          # En caso de error, aún mostramos la etiqueta para no perder contexto
+        end
+
+        pdf.move_down 4
+        pdf.text 'Client signature', size: 12, align: :center
+      end
+    end.render
+
+    pdf_object << CombinePDF.parse(annex_pdf_data)
     pdf_object
   end
 

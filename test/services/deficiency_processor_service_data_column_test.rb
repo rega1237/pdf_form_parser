@@ -89,28 +89,28 @@ class DeficiencyProcessorServiceDataColumnTest < ActiveSupport::TestCase
     # Verify processing results
     assert_not_nil result[:processed_fields]
     assert_not_nil result[:unprocessed_deficiencies]
-    
+
     # Should have processed fields for both deficiencies
     assert result[:processed_fields].length > 0, "Should have processed some fields"
-    
+
     # Verify specific field mappings
     processed_field_names = result[:processed_fields].map { |f| f['name'] }
-    
+
     # Should have mapped item fields
     assert_includes processed_field_names, 'item_field_1'
     assert_includes processed_field_names, 'item_field_2'
-    
+
     # Verify field values were set correctly
     item_field_1 = result[:processed_fields].find { |f| f['name'] == 'item_field_1' }
     assert_equal 'Fire Extinguisher', item_field_1['value']
-    
+
     item_field_2 = result[:processed_fields].find { |f| f['name'] == 'item_field_2' }
     assert_equal 'Sprinkler Head', item_field_2['value']
-    
+
     # Verify D/C field mapping
     d_field = result[:processed_fields].find { |f| f['name'] == 'd_field_1' }
     assert_equal 'X', d_field['value'] # D was 'Yes'
-    
+
     c_field = result[:processed_fields].find { |f| f['name'] == 'c_field_2' }
     assert_equal 'X', c_field['value'] # C was 'Yes'
   end
@@ -254,7 +254,7 @@ class DeficiencyProcessorServiceDataColumnTest < ActiveSupport::TestCase
   test "should maintain compatibility with existing deficiency processing logic" do
     # This test ensures that the service still works the same way it did before
     # when processing deficiencies from merged form data
-    
+
     deficiencies_data = [
       {
         'name' => 'legacy_deficiency',
@@ -310,7 +310,7 @@ class DeficiencyProcessorServiceDataColumnTest < ActiveSupport::TestCase
 
     # Verify all expected fields were processed
     processed_names = result[:processed_fields].map { |f| f['name'] }
-    
+
     assert_includes processed_names, 'item_1'
     assert_includes processed_names, 'riser_1'
     assert_includes processed_names, 'd_1'

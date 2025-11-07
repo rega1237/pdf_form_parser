@@ -73,13 +73,87 @@ class GenerateIndividualPdfJob < ApplicationJob
 
   def generate_individual_pdf(form_fill, form_fields)
     output_path = nil
-    form_fill.form_template.original_file.blob.open do |template_tempfile|
-      pdf_service = PdfFormsParserService.new(template_tempfile.path)
-      output_filename = "#{form_fill.name.parameterize}_#{Time.now.to_i}.pdf"
-      output_path = Rails.root.join('tmp', output_filename)
-      pdf_service.fill_form(output_path, form_fields)
+
+    # Preparar imágenes de firma para campos de firma
+    signature_image_tempfiles = []
+    # Tipos de firma permitidos por defecto
+    allowed_signature_types = ['Signature', 'Signature_Field']
+    # Caso especial: en "Corrected Deficiencies" también estampar "Signature_Annex" directamente en el campo
+    begin
+      template_name = form_fill.form_template&.name.to_s
+      if template_name.strip == 'Corrected Deficiencies'
+        allowed_signature_types << 'Signature_Annex'
+      end
+    rescue StandardError => e
+      Rails.logger.warn "No se pudo determinar el nombre del template para habilitar firmas annex: #{e.message}"
     end
-    output_path
+
+    form_fields.each do |field|
+      next unless field.is_a?(Hash)
+
+      type = field['type'].to_s
+      next unless allowed_signature_types.include?(type)
+
+      field_name = field['name']
+      begin
+        signature_attachment = form_fill.get_signature_for_field(field_name)
+        if signature_attachment.present?
+          signature_attachment.blob.open do |blob_tempfile|
+            ext = File.extname(signature_attachment.filename.to_s).presence || '.png'
+            tf = Tempfile.create(["signature_#{field_name}", ext])
+            tf.binmode
+            FileUtils.cp(blob_tempfile.path, tf.path)
+            tf.flush
+            signature_image_tempfiles << tf
+            field['signature_image_path'] = tf.path
+            # Si el campo es de tipo Signature_Annex y está permitido (p.ej., Corrected Deficiencies),
+            # tratarlo como Signature_Field para que PdfFormsParserService lo procese como solicitud de firma.
+            if type == 'Signature_Annex'
+              field['type'] = 'Signature_Field'
+              Rails.logger.info "Tratando campo annex '#{field_name}' como Signature_Field para estampar firma (individual)."
+            end
+            Rails.logger.info "Asignada imagen de firma para campo '#{field_name}' (individual): #{tf.path}"
+          end
+        else
+          Rails.logger.warn "Imagen de firma no encontrada para campo '#{field_name}' en FormFill ##{form_fill.id} (individual)"
+        end
+      rescue StandardError => e
+        Rails.logger.error "Error preparando imagen de firma (individual) para campo '#{field_name}': #{e.message}"
+      end
+    end
+
+    begin
+      form_fill.form_template.original_file.blob.open do |template_tempfile|
+        pdf_service = PdfFormsParserService.new(template_tempfile.path)
+        output_filename = "#{form_fill.name.parameterize}_#{Time.now.to_i}.pdf"
+        output_path = Rails.root.join('tmp', output_filename)
+        pdf_service.fill_form(output_path, form_fields)
+      end
+      # No anexos de firma de cliente en PDFs individuales.
+      # Los anexos (página extra con firma del cliente) solo se agregan
+      # cuando se genera el PDF completo desde el formulario principal.
+      output_path
+    ensure
+      signature_image_tempfiles.each do |tf|
+        begin
+          tf.close!
+        rescue StandardError
+          FileUtils.rm_f(tf.path) if tf.path
+        end
+      end
+    end
+  end
+
+  # Recolecta firmas de cliente configuradas como anexos en el formulario
+  def collect_annex_signatures(form_fill)
+    return [] unless form_fill&.form_structure.present?
+
+    fields = JSON.parse(form_fill.form_structure)
+    annex_fields = fields.select { |f| f['type'].to_s == 'Signature_Annex' }
+
+    annex_fields.filter_map do |f|
+      form_fill.get_signature_for_field(f['name'])
+    end
   end
 
   def attach_pdf_to_form_fill(form_fill, pdf_path)

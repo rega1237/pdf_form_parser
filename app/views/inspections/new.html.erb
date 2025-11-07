@@ -1,26 +1,26 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
   <div class="container mx-auto px-4 py-6 lg:py-12">
-    <!-- Header con navegación -->
+    <!-- Header with navigation -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div>
-        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">Nueva Inspección</h1>
-        <p class="text-slate-300 text-sm lg:text-base">Completa la información para programar una nueva inspección de campo.</p>
+        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">New Inspection</h1>
+        <p class="text-slate-300 text-sm lg:text-base">Complete the information to schedule a new field inspection.</p>
       </div>
       <div class="mt-4 sm:mt-0">
         <%= link_to inspections_path, class: "inline-flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors duration-200 text-sm font-medium" do %>
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
           </svg>
-          Volver a Inspecciones
+          Back to Inspections
         <% end %>
       </div>
     </div>
 
-    <!-- Contenido principal -->
+    <!-- Main content -->
     <div class="max-w-4xl mx-auto">
       <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
         
-        <!-- Sección informativa -->
+        <!-- Informational section -->
         <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 animate-fade-in mb-8">
           <div class="flex items-start space-x-3">
             <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mt-1">
@@ -29,13 +29,13 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-white font-semibold mb-2">Información de la Inspección</h3>
-              <p class="text-slate-300 text-sm">Asegúrate de completar todos los campos requeridos. Selecciona primero el cliente para cargar sus propiedades disponibles.</p>
+              <h3 class="text-white font-semibold mb-2">Inspection Information</h3>
+              <p class="text-slate-300 text-sm">Make sure to complete all required fields. Select the customer first to load their available properties.</p>
             </div>
           </div>
         </div>
 
-        <!-- Formulario -->
+        <!-- Form -->
         <%= render 'form', inspection: @inspection %>
       </div>
     </div>

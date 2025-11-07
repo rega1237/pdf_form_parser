@@ -23,7 +23,7 @@ gem "jbuilder"
 # gem "bcrypt", "~> 3.1.7"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", platforms: %i[ windows jruby ]
+gem "tzinfo-data", platforms: %i[windows jruby]
 
 # Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
 gem "solid_cache"
@@ -46,6 +46,7 @@ gem "activestorage"
 
 # File processing gems
 gem "pdf-forms" # For reading PDF forms
+gem "hexapdf", "~> 0.36" # For detecting and signing digital signature fields (PAdES)
 
 # Merge pdf
 gem "combine_pdf"
@@ -63,8 +64,8 @@ gem 'kaminari' # Pagination
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-  gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
-  
+  gem "debug", platforms: %i[mri windows], require: "debug/prelude"
+
   # Load environment variables from .env file
   gem 'dotenv-rails'
 

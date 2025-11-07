@@ -38,13 +38,13 @@ system_categories = [
 
 system_categories.each do |name|
   system_category = SystemCategory.find_or_create_by(name: name)
-  
+
   # Adjuntar imagen si no tiene una ya
   unless system_category.thumbnail.attached?
     # Convertir el nombre a formato de archivo (espacios por guiones bajos, minúsculas)
     image_filename = "#{name.gsub(' ', '_')}.png"
     image_path = Rails.root.join("app", "assets", "images", "system_category", image_filename)
-    
+
     if File.exist?(image_path)
       system_category.thumbnail.attach(
         io: File.open(image_path),

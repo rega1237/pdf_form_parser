@@ -33,6 +33,38 @@ export default class extends Controller {
   setInspectionDate() {
     // Si el campo está vacío, establecer la fecha de inspección
     if (!this.element.value || this.element.value === "") {
+      // Antes de establecer por defecto, revisar si existe un valor guardado en data-form-fill-data-value
+      const formElement = this.element.closest('[data-controller*="form-fill"]');
+      let savedValue = null;
+      let fieldName = null;
+      if (formElement && this.element.name && this.element.name.startsWith("form_fill[")) {
+        const match = this.element.name.match(/form_fill\[(.+)\]/);
+        fieldName = match ? match[1] : null;
+      }
+      try {
+        const rawData = formElement?.dataset?.formFillDataValue;
+        if (rawData && fieldName) {
+          const parsed = JSON.parse(rawData);
+          if (parsed && parsed[fieldName]) {
+            savedValue = parsed[fieldName];
+          }
+        }
+      } catch (e) {
+        // Si falla parseo, continuar con lógica normal
+      }
+
+      // Si hay un valor guardado para este campo, usarlo silenciosamente y no marcar cambio
+      if (savedValue) {
+        let valueToSet = savedValue;
+        if (typeof valueToSet === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)) {
+          const [y, m, d] = valueToSet.split("-");
+          valueToSet = `${m}/${d}/${y}`;
+        }
+        this.element.value = valueToSet;
+        this.element.setAttribute("value", valueToSet);
+        return; // No disparamos eventos para evitar guardados redundantes
+      }
+
       const inspectionDate = this.getInspectionDate();
 
       if (inspectionDate) {

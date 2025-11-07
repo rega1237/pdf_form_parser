@@ -2,7 +2,7 @@
      data-controller="inspection-status" 
      data-inspection-status-inspection-id-value="<%= @inspection.id %>">
   <div class="container mx-auto px-4 py-6 lg:py-12">
-    <!-- Header con navegación -->
+    <!-- Header with navigation -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div>
         <h1 class="text-2xl lg:text-3xl font-bold text-white mb-2">
@@ -34,11 +34,11 @@
         <% end %>
       </div>
     </div>
-    <!-- Contenido principal -->
+    <!-- Main content -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Columna principal -->
+      <!-- Main column -->
       <div class="lg:col-span-2 space-y-6">
-        <!-- Detalles de la inspección -->
+        <!-- Inspection details -->
         <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
           <div class="flex items-center mb-6">
             <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
@@ -52,7 +52,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <dt class="text-slate-400 text-sm font-medium mb-1">Date</dt>
-                <dd class="text-white text-sm lg:text-base"><%= @inspection.date.strftime('%d de %B de %Y') %></dd>
+                <dd class="text-white text-sm lg:text-base"><%= @inspection.date.strftime('%B %d, %Y') %></dd>
               </div>
               <div>
                 <dt class="text-slate-400 text-sm font-medium mb-1">Status</dt>
@@ -176,7 +176,7 @@
           </div>
         </div>
       </div>
-      <!-- Columna lateral -->
+      <!-- Sidebar column -->
       <div class="space-y-6">
         <!-- Quick Actions -->
         <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/20 shadow-2xl animate-slide-up">
@@ -372,11 +372,11 @@
           <dl class="space-y-4">
             <div>
               <dt class="text-slate-400 text-sm font-medium">Created</dt>
-              <dd class="text-slate-300 text-sm mt-1"><%= @inspection.created_at.strftime('%d/%m/%Y %H:%M') %></dd>
+              <dd class="text-slate-300 text-sm mt-1"><%= @inspection.created_at.strftime('%m/%d/%Y %H:%M') %></dd>
             </div>
             <div>
               <dt class="text-slate-400 text-sm font-medium">Last updated</dt>
-              <dd class="text-slate-300 text-sm mt-1"><%= @inspection.updated_at.strftime('%d/%m/%Y %H:%M') %></dd>
+              <dd class="text-slate-300 text-sm mt-1"><%= @inspection.updated_at.strftime('%m/%d/%Y %H:%M') %></dd>
             </div>
           </dl>
         </div>

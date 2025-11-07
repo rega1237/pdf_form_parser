@@ -18,7 +18,7 @@
   <% end %>
 
   <div class="space-y-6">
-    <!-- Campo Nombre -->
+    <!-- Name field -->
     <div class="animate-fade-in">
       <%= form.label :name, "Name of the Deficiency", 
           class: "block text-white font-semibold text-sm lg:text-base mb-3" %>
@@ -33,7 +33,7 @@
         <%= form.text_field :name,
             class: ["w-full bg-white/5 border rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200",
                    deficiency.errors[:name].any? ? "border-red-500/50 focus:ring-red-500" : "border-white/20 focus:ring-indigo-500"],
-            placeholder: "Ej: Grieta en estructura, Corrosión visible, etc." %>
+            placeholder: "E.g.: Structural crack, Visible corrosion, etc." %>
       </div>
       
       <% if deficiency.errors[:name].any? %>
@@ -46,11 +46,11 @@
       <% end %>
     </div>
 
-    <!-- Botones de acción -->
+    <!-- Action buttons -->
     <div class="flex flex-col sm:flex-row gap-3 pt-4">
       <%= form.submit class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900" %>
       
-      <%= link_to "Cancelar", settings_path, 
+      <%= link_to "Cancel", settings_path, 
           class: "bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 text-center focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900" %>
     </div>
   </div>

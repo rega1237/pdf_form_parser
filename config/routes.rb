@@ -37,7 +37,9 @@ Rails.application.routes.draw do
       get :download_pdf        # Nueva ruta para descargar PDF directamente
       post :send_email         # Route for sending email with PDF attachment
       post :photo_url          # Endpoint para obtener URL de foto
+      post :signature_url      # Endpoint para obtener URL de firma
       delete :remove_photo     # Nuevo endpoint para eliminar foto
+      delete :remove_signature # Nuevo endpoint para eliminar firma
       get :structure           # Endpoint para obtener estructura actualizada
       post :upload_photo
       # New data-focused endpoints
@@ -89,9 +91,24 @@ Rails.application.routes.draw do
   # Health check route
   get 'up' => 'rails/health#show', as: :rails_health_check
 
-  # PWA routes (commented out)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  # API routes for offline functionality
+  namespace :api do
+    namespace :v1 do
+      resources :inspections, only: [] do
+        member do
+          get :offline_data # Endpoint para obtener datos completos de inspección para offline
+        end
+      end
+
+      post 'sync', to: 'sync#sync_data' # Endpoint para sincronización de datos offline
+      post 'sync/upload_photo', to: 'sync#upload_photo' # Endpoint para subir fotos desde offline
+      get 'sync/status', to: 'sync#sync_status' # Endpoint para verificar estado de sincronización
+    end
+  end
+
+  # PWA routes - Service Worker debe estar en la raíz para scope '/'
+  get 'manifest.json', to: 'pwa#manifest', as: 'pwa_manifest'
+  get 'service-worker.js', to: 'pwa#service_worker', as: 'pwa_service_worker'
 
   # Root route
   root 'home#index'

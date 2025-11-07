@@ -155,9 +155,6 @@
       0%, 100% { text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
       50% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 30px rgba(59, 130, 246, 0.5); }
     }
-      box-shadow: none !important;
-      background-color: #4A5568;
-    }
   </style>
 <% end %>
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900" data-controller="notification" data-action="show-notification@window->notification#showNotification">
@@ -262,21 +259,20 @@
               </div>
             <% end %>
 
-            <!-- Botón de Finalizar Inspección -->
+            <!-- Finish Inspection button -->
             <div class="page-content hidden" data-pagination-target="pageContent">
               <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-red-400 shadow-2xl flex flex-col items-center justify-center h-full">
                 <h2 class="text-3xl font-bold text-white mb-6">End of Inspection</h2>
                 <p class="text-red-300 text-lg mb-8">Click the button below to finalize and return to the inspection summary.</p>
-                <%= link_to 'End Inspection', inspection_path(@form_fill.inspection), class: "bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg text-xl" %>
-              </div>
-            </div>
-
-            <!-- Botón de Finalizar Inspección -->
-            <div class="page-content hidden" data-pagination-target="pageContent">
-              <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-red-400 shadow-2xl flex flex-col items-center justify-center h-full">
-                <h2 class="text-3xl font-bold text-white mb-6">End of Inspection</h2>
-                <p class="text-red-300 text-lg mb-8">Click the button below to finalize and return to the inspection summary.</p>
-                <%= link_to 'End Inspection', inspection_path(@form_fill.inspection), class: "bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg text-xl" %>
+                <button type="button"
+                        data-controller="inspection-status"
+                        data-inspection-status-inspection-id-value="<%= @form_fill.inspection_id %>"
+                        data-status="completed"
+                        data-redirect="index"
+                        data-action="click->inspection-status#updateStatus"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg text-xl">
+                  End Inspection
+                </button>
               </div>
             </div>
 
@@ -290,15 +286,32 @@
               </svg>
             </button>
           </div>
-          <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg">
-            <div class="flex items-start space-x-4 mb-6">
-              <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
-              <div>
-                <h3 class="text-white font-bold text-xl mb-2">Form Actions</h3>
-                <p class="text-blue-300 text-base mb-4">Save your progress or generate the final PDF</p>
+            <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg relative z-20">
+              <div class="flex items-start space-x-4 mb-6">
+                <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                <div>
+                  <h3 class="text-white font-bold text-xl mb-2">Form Actions</h3>
+                  <p class="text-blue-300 text-base mb-4">Save your progress or generate the final PDF</p>
+                </div>
               </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-4" 
+              <!-- Sync Button and Status -->
+              <div class="inline-flex items-center mb-4" data-controller="sync">
+                <button data-action="click->sync#startSync"
+                        data-sync-target="syncButton"
+                        class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-2xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  Sync (<span data-sync-target="syncCount">0</span>)
+                </button>
+                <div data-sync-target="syncStatus" class="ml-4 hidden">
+                  <div class="w-32 bg-slate-700 rounded-full h-2">
+                    <div data-sync-target="progressBar" class="bg-orange-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                  </div>
+                  <div data-sync-target="progressText" class="text-xs text-slate-300 mt-1">Syncing...</div>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-4" 
                  data-controller="pdf-status" 
                  data-pdf-status-status-value="<%= @form_fill.pdf_generation_status %>"
                  data-pdf-status-refresh-interval-value="5000">
@@ -317,9 +330,9 @@
                   </svg>
                   PDF Generation Failed
                 </div>
-                <%= button_tag 'Retry Generate PDF', type: 'button', class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { action: "click->form-fill#submitToPdf", confirm: "Are you sure you want to retry generating the PDF?" } %>
+                <%= button_tag 'Retry Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { controller: 'online-only', online_only_offline_title_value: 'Necesitas conexión a internet para generar el PDF', action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to retry generating the PDF?" }, aria: { label: "Retry Generate PDF" } %>
               <% else %>
-                <%= button_tag 'Generate PDF', type: 'button', class: "inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { action: "click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." } %>
+                <%= button_tag 'Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { controller: 'online-only', online_only_offline_title_value: 'Necesitas conexión a internet para generar el PDF', action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." }, aria: { label: "Generate PDF" } %>
               <% end %>
 
               <%# --- Botón para ir al formulario principal --- %>
@@ -346,7 +359,7 @@
                   target="_blank" 
                   class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
                   <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                  Ver PDF Principal
+                  View Main PDF
                 </a>
               <% end %>
               <%# --- Lógica para encontrar y mostrar el PDF de Deficiencias --- %>
@@ -367,7 +380,7 @@
                   target="_blank" 
                   class="inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
                   <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
-                  Ver PDF de Deficiencias
+                  View Deficiencies PDF
                 </a>
               <% end %>
               
@@ -433,7 +446,7 @@
       <% end %>
     </div>
   </div>
-  <!-- Overlay de carga para Save Draft -->
+  <!-- Loading overlay for Save Draft -->
   <div id="save-draft-overlay" class="save-draft-overlay">
     <div class="save-draft-content">
       <%= image_tag "logo.png", alt: "Company Logo", class: "save-draft-logo" %>
@@ -443,3 +456,31 @@
     </div>
   </div>
 </div>
+<style>
+  /* Toast de estado para fotos/firmas */
+  .photo-status {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.2;
+    color: #e2e8f0; /* slate-200 */
+    display: flex;
+    align-items: center;
+    min-height: 20px;
+    transition: opacity 0.2s ease;
+  }
+  .photo-status::before {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    margin-right: 6px;
+    background: #64748b; /* slate-500 default */
+  }
+  .photo-status.photo-status--success { color: #86efac; /* green-300 */ }
+  .photo-status.photo-status--success::before { background: #22c55e; }
+  .photo-status.photo-status--error { color: #fca5a5; /* red-300 */ }
+  .photo-status.photo-status--error::before { background: #ef4444; }
+  .photo-status.photo-status--info { color: #93c5fd; /* blue-300 */ }
+  .photo-status.photo-status--info::before { background: #3b82f6; }
+</style>

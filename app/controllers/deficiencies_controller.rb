@@ -1,5 +1,5 @@
 class DeficienciesController < ApplicationController
-  before_action :set_deficiency, only: %i[ show edit update destroy ]
+  before_action :set_deficiency, only: %i[show edit update destroy]
 
   # GET /deficiencies or /deficiencies.json
   def index
@@ -58,13 +58,14 @@ class DeficienciesController < ApplicationController
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_deficiency
-      @deficiency = Deficiency.find(params.expect(:id))
-    end
 
-    # Only allow a list of trusted parameters through.
-    def deficiency_params
-      params.expect(deficiency: [ :name ])
-    end
+  # Use callbacks to share common setup or constraints between actions.
+  def set_deficiency
+    @deficiency = Deficiency.find(params.expect(:id))
+  end
+
+  # Only allow a list of trusted parameters through.
+  def deficiency_params
+    params.expect(deficiency: [:name])
+  end
 end

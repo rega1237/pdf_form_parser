@@ -39,9 +39,51 @@ class GeneratePdfJob < ApplicationJob
       # Merge all PDFs
       final_pdf_object = merge_all_pdfs(main_pdf_path, deficiencies_pdf_path, individual_pdfs)
 
-      # Add photos if any
-      if final_pdf_object && main_form_fill.photos.attached?
-        final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, main_form_fill.photos)
+      # Add only deficiency/photo field images (exclude signatures)
+      # IMPORTANT: Include photos from the main form AND the 'Additional Risers' form
+      if final_pdf_object
+        begin
+          combined_photo_attachments = []
+
+          # Fotos del formulario principal
+          if main_form_fill.photos.attached?
+            main_photos_by_field = main_form_fill.get_photos_by_field
+            main_photo_attachments = main_photos_by_field.values.map { |h| h[:photo] }.compact
+            combined_photo_attachments.concat(main_photo_attachments)
+            Rails.logger.info "Collected #{main_photo_attachments.size} photo(s) from main form for stamping"
+          end
+
+          # Fotos del formulario 'Additional Risers'
+          additional_risers_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
+          if additional_risers_form_fill&.photos&.attached?
+            ar_photos_by_field = additional_risers_form_fill.get_photos_by_field
+            ar_photo_attachments = ar_photos_by_field.values.map { |h| h[:photo] }.compact
+            combined_photo_attachments.concat(ar_photo_attachments)
+            Rails.logger.info "Collected #{ar_photo_attachments.size} photo(s) from Additional Risers for stamping"
+          else
+            Rails.logger.info "No photos found in Additional Risers form or form not present"
+          end
+
+          if combined_photo_attachments.any?
+            final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, combined_photo_attachments)
+            Rails.logger.info "Stamped #{combined_photo_attachments.size} photo(s) pages into final PDF"
+          else
+            Rails.logger.info 'No photo attachments to stamp into final PDF'
+          end
+        rescue StandardError => e
+          Rails.logger.error "Error adding photos to PDF: #{e.message}"
+        end
+      end
+
+      # Append client signature annex pages (if any Signature_Annex fields exist)
+      begin
+        annex_signatures = collect_annex_signatures(main_form_fill)
+        if final_pdf_object && annex_signatures.any?
+          final_pdf_object = PdfMergingService.add_signature_annexes(final_pdf_object, annex_signatures)
+          Rails.logger.info "Appended #{annex_signatures.count} client signature annex page(s)"
+        end
+      rescue StandardError => e
+        Rails.logger.error "Error appending signature annex pages: #{e.message}"
       end
 
       # Save final PDF
@@ -152,7 +194,71 @@ class GeneratePdfJob < ApplicationJob
     deficiencies_result = deficiencies_processor.process
     update_form_fields(deficiencies_form_fields, deficiencies_result[:processed_fields])
 
-    generate_pdf_for(deficiencies_form_fill, deficiencies_form_fields)
+    # Sello automático de la firma del formulario principal en el PDF de "Deficiencies"
+    # El formulario "Deficiencies" no tiene campo de firma en el frontend, pero sí en su JSON
+    # Queremos tomar la firma del formulario principal (técnico) y estamparla en el campo de firma del PDF de Deficiencies
+    pdf_output_path = nil
+    begin
+      signature_tempfiles = []
+      # 1) Identificar campos de firma en el formulario de Deficiencies
+      deficiencies_signature_fields = deficiencies_form_fields.select { |f|
+        ['Signature', 'Signature_Field'].include?(f['type'].to_s)
+      }
+      if deficiencies_signature_fields.any?
+        # 2) Obtener el formulario principal para encontrar su firma del técnico
+        main_form_fill = inspection.form_fills.find_by(form_template_id: inspection.form_template_id)
+        if main_form_fill
+          main_fields = JSON.parse(main_form_fill.form_structure)
+          # Preferir el campo etiquetado como "Technician Signature"; si no existe, tomar el primer Signature_Field
+          tech_sig_field = main_fields.find { |f|
+            f['type'].to_s == 'Signature_Field' && f['label_name'].to_s.strip == 'Technician Signature'
+          }
+          tech_sig_field ||= main_fields.find { |f| f['type'].to_s == 'Signature_Field' }
+
+          if tech_sig_field.present?
+            source_field_name = tech_sig_field['name']
+            source_attachment = main_form_fill.get_signature_for_field(source_field_name)
+            if source_attachment.present?
+              source_attachment.blob.open do |blob_tempfile|
+                ext = File.extname(source_attachment.filename.to_s).presence || '.png'
+                tf = Tempfile.create(["deficiencies_signature_#{source_field_name}", ext])
+                tf.binmode
+                FileUtils.cp(blob_tempfile.path, tf.path)
+                tf.flush
+                signature_tempfiles << tf
+                # Asignar la ruta de imagen de firma a TODOS los campos de firma del PDF de Deficiencies
+                deficiencies_signature_fields.each do |sig_field|
+                  sig_field['signature_image_path'] = tf.path
+                  Rails.logger.info "Asignada firma del main form ('#{source_field_name}') al campo de Deficiencies '#{sig_field['name']}'"
+                end
+              end
+            else
+              Rails.logger.warn "No se encontró firma del técnico en el main form para estampar en Deficiencies (campo: #{source_field_name})."
+            end
+          else
+            Rails.logger.warn "No se encontró un campo Signature_Field en el main form para usar como firma del técnico."
+          end
+        else
+          Rails.logger.warn "No se encontró el FormFill principal de la inspección para copiar la firma al PDF de Deficiencies."
+        end
+      else
+        Rails.logger.info "El formulario de Deficiencies no contiene campos de firma en su JSON o no fueron detectados."
+      end
+      # Generar el PDF de Deficiencies (con firma ya asignada si corresponde)
+      pdf_output_path = generate_pdf_for(deficiencies_form_fill, deficiencies_form_fields)
+    rescue StandardError => e
+      Rails.logger.error "Error preparando firma automática para PDF de Deficiencies: #{e.message}"
+    ensure
+      # Limpiar tempfiles usados para las firmas
+      signature_tempfiles.each do |tf|
+        begin
+          tf.close!
+        rescue StandardError
+          FileUtils.rm_f(tf.path) if tf.path
+        end
+      end
+    end
+    pdf_output_path
   end
 
   def collect_individual_pdfs_for_merge(inspection)
@@ -220,13 +326,73 @@ class GeneratePdfJob < ApplicationJob
   # Keep existing helper methods
   def generate_pdf_for(form_fill, processed_fields)
     output_path = nil
-    form_fill.form_template.original_file.blob.open do |template_tempfile|
-      pdf_service = PdfFormsParserService.new(template_tempfile.path)
-      output_filename = "#{form_fill.name.parameterize}_#{Time.now.to_i}.pdf"
-      output_path = Rails.root.join('tmp', output_filename)
-      pdf_service.fill_form(output_path, processed_fields)
+
+    # Preparar imágenes de firma para campos tipo "Signature"/"Signature_Field" y asignar signature_image_path
+    signature_image_tempfiles = []
+    processed_fields.each do |field|
+      next unless field.is_a?(Hash)
+
+      type = field['type'].to_s
+      next unless ['Signature', 'Signature_Field'].include?(type)
+
+      field_name = field['name']
+      begin
+        signature_attachment = form_fill.get_signature_for_field(field_name)
+        if signature_attachment.present?
+          signature_attachment.blob.open do |blob_tempfile|
+            ext = File.extname(signature_attachment.filename.to_s).presence || '.png'
+            tf = Tempfile.create(["signature_#{field_name}", ext])
+            tf.binmode
+            FileUtils.cp(blob_tempfile.path, tf.path)
+            tf.flush
+            signature_image_tempfiles << tf
+            field['signature_image_path'] = tf.path
+            Rails.logger.info "Asignada imagen de firma para campo '#{field_name}': #{tf.path}"
+          end
+        else
+          Rails.logger.warn "Imagen de firma no encontrada para campo '#{field_name}' en FormFill ##{form_fill.id}"
+        end
+      rescue StandardError => e
+        Rails.logger.error "Error preparando imagen de firma para campo '#{field_name}': #{e.message}"
+      end
     end
-    output_path
+
+    begin
+      form_fill.form_template.original_file.blob.open do |template_tempfile|
+        pdf_service = PdfFormsParserService.new(template_tempfile.path)
+        safe_name = form_fill.name.presence || form_fill.form_template&.name.presence || "form"
+        output_filename = "#{safe_name.parameterize}_#{Time.now.to_i}.pdf"
+        output_path = Rails.root.join('tmp', output_filename)
+        pdf_service.fill_form(output_path, processed_fields)
+      end
+      output_path
+    ensure
+      signature_image_tempfiles.each do |tf|
+        begin
+          tf.close!
+        rescue StandardError
+          FileUtils.rm_f(tf.path) if tf.path
+        end
+      end
+    end
+  end
+
+  # Recolecta firmas de cliente configuradas como anexos en el formulario principal
+  def collect_annex_signatures(form_fill)
+    return [] unless form_fill&.form_structure.present?
+
+    fields = JSON.parse(form_fill.form_structure)
+    annex_fields = fields.select { |f| f['type'].to_s == 'Signature_Annex' }
+
+    annex_fields.filter_map do |f|
+      begin
+        att = form_fill.get_signature_for_field(f['name'])
+        att if att.present?
+      rescue StandardError => e
+        Rails.logger.error "Error collecting annex signature for field '#{f['name']}': #{e.message}"
+        nil
+      end
+    end
   end
 
   def update_form_fields(original_fields, processed_fields)
