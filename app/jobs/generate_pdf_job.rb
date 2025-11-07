@@ -201,14 +201,18 @@ class GeneratePdfJob < ApplicationJob
     begin
       signature_tempfiles = []
       # 1) Identificar campos de firma en el formulario de Deficiencies
-      deficiencies_signature_fields = deficiencies_form_fields.select { |f| ['Signature', 'Signature_Field'].include?(f['type'].to_s) }
+      deficiencies_signature_fields = deficiencies_form_fields.select { |f|
+        ['Signature', 'Signature_Field'].include?(f['type'].to_s)
+      }
       if deficiencies_signature_fields.any?
         # 2) Obtener el formulario principal para encontrar su firma del técnico
         main_form_fill = inspection.form_fills.find_by(form_template_id: inspection.form_template_id)
         if main_form_fill
           main_fields = JSON.parse(main_form_fill.form_structure)
           # Preferir el campo etiquetado como "Technician Signature"; si no existe, tomar el primer Signature_Field
-          tech_sig_field = main_fields.find { |f| f['type'].to_s == 'Signature_Field' && f['label_name'].to_s.strip == 'Technician Signature' }
+          tech_sig_field = main_fields.find { |f|
+            f['type'].to_s == 'Signature_Field' && f['label_name'].to_s.strip == 'Technician Signature'
+          }
           tech_sig_field ||= main_fields.find { |f| f['type'].to_s == 'Signature_Field' }
 
           if tech_sig_field.present?
@@ -327,6 +331,7 @@ class GeneratePdfJob < ApplicationJob
     signature_image_tempfiles = []
     processed_fields.each do |field|
       next unless field.is_a?(Hash)
+
       type = field['type'].to_s
       next unless ['Signature', 'Signature_Field'].include?(type)
 

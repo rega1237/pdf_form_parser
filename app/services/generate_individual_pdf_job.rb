@@ -90,6 +90,7 @@ class GenerateIndividualPdfJob < ApplicationJob
 
     form_fields.each do |field|
       next unless field.is_a?(Hash)
+
       type = field['type'].to_s
       next unless allowed_signature_types.include?(type)
 
