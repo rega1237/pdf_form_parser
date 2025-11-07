@@ -24,14 +24,33 @@ export default class extends Controller {
       // Evitar scrolling/gestos por encima del canvas en móviles
       try { this.canvasTarget.style.touchAction = "none"; } catch (_) {}
 
-      // Normalizar tamaño del canvas a dimensiones CSS y DPR
+      // Normalizar tamaño del canvas a dimensiones reales del contenedor y DPR
+      // Evitamos el fallback fijo (600px) que estaba provocando overflow.
       const dpr = window.devicePixelRatio || 1;
-      const cssWidth = this.canvasTarget.clientWidth || this.canvasTarget.parentElement?.clientWidth || 600;
+      const containerEl = this.canvasTarget.parentElement || this.element;
+      const measureWidth = () => {
+        const rect = containerEl.getBoundingClientRect();
+        const style = window.getComputedStyle(containerEl);
+        const padding = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+        const borders = (parseFloat(style.borderLeftWidth) || 0) + (parseFloat(style.borderRightWidth) || 0);
+        // Calculamos el ancho disponible dentro del contenedor restando padding y bordes
+        const available = Math.floor(rect.width - padding - borders);
+        const w = available > 0 ? available : 0;
+        return w > 0 ? w : null;
+      };
+      let cssWidth = measureWidth();
+      // Si no hay tamaño válido todavía (collapse/hidden), esperar al siguiente tick y medir de nuevo
+      if (!cssWidth) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        cssWidth = measureWidth() || 1; // mínimo 1 para evitar 0
+      }
       const cssHeight = this.padHeight;
-      this.canvasTarget.width = Math.max(1, Math.floor(cssWidth * dpr));
-      this.canvasTarget.height = Math.max(1, Math.floor(cssHeight * dpr));
+
+      // Aplicar tamaño CSS y tamaño del buffer de dibujo acorde al DPR
       this.canvasTarget.style.width = `${cssWidth}px`;
       this.canvasTarget.style.height = `${cssHeight}px`;
+      this.canvasTarget.width = Math.max(1, Math.floor(cssWidth * dpr));
+      this.canvasTarget.height = Math.max(1, Math.floor(cssHeight * dpr));
 
       this.ctx = this.canvasTarget.getContext("2d");
       if (!this.ctx) {
@@ -40,9 +59,8 @@ export default class extends Controller {
         return;
       }
       // Escalar para DPR
-      if (dpr !== 1) {
-        this.ctx.scale(dpr, dpr);
-      }
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform antes de escalar
+      if (dpr !== 1) this.ctx.scale(dpr, dpr);
 
       // Estados internos
       this.isDrawing = false;
@@ -88,6 +106,26 @@ export default class extends Controller {
 
       console.log("[SignaturePad] Initialized. size:", { cssWidth, cssHeight, dpr });
 
+      // Observar cambios de tamaño del contenedor para ajustar el canvas y evitar desbordes
+      try {
+        const resizeHandler = () => {
+          const w = measureWidth();
+          if (!w) return; // si sigue oculto, no redimensionar
+          const currentCssH = this.padHeight;
+          this.canvasTarget.style.width = `${w}px`;
+          this.canvasTarget.style.height = `${currentCssH}px`;
+          this.canvasTarget.width = Math.max(1, Math.floor(w * dpr));
+          this.canvasTarget.height = Math.max(1, Math.floor(currentCssH * dpr));
+          // Reset + escalar contexto
+          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          if (dpr !== 1) this.ctx.scale(dpr, dpr);
+          // Limpiar superficie visual (no preservamos trazos previos)
+          this.ctx.clearRect(0, 0, w, currentCssH);
+        };
+        this._resizeObserver = new ResizeObserver(() => resizeHandler());
+        this._resizeObserver.observe(containerEl);
+      } catch (_) {}
+
       // Intentar precargar firma existente en el canvas sin distorsión
       try {
         await this.preloadExistingSignatureToCanvas();
@@ -111,6 +149,10 @@ export default class extends Controller {
       if (this._boundTouchMove) this.canvasTarget.removeEventListener("touchmove", this._boundTouchMove);
       if (this._boundTouchEnd) document.removeEventListener("touchend", this._boundTouchEnd);
       if (this._boundClick) this.canvasTarget.removeEventListener("click", this._boundClick);
+      if (this._resizeObserver) {
+        try { this._resizeObserver.disconnect(); } catch(_) {}
+        this._resizeObserver = null;
+      }
     } catch (e) {
       console.warn("[SignaturePad] Disconnect cleanup warning:", e);
     }

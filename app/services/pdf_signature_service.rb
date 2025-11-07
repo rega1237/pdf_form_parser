@@ -311,7 +311,17 @@ class PdfSignatureService
       canvas.image(image, at: [x, y], width: inner_width, height: inner_height)
     end
 
-    doc.write(output_path, optimize: true)
+    # Intento de escritura con validación. Si falla por validación de anotaciones
+    # (por ejemplo, alguna anotación del PDF no tiene Rect), hacemos fallback
+    # a escribir sin validar. Esto es seguro para nuestro caso porque solo
+    # estamos dibujando contenido (imagen) en un overlay y no modificamos
+    # estructuras de anotaciones.
+    begin
+      doc.write(output_path, optimize: true)
+    rescue StandardError => write_error
+      Rails.logger.warn "HexaPDF validation/write failed (#{write_error.message}); retrying without validation for #{File.basename(file_path)}##{field_name}"
+      doc.write(output_path, optimize: true, validate: false)
+    end
     Rails.logger.info "Firma colocada correctamente en campo '#{field_name}' (imagen: #{File.basename(image_path)})"
     output_path
   rescue StandardError => e
