@@ -17,7 +17,7 @@
       <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
     </div>
   </div>
-<% elsif field['type'] == "Photo" %>
+<% elsif ['Photo', 'pass_photo'].include?(field['type']) %>
   <div>
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class=\"text-red-400\">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
     
@@ -25,7 +25,7 @@
     <!-- Controlador offline de fotos -->
     
     
-    <% if field['type'] == 'Photo' %>
+    <% if ['Photo', 'pass_photo'].include?(field['type']) %>
     <div data-controller="offline-photo photo-capture"
          data-offline-photo-form-fill-id-value="<%= @form_fill.id %>"
          data-offline-photo-field-name-value="<%= field['name'] %>"

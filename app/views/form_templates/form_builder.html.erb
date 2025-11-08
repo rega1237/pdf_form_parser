@@ -322,7 +322,8 @@
                           <option value="Text" <%= 'selected' if field['type'] == 'Text' %>>Text</option>
                           <option value="Choice" <%= 'selected' if field['type'] == 'Choice' %>>Choice</option>
                           <option value="Button" <%= 'selected' if field['type'] == 'Button' %>>Button</option>
-                          <option value="Photo" <%= 'selected' if field['type'] == 'Photo' %>>Photo</option>
+                          <option value="Photo" <%= 'selected' if field['type'] == 'Photo' %>>Photo (for Deficiencies)</option>
+                          <option value="pass_photo" <%= 'selected' if field['type'] == 'pass_photo' %>>Pass Photo</option>
                           <!-- Signature types -->
                           <option value="Signature_Field" <%= 'selected' if field['type'] == 'Signature_Field' || field['type'] == 'Signature' %>>Signature (Technician - field)</option>
                           <option value="Signature_Annex" <%= 'selected' if field['type'] == 'Signature_Annex' %>>Signature (Client - annex page)</option>

@@ -6,6 +6,8 @@ class GeneratePdfJob < ApplicationJob
     inspection = main_form_fill.inspection
     inspection_date = inspection&.date
 
+    Rails.logger.info "--- [PDF_DEBUG] Processing FormFill ##{main_form_fill.id} with form_structure: #{main_form_fill.form_structure}"
+
     unless main_form_fill.generating?
       Rails.logger.warn "FormFill ##{main_form_fill.id} is not in generating state. Current state: #{main_form_fill.pdf_generation_status}"
       return
@@ -39,39 +41,46 @@ class GeneratePdfJob < ApplicationJob
       # Merge all PDFs
       final_pdf_object = merge_all_pdfs(main_pdf_path, deficiencies_pdf_path, individual_pdfs)
 
-      # Add only deficiency/photo field images (exclude signatures)
-      # IMPORTANT: Include photos from the main form AND the 'Additional Risers' form
+      # Add photo pages for different categories (e.g., Deficiency Photos, Pass Photos)
       if final_pdf_object
         begin
-          combined_photo_attachments = []
+          all_photos_with_context = []
 
-          # Fotos del formulario principal
-          if main_form_fill.photos.attached?
-            main_photos_by_field = main_form_fill.get_photos_by_field
-            main_photo_attachments = main_photos_by_field.values.map { |h| h[:photo] }.compact
-            combined_photo_attachments.concat(main_photo_attachments)
-            Rails.logger.info "Collected #{main_photo_attachments.size} photo(s) from main form for stamping"
-          end
+          # Collect photos from the main form fill
+          all_photos_with_context.concat(main_form_fill.get_photos_with_context)
+          Rails.logger.info "Collected #{main_form_fill.get_photos_with_context.size} photo(s) with context from main form"
 
-          # Fotos del formulario 'Additional Risers'
+          # Collect photos from 'Additional Risers' form fill
           additional_risers_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
-          if additional_risers_form_fill&.photos&.attached?
-            ar_photos_by_field = additional_risers_form_fill.get_photos_by_field
-            ar_photo_attachments = ar_photos_by_field.values.map { |h| h[:photo] }.compact
-            combined_photo_attachments.concat(ar_photo_attachments)
-            Rails.logger.info "Collected #{ar_photo_attachments.size} photo(s) from Additional Risers for stamping"
-          else
-            Rails.logger.info "No photos found in Additional Risers form or form not present"
+          if additional_risers_form_fill
+            ar_photos = additional_risers_form_fill.get_photos_with_context
+            all_photos_with_context.concat(ar_photos)
+            Rails.logger.info "Collected #{ar_photos.size} photo(s) with context from Additional Risers form"
           end
 
-          if combined_photo_attachments.any?
-            final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, combined_photo_attachments)
-            Rails.logger.info "Stamped #{combined_photo_attachments.size} photo(s) pages into final PDF"
+          # Partition photos into deficiency photos and pass photos
+          deficiency_photos = all_photos_with_context.select { |p| p[:field_type] == 'Photo' }
+          pass_photos = all_photos_with_context.select { |p| p[:field_type] == 'pass_photo' }
+
+
+          # Add Deficiency Photos page if any exist
+          if deficiency_photos.any?
+            final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, deficiency_photos, title: 'Deficiency Photos')
+            Rails.logger.info "Stamped #{deficiency_photos.size} deficiency photo(s) into final PDF"
           else
-            Rails.logger.info 'No photo attachments to stamp into final PDF'
+            Rails.logger.info 'No deficiency photos to stamp'
           end
+
+          # Add Pass Photos page if any exist
+          if pass_photos.any?
+            final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, pass_photos, title: 'Pass Photos')
+            Rails.logger.info "Stamped #{pass_photos.size} pass photo(s) into final PDF"
+          else
+            Rails.logger.info 'No pass photos to stamp'
+          end
+
         rescue StandardError => e
-          Rails.logger.error "Error adding photos to PDF: #{e.message}"
+          Rails.logger.error "Error adding photo pages to PDF: #{e.message}"
         end
       end
 

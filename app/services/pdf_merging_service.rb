@@ -17,37 +17,36 @@ class PdfMergingService
     main_pdf
   end
 
-  def self.add_images_to_pdf(pdf_object, images)
-    # This method works with the new data structure by receiving photo attachments directly
-    # Photo attachment IDs are now stored in the data column, but this service doesn't need
-    # to access them - it works with the actual photo attachments passed as parameter
-    # IMPORTANT: Excluir imágenes de firma (special-case) para evitar duplicarlas en páginas normales.
-    # Excluir imágenes de firma detectando patrones comunes y variantes mal escritas
-    images = Array(images).reject do |img|
-      fname = img&.filename.to_s.downcase
-      fname.include?('_signature_') ||
-        fname.start_with?('signature_') ||
-        # Variantes con errores tipográficos históricas
-        fname.include?('_siganture_') || fname.include?('sigantures') ||
-        # Palabras en español usadas para firmas
-        fname.include?('firma')
+  def self.add_images_to_pdf(pdf_object, photos_with_context, title:)
+    # photos_with_context is an array of hashes:
+    # [{ photo: attachment, section_name: "Section A | Item 1", label_name: "Label 1" }, ...]
+
+    # Reject signatures if they accidentally get passed in.
+    photos_with_context = Array(photos_with_context).reject do |h|
+      fname = h[:photo]&.filename.to_s.downcase
+      fname.include?('_signature_') || fname.start_with?('signature_') || fname.include?('firma')
     end
-    grouped_photos = group_and_process_photos(images)
-    return pdf_object if grouped_photos.empty?
+
+    return pdf_object if photos_with_context.empty?
+
+    # Group photos by the main section part (before '|')
+    grouped_photos = photos_with_context.group_by do |h|
+      (h[:section_name].presence || 'Uncategorized Photos').split('|').first.strip
+    end
 
     all_photos_pdf_data = Prawn::Document.new(page_size: 'LETTER', margin: 30) do |pdf|
-      # 1. Añadir el título principal al comienzo.
-      pdf.text 'Deficiency with photos', size: 18, style: :bold, align: :center
+      # 1. Use the dynamic title.
+      pdf.text title, size: 18, style: :bold, align: :center
       pdf.move_down 25
 
-      grouped_photos.each_with_index do |(section_name, photos_in_section), section_index|
+      grouped_photos.each_with_index do |(main_section, photos_in_section), section_index|
         # Asegurarse de que haya espacio para el título de la sección, si no, empezar en una nueva página.
         pdf.start_new_page if pdf.cursor < 50
 
         pdf.move_down 20 if section_index > 0
 
         # 2. Agregar el titulo Section".
-        pdf.text "Section: #{section_name}", size: 14, style: :bold, align: :left
+        pdf.text "Section: #{main_section}", size: 14, style: :bold, align: :left
         pdf.stroke_horizontal_rule
         pdf.move_down 10
 
@@ -64,21 +63,31 @@ class PdfMergingService
 
           pdf.bounding_box([0, pdf.cursor], width: pdf.bounds.width, height: cell_height) do
             row_of_photos.each_with_index do |photo_data, col_index|
-              image_blob_data = photo_data[:image].download
-              sio = StringIO.new(image_blob_data)
-              x_position = col_index * (cell_width + padding)
+              begin
+                image_blob_data = photo_data[:photo].download
+                sio = StringIO.new(image_blob_data)
+                x_position = col_index * (cell_width + padding)
 
-              pdf.bounding_box([x_position, pdf.bounds.top], width: cell_width, height: cell_height - label_height) do
-                pdf.image(sio, fit: [pdf.bounds.width, pdf.bounds.height], position: :center, vposition: :center)
-              end
+                pdf.bounding_box([x_position, pdf.bounds.top], width: cell_width, height: cell_height - label_height) do
+                  pdf.image(sio, fit: [pdf.bounds.width, pdf.bounds.height], position: :center, vposition: :center)
+                end
 
-              pdf.bounding_box([x_position, pdf.bounds.top - (cell_height - label_height)], width: cell_width,
-                                                                                            height: label_height) do
-                pdf.text photo_data[:clean_name], size: 7, align: :center, valign: :center, overflow: :shrink_to_fit
+                # Correct caption logic: use part after '|' from section_name, or fallback.
+                section_parts = (photo_data[:section_name] || '').split('|')
+                caption = if section_parts.length > 1
+                            section_parts[1].strip
+                          else
+                            photo_data[:label_name].presence || photo_data[:photo].filename.base.to_s
+                          end
+
+                pdf.bounding_box([x_position, pdf.bounds.top - (cell_height - label_height)], width: cell_width,
+                                                                                              height: label_height) do
+                  pdf.text caption.capitalize, size: 7, align: :center, valign: :center, overflow: :shrink_to_fit
+                end
+              rescue StandardError => e
+                Rails.logger.error "No se pudo procesar la imagen #{photo_data[:photo].filename}: #{e.message}"
+                next
               end
-            rescue StandardError => e
-              Rails.logger.error "No se pudo procesar la imagen #{photo_data[:image].filename}: #{e.message}"
-              next
             end
           end
           pdf.move_down padding
@@ -135,36 +144,5 @@ class PdfMergingService
     pdf_object << CombinePDF.parse(annex_pdf_data)
     pdf_object
   end
-
-  # Método auxiliar para la lógica de agrupación.
-  # This method works with the new data structure by parsing photo filenames
-  # which contain the section information needed for grouping
-  def self.group_and_process_photos(images)
-    grouped = {}
-
-    # Ensure images is an array-like object
-    return grouped unless images.respond_to?(:each)
-
-    images.each do |image|
-      # Skip invalid images
-      next unless image&.filename&.base
-
-      filename = image.filename.base.to_s
-      match = filename.match(/^inspection_\d+_(.+)__(.+)_[a-f0-9]{8,}/)
-
-      if match
-        section_raw = match[1]
-        name_raw = match[2]
-
-        section_name = section_raw.gsub('_', ' ').strip.capitalize
-        clean_name = name_raw.gsub('_', ' ').strip.sub(/(\d) (\d)/, '\1.\2')
-
-        (grouped[section_name] ||= []) << { image: image, clean_name: clean_name.capitalize }
-      else
-        (grouped['Uncategorized Photos'] ||= []) << { image: image, clean_name: image.filename.base.to_s }
-      end
-    end
-
-    grouped
-  end
 end
+
