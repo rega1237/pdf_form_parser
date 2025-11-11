@@ -13,6 +13,8 @@ export default class extends Controller {
   ]
 
   connect() {
+    // Placeholder por defecto (lo que esté ya en el botón)
+    this.placeholderText = (this.buttonTextTarget?.textContent || 'Select an option').trim()
     // Si el campo oculto ya tiene un valor (ej: al cargar un borrador),
     // intentamos mostrar su etiqueta legible en el botón.
     const initialValue = this.hiddenInputTarget.value
@@ -24,9 +26,9 @@ export default class extends Controller {
           matchedLabel = opt.textContent.trim()
         }
       })
-      this.buttonTextTarget.textContent = matchedLabel || 'Jump to a section...'
+      this.buttonTextTarget.textContent = matchedLabel || this.placeholderText
     } else {
-      this.buttonTextTarget.textContent = 'Jump to a section...'
+      this.buttonTextTarget.textContent = this.placeholderText
     }
 
     // Prepara las funciones enlazadas para eventos globales.
@@ -84,6 +86,20 @@ export default class extends Controller {
     this.hiddenInputTarget.dispatchEvent(changeEvent)
 
     this.hide() // Cierra el dropdown.
+  }
+
+  // Limpia la selección actual y restaura el placeholder.
+  clear(event) {
+    if (event) event.stopPropagation()
+    this.hiddenInputTarget.value = ''
+    this.buttonTextTarget.textContent = this.placeholderText
+    const changeEvent = new Event('change', { bubbles: true })
+    this.hiddenInputTarget.dispatchEvent(changeEvent)
+    // Si el dropdown estuviera abierto, lo cerramos por UX.
+    this.optionsContainerTarget?.classList.add('hidden')
+    document.removeEventListener('click', this.boundHide, true)
+    window.removeEventListener('resize', this.boundReposition)
+    window.removeEventListener('scroll', this.boundReposition, true)
   }
 
   // Filtra la lista de opciones basándose en lo que el usuario escribe.
