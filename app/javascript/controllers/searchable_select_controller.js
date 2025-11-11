@@ -14,12 +14,19 @@ export default class extends Controller {
 
   connect() {
     // Si el campo oculto ya tiene un valor (ej: al cargar un borrador),
-    // lo mostramos en el botón.
+    // intentamos mostrar su etiqueta legible en el botón.
     const initialValue = this.hiddenInputTarget.value
     if (initialValue && initialValue.trim() !== '') {
-      this.buttonTextTarget.textContent = initialValue
+      const options = this.optionsListTarget.querySelectorAll('li[data-value]')
+      let matchedLabel = null
+      options.forEach(opt => {
+        if (opt.dataset.value === initialValue) {
+          matchedLabel = opt.textContent.trim()
+        }
+      })
+      this.buttonTextTarget.textContent = matchedLabel || 'Jump to a section...'
     } else {
-      this.buttonTextTarget.textContent = 'Select an option'
+      this.buttonTextTarget.textContent = 'Jump to a section...'
     }
 
     // Prepara las funciones enlazadas para eventos globales.
@@ -65,10 +72,11 @@ export default class extends Controller {
   select(event) {
     const selectedOption = event.currentTarget
     const newValue = selectedOption.dataset.value
+    const label = selectedOption.textContent.trim()
 
     // Actualiza el valor del input oculto y el texto del botón.
     this.hiddenInputTarget.value = newValue
-    this.buttonTextTarget.textContent = newValue
+    this.buttonTextTarget.textContent = label
 
     // Dispara un evento 'change' para que otros controladores (como el de validación)
     // sepan que el campo ha cambiado.
