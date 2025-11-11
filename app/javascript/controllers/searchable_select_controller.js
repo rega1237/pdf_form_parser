@@ -22,8 +22,9 @@ export default class extends Controller {
       this.buttonTextTarget.textContent = 'Select an option'
     }
 
-    // Prepara la función para cerrar el dropdown al hacer clic fuera.
+    // Prepara las funciones enlazadas para eventos globales.
     this.boundHide = this.hide.bind(this)
+    this.boundReposition = this.reposition.bind(this)
   }
 
   // Muestra u oculta el dropdown.
@@ -38,9 +39,13 @@ export default class extends Controller {
   // Muestra el contenedor de opciones.
   show() {
     this.optionsContainerTarget.classList.remove('hidden')
+    this.reposition() // Posiciona correctamente el dropdown
     this.searchInputTarget.focus() // Pone el foco en el campo de búsqueda.
     // Escucha clics fuera del componente para cerrarlo.
     document.addEventListener('click', this.boundHide, true)
+    // Ajusta posicionamiento en cambios de viewport.
+    window.addEventListener('resize', this.boundReposition)
+    window.addEventListener('scroll', this.boundReposition, true)
   }
 
   // Oculta el contenedor de opciones.
@@ -52,6 +57,8 @@ export default class extends Controller {
     this.optionsContainerTarget.classList.add('hidden')
     // Deja de escuchar clics fuera.
     document.removeEventListener('click', this.boundHide, true)
+    window.removeEventListener('resize', this.boundReposition)
+    window.removeEventListener('scroll', this.boundReposition, true)
   }
 
   // Se ejecuta cuando el usuario selecciona una opción de la lista.
@@ -81,5 +88,38 @@ export default class extends Controller {
       const matches = text.includes(query)
       option.style.display = matches ? '' : 'none' // Oculta las que no coinciden.
     })
+  }
+
+  // Posiciona el dropdown para que se superponga y no desborde la pantalla.
+  reposition() {
+    const container = this.optionsContainerTarget
+    const button = this.buttonTarget
+    const rect = button.getBoundingClientRect()
+
+    // Asegura estilo base para overlay
+    container.style.position = 'absolute'
+    container.style.left = '0'
+    container.style.right = '0'
+    container.style.width = '100%'
+    container.style.zIndex = '1000'
+
+    // Determina si hay espacio suficiente abajo; si no, abre hacia arriba.
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+    const estimatedHeight = Math.min(container.scrollHeight || 256, 256) // estimación prudente
+    const spaceBelow = viewportHeight - rect.bottom
+
+    if (spaceBelow < estimatedHeight && rect.top > estimatedHeight) {
+      // Abrir hacia arriba
+      container.style.top = 'auto'
+      container.style.bottom = `${button.offsetHeight}px`
+    } else {
+      // Abrir hacia abajo (debajo del botón)
+      container.style.bottom = 'auto'
+      container.style.top = `${button.offsetHeight}px`
+    }
+
+    // Limitar altura para evitar que tape toda la pantalla y permitir scroll interno
+    container.style.maxHeight = '16rem' // ~256px
+    container.style.overflow = 'auto'
   }
 }

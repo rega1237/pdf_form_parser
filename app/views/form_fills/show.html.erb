@@ -174,21 +174,40 @@
   </div>
   <div class="max-w-6xl mx-auto px-4 pb-12">
 
-    <div data-controller="page-navigation" data-page-navigation-pagination-outlet="#form-fill-main-form" class="w-[50%] mb-3.5">
-      <select data-action="change->page-navigation#jump" class="w-full bg-slate-700 text-white font-semibold border-2 border-slate-500 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-        <option value="">Jump to a section...</option>
-        <% @navigation_sections.each do |section| %>
-          <%
-            section_name = section[:name].humanize
-            if section_name.downcase.include?('year') && section_name.include?('|') || section_name.downcase.include?('annual') || section_name.downcase.include?('quarterly') && section_name.include?('|')
-              section_name = section_name.split('|').last.strip
-            end
-          %>
-          <option value="<%= section[:page] - 1 %>">
-            Page <%= section[:page] %>: <%= section_name %>
-          </option>
-        <% end %>
-      </select>
+    <div data-controller="searchable-select page-navigation" data-page-navigation-pagination-outlet="#form-fill-main-form" class="w-[50%] mb-3.5 relative">
+      <!-- Input oculto que guarda el valor seleccionado y dispara el salto de página -->
+      <input type="hidden" data-searchable-select-target="hiddenInput" data-action="change->page-navigation#jump" />
+
+      <!-- Botón visible que abre/cierra el dropdown -->
+      <button type="button" data-searchable-select-target="button" data-action="click->searchable-select#toggle"
+        class="w-full bg-slate-700 text-white font-semibold border-2 border-slate-500 rounded-lg py-2 px-4 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        <span data-searchable-select-target="buttonText">Jump to a section...</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-300" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clip-rule="evenodd"/></svg>
+      </button>
+
+      <!-- Contenedor del dropdown con campo de búsqueda y lista -->
+      <!-- Dropdown en overlay: no empuja el layout -->
+      <div data-searchable-select-target="optionsContainer" class="hidden absolute top-full left-0 right-0 z-[1000] bg-slate-800 border border-slate-600 rounded-lg shadow-xl w-full">
+        <input type="text" data-searchable-select-target="searchInput" data-action="input->searchable-select#search"
+               placeholder="Search sections..."
+               class="w-full bg-slate-700 text-white border-0 rounded-t-lg py-2 px-4 placeholder-slate-300 focus:outline-none" />
+
+        <ul data-searchable-select-target="optionsList" class="max-h-64 overflow-auto divide-y divide-slate-700">
+          <li class="py-2 px-4 text-slate-300">Jump to a section...</li>
+          <% @navigation_sections.each do |section| %>
+            <%
+              section_name = section[:name].humanize
+              if section_name.downcase.include?('year') && section_name.include?('|') || section_name.downcase.include?('annual') || section_name.downcase.include?('quarterly') && section_name.include?('|')
+                section_name = section_name.split('|').last.strip
+              end
+            %>
+            <li data-action="click->searchable-select#select" data-value="<%= section[:page] - 1 %>"
+                class="cursor-pointer py-2 px-4 hover:bg-slate-700 text-white">
+              Page <%= section[:page] %>: <%= section_name %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
     </div>
     
     <div data-controller="field-toggle">
