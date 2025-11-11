@@ -805,4 +805,29 @@ class FormFill < ApplicationRecord
       []
     end
   end
+
+  def get_photos_with_context
+    return [] unless form_structure.present? && photos.attached?
+
+    begin
+      structure_map = JSON.parse(form_structure).index_by { |field| field['name'] }
+      photos_by_field = get_photos_by_field # Usamos el método que ya existe
+
+      photos_by_field.map do |field_name, photo_data|
+        field_info = structure_map[field_name]
+        Rails.logger.info "--- [PDF_DEBUG] Photo context for field_name '#{field_name}': #{field_info.inspect}"
+        next nil unless field_info && ['Photo', 'pass_photo'].include?(field_info['type'])
+
+        {
+          photo: photo_data[:photo],
+          field_type: field_info['type'], # 'Photo' o 'pass_photo'
+          section_name: field_info['section_name'],
+          label_name: field_info['label_name']
+        }
+      end.compact
+    rescue JSON::ParserError => e
+      Rails.logger.error "Error parsing form_structure in get_photos_with_context: #{e.message}"
+      []
+    end
+  end
 end

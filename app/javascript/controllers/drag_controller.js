@@ -168,7 +168,7 @@ export default class extends Controller {
     const currentType = baseField.type;
 
     // Agregar campos específicos según el tipo
-    if (currentType === "Photo") {
+    if (["Photo", "pass_photo"].includes(currentType)) {
       baseField.photo_attachment_id = null; // Se llenará cuando se use en form_fill
     } else if (
       ["Choice", "Deficiency", "Pass/Fail", "Radio"].includes(currentType)
@@ -310,7 +310,8 @@ export default class extends Controller {
              <option value="Text" ${itemData.type === "Text" ? "selected" : ""}>Text</option>
              <option value="Choice" ${itemData.type === "Choice" ? "selected" : ""}>Choice</option>
              <option value="Button" ${itemData.type === "Button" ? "selected" : ""}>Button</option>
-             <option value="Photo" ${itemData.type === "Photo" ? "selected" : ""}>Photo</option>
+             <option value="Photo" ${itemData.type === "Photo" ? "selected" : ""}>Photo (for Deficiencies)</option>
+             <option value="pass_photo" ${itemData.type === "pass_photo" ? "selected" : ""}>Pass Photo</option>
               <option value="Signature_Field" ${['Signature', 'Signature_Field'].includes(itemData.type) ? "selected" : ""}>Signature (Technician - field)</option>
               <option value="Signature_Annex" ${itemData.type === "Signature_Annex" ? "selected" : ""}>Signature (Client - annex page)</option>
              <option value="Deficiency" ${itemData.type === "Deficiency" ? "selected" : ""}>Deficiency</option>
@@ -515,7 +516,7 @@ export default class extends Controller {
 
       <!-- Photo Field Info (solo para campos Photo) -->
       ${
-        itemData.type === "Photo"
+        ["Photo", "pass_photo"].includes(itemData.type)
           ? `
         <div class="photo-info border-t border-white/10 pt-4 mt-4">
           <div class="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
@@ -751,7 +752,7 @@ export default class extends Controller {
   // Método para manejar cambios de tipo de campo
   handleTypeChange(itemData, oldType, newType) {
     // Limpiar campos específicos del tipo anterior
-    if (oldType === "Photo") {
+    if (["Photo", "pass_photo"].includes(oldType)) {
       delete itemData.photo_attachment_id;
     } else if (
       ["Choice", "Deficiency", "Pass/Fail", "Radio", "Button"].includes(oldType)
@@ -772,7 +773,7 @@ export default class extends Controller {
     }
 
     // Agregar campos específicos del nuevo tipo
-    if (newType === "Photo") {
+    if (["Photo", "pass_photo"].includes(newType)) {
       // Agregar campo para ID de photo que se llenará después
       itemData.photo_attachment_id = null; // Se llenará cuando se suba la foto
     } else if (

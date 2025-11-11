@@ -17,7 +17,7 @@
       <button type="button" class="choice-button" data-choice-buttons-target="button" data-action="click->choice-buttons#select" data-value="N/A">N/A</button>
     </div>
   </div>
-<% elsif field['type'] == "Photo" %>
+<% elsif ['Photo', 'pass_photo'].include?(field['type']) %>
   <div>
     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class=\"text-red-400\">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
     
@@ -25,14 +25,14 @@
     <!-- Controlador offline de fotos -->
     
     
-    <% if field['type'] == 'Photo' %>
+    <% if ['Photo', 'pass_photo'].include?(field['type']) %>
     <div data-controller="offline-photo photo-capture"
          data-offline-photo-form-fill-id-value="<%= @form_fill.id %>"
          data-offline-photo-field-name-value="<%= field['name'] %>"
          data-photo-capture-input-id-value="<%= field_id %>"
          data-photo-capture-field-name-value="<%= field['name'] %>">
       
-      <%= form.file_field field['name'], id: field_id, accept: "image/*", capture: "environment", class: "hidden",
+      <%= form.file_field field['name'], id: field_id, accept: "image/*", class: "hidden",
             data: { action: 'change->offline-photo#handleFileSelect', offline_photo_target: 'input' } %>
       
       <button type="button" data-action="click->photo-capture#openCamera" class="w-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-6 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-purple-400">
@@ -176,9 +176,16 @@
         <button type="button" 
                 data-action="click->searchable-select#toggle" 
           data-searchable-select-target="button" 
-          class="relative w-full rounded-2xl py-4 pl-14 pr-10 text-left text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20">
-          <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
+          class="relative w-full rounded-2xl py-4 pl-14 pr-24 text-left text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20">
+          
           <span data-searchable-select-target="buttonText">Select an option</span>
+          <%# Botón para limpiar selección %>
+          <button type="button" 
+                  class="absolute inset-y-0 right-10 flex items-center px-2 text-sm text-blue-700 hover:text-blue-900 hover:bg-blue-50 rounded-md"
+                  title="Clear selection" aria-label="Clear selection"
+                  data-action="click->searchable-select#clear">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
           <span class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
             <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.53.22l3.5 3.5a.75.75 0 01-1.06 1.06L10 4.81 6.53 8.28a.75.75 0 01-1.06-1.06l3.5-3.5A.75.75 0 0110 3zm-3.72 9.28a.75.75 0 011.06 0L10 15.19l3.47-3.47a.75.75 0 111.06 1.06l-4 4a.75.75 0 01-1.06 0l-4-4a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
           </span>
