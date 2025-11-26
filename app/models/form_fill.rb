@@ -37,7 +37,7 @@ class FormFill < ApplicationRecord
       field_data = structure.find { |field| field['name'] == field_name }
 
       # Si el campo es de tipo Signature técnico en campo o anexo de cliente, usar la lógica especial de firma
-      if ['Signature', 'Signature_Field', 'Signature_Annex'].include?(field_data&.dig('type').to_s)
+      if %w[Signature Signature_Field Signature_Annex].include?(field_data&.dig('type').to_s)
         return attach_signature_for_field(field_name, photo_file)
       end
 
@@ -79,19 +79,24 @@ class FormFill < ApplicationRecord
   # =============================
   # FIRMA: LÓGICA ESPECIAL
   # =============================
-  def generate_unique_signature_attachment_id(field_section, field_name)
-    return nil if field_section.blank? || field_name.blank? || inspection.blank?
+  def generate_unique_signature_attachment_id(field_section, field_name, field_type = nil)
+    return nil if field_name.blank? || inspection.blank?
 
-    # Usar sección y nombre del campo para evitar colisiones entre múltiples firmas dentro de la misma sección
-    safe_section_name = field_section.gsub('|', '__')
-    parameterized_section = safe_section_name.parameterize.underscore
-
-    safe_field_name = field_name.to_s.gsub('|', '__')
-    parameterized_field = safe_field_name.parameterize.underscore
+    # Usar el tipo de campo para determinar si es técnico o cliente
+    # Signature_Field = técnico, Signature_Annex = cliente
+    signature_type = case field_type&.to_s
+                     when 'Signature_Field'
+                       'technician'
+                     when 'Signature_Annex'
+                       'client'
+                     else
+                       # Fallback: usar el nombre del campo si no hay tipo
+                       field_name.to_s.downcase.include?('client') ? 'client' : 'technician'
+                     end
 
     random_suffix = SecureRandom.hex(4)
-    # Formato: inspection_<id>_signature_<section>_<field>_<hex>
-    "inspection_#{inspection.id}_signature_#{parameterized_section}_#{parameterized_field}_#{random_suffix}"
+    # Formato: inspection_<id>_signature_<type>_<hex>
+    "inspection_#{inspection.id}_signature_#{signature_type}_#{random_suffix}.png"
   end
 
   # Adjuntar imagen de firma para un campo de tipo Signature
@@ -102,7 +107,7 @@ class FormFill < ApplicationRecord
       structure = JSON.parse(form_structure)
       field_data = structure.find { |field| field['name'] == field_name }
       # Aceptar tanto "Signature" como "Signature_Field" y "Signature_Annex"
-      unless ['Signature', 'Signature_Field', 'Signature_Annex'].include?(field_data&.dig('type').to_s)
+      unless %w[Signature Signature_Field Signature_Annex].include?(field_data&.dig('type').to_s)
         return { success: false,
                  error: 'The field is not type Signature/Signature_Field/Signature_Annex' }
       end
@@ -118,13 +123,14 @@ class FormFill < ApplicationRecord
       remove_all_signatures_for_field(field_name)
 
       field_section = field_data&.dig('section_name').presence || field_name
-      unique_attachment_id = generate_unique_signature_attachment_id(field_section, field_name)
+      field_type = field_data&.dig('type')
+      unique_attachment_id = generate_unique_signature_attachment_id(field_name, field_section, field_type)
       return { success: false, error: 'No se pudo generar ID único de firma' } if unique_attachment_id.blank?
 
       # Adjuntar sin alterar el binario (mantener calidad original)
       photos.attach(
         io: image_file,
-        filename: "#{unique_attachment_id}#{content_type == 'image/png' ? '.png' : '.jpg'}",
+        filename: unique_attachment_id,
         content_type: content_type
       )
 
@@ -203,16 +209,56 @@ class FormFill < ApplicationRecord
     return nil if field_name.blank?
 
     begin
+      Rails.logger.info "Searching for signature for field: #{field_name}"
+
       signature_data_key = "#{field_name}_signature_attachment_id"
       attachment_id = get_field_value(signature_data_key)
       if attachment_id.present?
         found = photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
+        Rails.logger.info "Found signature via attachment_id for #{field_name}: #{found&.filename}" if found
         return found if found
       end
 
-      # Fallback: buscar por patrón basado en la sección del campo, para compatibilidad con adjuntos antiguos
+      # Fallback: buscar por tipo de campo (Signature_Field vs Signature_Annex)
       structure = JSON.parse(form_structure) if form_structure.present?
       field_data = structure&.find { |f| f['name'] == field_name }
+
+      # Determine signature type based on field type ONLY
+      field_type = field_data&.dig('type').to_s
+      is_technician_field = field_type == 'Signature_Field'
+      is_client_field = field_type == 'Signature_Annex'
+
+      Rails.logger.info "Searching for signature - Field type: #{field_type}, is_technician: #{is_technician_field}, is_client: #{is_client_field}"
+      Rails.logger.info "Available photos: #{photos.map(&:filename).join(', ')}" if photos.attached?
+
+      # Buscar por prefijo basado en tipo (nuevo formato simplificado)
+      if is_technician_field
+        # Buscar firmas de técnico
+        technician_candidates = photos.select { |p| p.filename.to_s.include?('signature_technician') }
+        if technician_candidates.any?
+          candidate = technician_candidates.first
+          Rails.logger.info "Found technician signature: #{candidate&.filename}"
+          return candidate
+        end
+        # Si no hay firmas de técnico, no buscar firmas de cliente
+        Rails.logger.info "No technician signatures found for technician field #{field_name}"
+        return nil
+      elsif is_client_field
+        # Buscar firmas de cliente
+        client_candidates = photos.select { |p| p.filename.to_s.include?('signature_client') }
+        if client_candidates.any?
+          candidate = client_candidates.first
+          Rails.logger.info "Found client signature: #{candidate&.filename}"
+          return candidate
+        end
+        # Si no hay firmas de cliente, no buscar firmas de técnico
+        Rails.logger.info "No client signatures found for client field #{field_name}"
+        return nil
+      end
+
+      # Fallback para compatibilidad con archivos antiguos (formato anterior)
+      Rails.logger.info 'No signature found with new format, trying legacy format...'
+
       field_section = field_data&.dig('section_name').presence || field_name
       safe_section_name = field_section.gsub('|', '__')
       parameterized_section = safe_section_name.parameterize.underscore
@@ -220,17 +266,67 @@ class FormFill < ApplicationRecord
       safe_field_name = field_name.to_s.gsub('|', '__')
       parameterized_field = safe_field_name.parameterize.underscore
 
-      # Preferir adjuntos que contengan el marcador de signature
       specific_prefix = "inspection_#{inspection.id}_signature_#{parameterized_section}_#{parameterized_field}_"
       section_only_prefix = "inspection_#{inspection.id}_signature_#{parameterized_section}_"
       legacy_prefix = "inspection_#{inspection.id}_#{parameterized_section}_"
 
-      # 1) Intentar por prefijo específico sección+campo (nuevo formato)
+      # Intentar búsquedas en orden de especificidad, pero filtrar por tipo
       candidate = photos.find { |p| p.filename.to_s.start_with?(specific_prefix) }
-      # 2) Luego por prefijo sólo sección (formato antiguo con sección)
-      candidate ||= photos.find { |p| p.filename.to_s.start_with?(section_only_prefix) }
-      # 3) Finalmente por prefijo legacy sin marcador de signature
-      candidate ||= photos.find { |p| p.filename.to_s.include?(legacy_prefix) }
+      Rails.logger.info "Found via specific prefix: #{candidate&.filename}" if candidate
+
+      if candidate.nil? && section_only_prefix.present?
+        section_candidates = photos.select { |p| p.filename.to_s.start_with?(section_only_prefix) }
+
+        # Filtrar por tipo de firma en archivos legacy
+        if is_technician_field
+          candidate = section_candidates.find { |p| p.filename.to_s.include?('technician') }
+          Rails.logger.info "Found technician signature via section prefix: #{candidate&.filename}" if candidate
+          # Si no hay firmas technician en esta sección, no usar firmas cliente
+          if candidate.nil? && section_candidates.any?
+            Rails.logger.info "Found section candidates but rejected (not technician signatures): #{section_candidates.map(&:filename).join(', ')}"
+            return nil
+          end
+        elsif is_client_field
+          candidate = section_candidates.find { |p| p.filename.to_s.include?('client') }
+          Rails.logger.info "Found client signature via section prefix: #{candidate&.filename}" if candidate
+          # Si no hay firmas cliente en esta sección, no usar firmas technician
+          if candidate.nil? && section_candidates.any?
+            Rails.logger.info "Found section candidates but rejected (not client signatures): #{section_candidates.map(&:filename).join(', ')}"
+            return nil
+          end
+        else
+          candidate = section_candidates.first
+          Rails.logger.info "Found via section prefix: #{candidate&.filename}" if candidate
+        end
+      end
+
+      if candidate.nil? && legacy_prefix.present?
+        legacy_candidates = photos.select { |p| p.filename.to_s.include?(legacy_prefix) }
+
+        # Filtrar por tipo de firma en archivos legacy
+        if is_technician_field
+          candidate = legacy_candidates.find { |p| p.filename.to_s.include?('technician') }
+          Rails.logger.info "Found technician signature via legacy prefix: #{candidate&.filename}" if candidate
+          # Si no hay firmas technician con este prefijo, no usar firmas cliente
+          if candidate.nil? && legacy_candidates.any?
+            Rails.logger.info "Found legacy candidates but rejected (not technician signatures): #{legacy_candidates.map(&:filename).join(', ')}"
+            return nil
+          end
+        elsif is_client_field
+          candidate = legacy_candidates.find { |p| p.filename.to_s.include?('client') }
+          Rails.logger.info "Found client signature via legacy prefix: #{candidate&.filename}" if candidate
+          # Si no hay firmas cliente con este prefijo, no usar firmas technician
+          if candidate.nil? && legacy_candidates.any?
+            Rails.logger.info "Found legacy candidates but rejected (not client signatures): #{legacy_candidates.map(&:filename).join(', ')}"
+            return nil
+          end
+        else
+          candidate = legacy_candidates.first
+          Rails.logger.info "Found via legacy prefix: #{candidate&.filename}" if candidate && !candidate.nil?
+        end
+      end
+
+      Rails.logger.info "Final result for #{field_name}: #{candidate&.filename || 'not found'}"
       candidate
     rescue StandardError => e
       Rails.logger.error "Error getting signature for field #{field_name}: #{e.message}"
@@ -816,7 +912,7 @@ class FormFill < ApplicationRecord
       photos_by_field.map do |field_name, photo_data|
         field_info = structure_map[field_name]
         Rails.logger.info "--- [PDF_DEBUG] Photo context for field_name '#{field_name}': #{field_info.inspect}"
-        next nil unless field_info && ['Photo', 'pass_photo'].include?(field_info['type'])
+        next nil unless field_info && %w[Photo pass_photo].include?(field_info['type'])
 
         {
           photo: photo_data[:photo],

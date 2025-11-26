@@ -62,10 +62,10 @@ class GeneratePdfJob < ApplicationJob
           deficiency_photos = all_photos_with_context.select { |p| p[:field_type] == 'Photo' }
           pass_photos = all_photos_with_context.select { |p| p[:field_type] == 'pass_photo' }
 
-
           # Add Deficiency Photos page if any exist
           if deficiency_photos.any?
-            final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, deficiency_photos, title: 'Deficiency Photos')
+            final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, deficiency_photos,
+                                                                   title: 'Deficiency Photos')
             Rails.logger.info "Stamped #{deficiency_photos.size} deficiency photo(s) into final PDF"
           else
             Rails.logger.info 'No deficiency photos to stamp'
@@ -78,7 +78,6 @@ class GeneratePdfJob < ApplicationJob
           else
             Rails.logger.info 'No pass photos to stamp'
           end
-
         rescue StandardError => e
           Rails.logger.error "Error adding photo pages to PDF: #{e.message}"
         end
@@ -210,18 +209,18 @@ class GeneratePdfJob < ApplicationJob
     begin
       signature_tempfiles = []
       # 1) Identificar campos de firma en el formulario de Deficiencies
-      deficiencies_signature_fields = deficiencies_form_fields.select { |f|
-        ['Signature', 'Signature_Field'].include?(f['type'].to_s)
-      }
+      deficiencies_signature_fields = deficiencies_form_fields.select do |f|
+        %w[Signature Signature_Field].include?(f['type'].to_s)
+      end
       if deficiencies_signature_fields.any?
         # 2) Obtener el formulario principal para encontrar su firma del técnico
         main_form_fill = inspection.form_fills.find_by(form_template_id: inspection.form_template_id)
         if main_form_fill
           main_fields = JSON.parse(main_form_fill.form_structure)
           # Preferir el campo etiquetado como "Technician Signature"; si no existe, tomar el primer Signature_Field
-          tech_sig_field = main_fields.find { |f|
+          tech_sig_field = main_fields.find do |f|
             f['type'].to_s == 'Signature_Field' && f['label_name'].to_s.strip == 'Technician Signature'
-          }
+          end
           tech_sig_field ||= main_fields.find { |f| f['type'].to_s == 'Signature_Field' }
 
           if tech_sig_field.present?
@@ -245,13 +244,13 @@ class GeneratePdfJob < ApplicationJob
               Rails.logger.warn "No se encontró firma del técnico en el main form para estampar en Deficiencies (campo: #{source_field_name})."
             end
           else
-            Rails.logger.warn "No se encontró un campo Signature_Field en el main form para usar como firma del técnico."
+            Rails.logger.warn 'No se encontró un campo Signature_Field en el main form para usar como firma del técnico.'
           end
         else
-          Rails.logger.warn "No se encontró el FormFill principal de la inspección para copiar la firma al PDF de Deficiencies."
+          Rails.logger.warn 'No se encontró el FormFill principal de la inspección para copiar la firma al PDF de Deficiencies.'
         end
       else
-        Rails.logger.info "El formulario de Deficiencies no contiene campos de firma en su JSON o no fueron detectados."
+        Rails.logger.info 'El formulario de Deficiencies no contiene campos de firma en su JSON o no fueron detectados.'
       end
       # Generar el PDF de Deficiencies (con firma ya asignada si corresponde)
       pdf_output_path = generate_pdf_for(deficiencies_form_fill, deficiencies_form_fields)
@@ -260,11 +259,9 @@ class GeneratePdfJob < ApplicationJob
     ensure
       # Limpiar tempfiles usados para las firmas
       signature_tempfiles.each do |tf|
-        begin
-          tf.close!
-        rescue StandardError
-          FileUtils.rm_f(tf.path) if tf.path
-        end
+        tf.close!
+      rescue StandardError
+        FileUtils.rm_f(tf.path) if tf.path
       end
     end
     pdf_output_path
@@ -342,9 +339,30 @@ class GeneratePdfJob < ApplicationJob
       next unless field.is_a?(Hash)
 
       type = field['type'].to_s
-      next unless ['Signature', 'Signature_Field'].include?(type)
+      next unless %w[Signature Signature_Field].include?(type)
 
       field_name = field['name']
+
+      # Check if this field should have a signature based on field characteristics
+      # Get field info directly from the field hash since we're already processing the fields
+      is_client_field = type == 'Signature_Annex' ||
+                        field_name.to_s.downcase.include?('client') ||
+                        field['label_name'].to_s.downcase.include?('client') ||
+                        field['original_name'].to_s.downcase.include?('client')
+
+      # For client signature fields, only process if there are actual client signatures available
+      if is_client_field
+        client_signatures_available = form_fill.photos.attached? &&
+                                      form_fill.photos.any? do |p|
+                                        filename = p.filename.to_s.downcase
+                                        filename.include?('client') || filename.include?('annex')
+                                      end
+        unless client_signatures_available
+          Rails.logger.info "Skipping client signature field '#{field_name}' - no client signatures available"
+          next
+        end
+      end
+
       begin
         signature_attachment = form_fill.get_signature_for_field(field_name)
         if signature_attachment.present?
@@ -369,7 +387,7 @@ class GeneratePdfJob < ApplicationJob
     begin
       form_fill.form_template.original_file.blob.open do |template_tempfile|
         pdf_service = PdfFormsParserService.new(template_tempfile.path)
-        safe_name = form_fill.name.presence || form_fill.form_template&.name.presence || "form"
+        safe_name = form_fill.name.presence || form_fill.form_template&.name.presence || 'form'
         output_filename = "#{safe_name.parameterize}_#{Time.now.to_i}.pdf"
         output_path = Rails.root.join('tmp', output_filename)
         pdf_service.fill_form(output_path, processed_fields)
@@ -377,11 +395,9 @@ class GeneratePdfJob < ApplicationJob
       output_path
     ensure
       signature_image_tempfiles.each do |tf|
-        begin
-          tf.close!
-        rescue StandardError
-          FileUtils.rm_f(tf.path) if tf.path
-        end
+        tf.close!
+      rescue StandardError
+        FileUtils.rm_f(tf.path) if tf.path
       end
     end
   end
@@ -391,17 +407,34 @@ class GeneratePdfJob < ApplicationJob
     return [] unless form_fill&.form_structure.present?
 
     fields = JSON.parse(form_fill.form_structure)
-    annex_fields = fields.select { |f| f['type'].to_s == 'Signature_Annex' }
+    # Only collect signatures for fields that are clearly client signatures
+    annex_fields = fields.select do |f|
+      f['type'].to_s == 'Signature_Annex' &&
+        (f['label_name'].to_s.downcase.include?('client') ||
+         f['original_name'].to_s.downcase.include?('client') ||
+         f['name'].to_s.downcase.include?('client'))
+    end
 
-    annex_fields.filter_map do |f|
-      begin
-        att = form_fill.get_signature_for_field(f['name'])
-        att if att.present?
-      rescue StandardError => e
-        Rails.logger.error "Error collecting annex signature for field '#{f['name']}': #{e.message}"
+    Rails.logger.info "Found #{annex_fields.count} client Signature_Annex fields: #{annex_fields.map do |f|
+      f['name']
+    end.join(', ')}"
+
+    signatures = annex_fields.filter_map do |f|
+      att = form_fill.get_signature_for_field(f['name'])
+      if att.present?
+        Rails.logger.info "Found signature for client annex field '#{f['name']}': #{att.filename}"
+        att
+      else
+        Rails.logger.info "No signature found for client annex field '#{f['name']}'"
         nil
       end
+    rescue StandardError => e
+      Rails.logger.error "Error collecting client annex signature for field '#{f['name']}': #{e.message}"
+      nil
     end
+
+    Rails.logger.info "Collected #{signatures.count} client annex signatures total"
+    signatures
   end
 
   def update_form_fields(original_fields, processed_fields)
