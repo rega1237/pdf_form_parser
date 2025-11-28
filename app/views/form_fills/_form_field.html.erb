@@ -47,35 +47,17 @@
         %>
         <% existing_photos.each do |photo| %>
           <div class="relative bg-slate-700 rounded-2xl p-2 border-2 border-blue-400 group photo-item" id="photo-<%= photo.filename.to_s.split('.').first %>">
-            <%= image_tag rails_blob_path(photo), class: "w-full h-32 object-cover rounded-xl", alt: "Photo" %>
+            <%= image_tag rails_blob_path(photo), class: "w-full h-48 object-cover rounded-xl", alt: "Photo" %>
             <button type="button" 
-                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-lg transform hover:scale-110 transition-all z-10"
+                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg transform hover:scale-110 transition-all z-10"
                     data-action="click->photo-capture#removePhoto"
                     data-photo-id="<%= photo.filename.to_s.split('.').first %>"
                     title="Remove photo">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">Saved</div>
           </div>
         <% end %>
-      </div>
-      
-      <div id="photo-preview-<%= field_id %>" data-photo-capture-target="preview" class="mt-4 hidden">
-        <div class="relative bg-slate-700 rounded-2xl p-4 border-2 border-blue-400">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-white font-semibold text-sm">Captured photo:</span>
-            <div class="flex space-x-2">
-              <% if Rails.env.development? %>
-                <button type="button" data-action="click->photo-capture#debugRemovePhoto" class="text-yellow-400 hover:text-yellow-300 transition-colors text-xs">🐛</button>
-              <% end %>
-              <button type="button" data-offline-photo-target="removeButton" data-action="click->photo-capture#cancelUpload" class="text-red-400 hover:text-red-300 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            </div>
-          </div>
-          
-          <img data-photo-capture-target="image" data-offline-photo-target="preview" class="w-full object-cover rounded-xl border border-slate-600" alt="Captured photo" src="">
-          
-          <div data-offline-photo-target="status" class="photo-status"></div>
-        </div>
       </div>
     </div>
     

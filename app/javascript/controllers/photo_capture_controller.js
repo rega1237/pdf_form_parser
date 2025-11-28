@@ -648,13 +648,13 @@ export default class extends Controller {
     }
 
     div.innerHTML = `
-        <img src="${imgSrc}" class="w-full h-32 object-cover rounded-xl" alt="Photo">
+        <img src="${imgSrc}" class="w-full h-48 object-cover rounded-xl" alt="Photo">
         <button type="button" 
-                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-lg transform hover:scale-110 transition-all z-10"
+                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg transform hover:scale-110 transition-all z-10"
                 data-action="click->photo-capture#removePhoto"
                 data-photo-id="${attachmentId}"
                 title="Remove photo">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
             ${isSynced ? "Saved" : "Offline"}
