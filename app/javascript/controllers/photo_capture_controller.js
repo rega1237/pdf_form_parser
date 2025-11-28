@@ -51,9 +51,9 @@ export default class extends Controller {
   }
 
   // Método para manejar cambio de archivo
-  handleFileChange(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+  async handleFileChange(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     // Si estamos offline, delega a offline-photo y no intentes subir
     if (!navigator.onLine) {
@@ -64,23 +64,39 @@ export default class extends Controller {
       return;
     }
 
-    // Validar que sea una imagen
-    if (!file.type.startsWith("image/")) {
-      alert("Por favor seleccione un archivo de imagen válido.");
-      this.clearFileInput();
-      return;
+    // Procesar archivos secuencialmente para evitar conflictos
+    for (const file of Array.from(files)) {
+      // Validar que sea una imagen
+      if (!file.type.startsWith("image/")) {
+        alert(`El archivo ${file.name} no es una imagen válida.`);
+        continue;
+      }
+
+      // Validar tamaño del archivo (máximo 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+      if (file.size > maxSize) {
+        alert(
+          `El archivo ${file.name} es demasiado grande. Máximo permitido: 10MB.`,
+        );
+        continue;
+      }
+
+      // Verificar si tenemos galería para determinar cómo procesar
+      const gallery = this.element.querySelector(
+        '[data-photo-capture-target="gallery"]',
+      );
+
+      if (gallery) {
+        // Si hay galería, subimos directamente (la galería maneja múltiples items)
+        await this.uploadPhotoToServer(file);
+      } else {
+        // Si no hay galería (modo legacy/single), usamos displayPhoto
+        this.displayPhoto(file);
+      }
     }
 
-    // Validar tamaño del archivo (máximo 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB en bytes
-    if (file.size > maxSize) {
-      alert("El archivo es demasiado grande. Máximo permitido: 10MB.");
-      this.clearFileInput();
-      return;
-    }
-
-    // Mostrar vista previa y subir cuando estamos online
-    this.displayPhoto(file);
+    // Limpiar el input al final
+    this.clearFileInput();
   }
 
   // Método para mostrar vista previa de la foto
@@ -241,18 +257,18 @@ export default class extends Controller {
     // Ocultar vista previa
     if (this.hasPreviewTarget) {
       this.previewTarget.classList.add("hidden");
+
+      // Remover información del archivo
+      const infoElement = this.previewTarget.querySelector(".file-info");
+      if (infoElement) {
+        infoElement.remove();
+      }
     }
 
     // Limpiar imagen
     if (this.hasImageTarget) {
       this.imageTarget.src = "";
       this.imageTarget.alt = "";
-    }
-
-    // Remover información del archivo
-    const infoElement = this.previewTarget?.querySelector(".file-info");
-    if (infoElement) {
-      infoElement.remove();
     }
 
     console.log("Photo preview cleared (local only)");
@@ -413,18 +429,18 @@ export default class extends Controller {
     // Ocultar vista previa
     if (this.hasPreviewTarget) {
       this.previewTarget.classList.add("hidden");
+
+      // Remover información del archivo
+      const infoElement = this.previewTarget.querySelector(".file-info");
+      if (infoElement) {
+        infoElement.remove();
+      }
     }
 
     // Limpiar imagen
     if (this.hasImageTarget) {
       this.imageTarget.src = "";
       this.imageTarget.alt = "";
-    }
-
-    // Remover información del archivo
-    const infoElement = this.previewTarget?.querySelector(".file-info");
-    if (infoElement) {
-      infoElement.remove();
     }
 
     console.log("Photo preview and input cleared");
@@ -673,7 +689,9 @@ export default class extends Controller {
 
   // Método para mostrar estado de subida
   showUploadingState() {
-    const infoElement = this.previewTarget?.querySelector(".file-info");
+    if (!this.hasPreviewTarget) return;
+
+    const infoElement = this.previewTarget.querySelector(".file-info");
     if (infoElement) {
       infoElement.innerHTML = `
         <div class="flex justify-between items-center">
@@ -697,7 +715,9 @@ export default class extends Controller {
 
   // Método para actualizar la vista previa a estado guardado
   updatePreviewToSavedState(fileName) {
-    const infoElement = this.previewTarget?.querySelector(".file-info");
+    if (!this.hasPreviewTarget) return;
+
+    const infoElement = this.previewTarget.querySelector(".file-info");
     if (infoElement) {
       infoElement.innerHTML = `
         <div class="flex justify-between items-center">

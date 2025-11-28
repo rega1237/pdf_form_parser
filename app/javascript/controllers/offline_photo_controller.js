@@ -122,8 +122,8 @@ export default class extends Controller {
    * Maneja la selección de archivos
    */
   async handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+    const files = Array.from(event.target.files);
+    if (!files || files.length === 0) return;
 
     // Asegurar OfflineStorage inicializado
     if (!this.offlineStorage) {
@@ -137,18 +137,46 @@ export default class extends Controller {
       }
     }
 
-    // Validación
-    const isValid = this.validateFile(file);
-    if (!isValid) return;
+    let successCount = 0;
+    let errorCount = 0;
 
-    // Almacenar offline
-    await this.storePhotoOffline(file);
+    // Iterar sobre todos los archivos seleccionados
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
 
-    // Si estamos online, intentar sincronización inmediata
-    if (navigator.onLine) {
-      await this.syncPhoto();
-    } else {
-      this.updateStatus("Saved offline", "success");
+      // Validación individual
+      const isValid = this.validateFile(file);
+      if (!isValid) {
+        errorCount++;
+        continue;
+      }
+
+      // Almacenar offline cada archivo
+      try {
+        await this.storePhotoOffline(file);
+        successCount++;
+      } catch (e) {
+        console.error(`[OfflinePhoto] Error storing file ${file.name}:`, e);
+        errorCount++;
+      }
+    }
+
+    // Reportar resultado
+    if (successCount > 0) {
+      if (navigator.onLine) {
+        // Si estamos online, intentar sincronización (que procesará todas las pendientes)
+        this.updateStatus(`Uploading ${successCount} photos...`, "info");
+        await this.syncPhoto();
+      } else {
+        this.updateStatus(`Saved ${successCount} photos offline`, "success");
+      }
+    }
+
+    if (errorCount > 0) {
+      // Si hubo errores, mantener el mensaje de error visible
+      if (successCount === 0) {
+        this.updateStatus(`Failed to save ${errorCount} photos`, "error");
+      }
     }
   }
 
