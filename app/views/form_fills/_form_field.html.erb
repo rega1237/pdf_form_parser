@@ -41,7 +41,7 @@
       </button>
 
       <!-- Gallery of saved photos -->
-      <div class="grid grid-cols-2 gap-4 mt-4" data-photo-capture-target="gallery">
+      <div class="grid grid-cols-2 gap-4 mt-4 p-3" data-photo-capture-target="gallery">
         <% 
            existing_photos = @form_fill.get_photos_for_field(field['name'])
         %>
@@ -53,7 +53,7 @@
                     data-action="click->photo-capture#removePhoto"
                     data-photo-id="<%= photo.filename.to_s.split('.').first %>"
                     title="Remove photo">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">Saved</div>
           </div>
