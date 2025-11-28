@@ -51,14 +51,45 @@ export default class extends Controller {
       return;
     }
 
-    // Cargar foto existente (si corresponde)
+    // Cargar foto existente (si corresponde) - Principalmente para firmas
     await this.loadExistingPhoto();
 
-    // Intentar cargar la última foto offline guardada para este campo
+    // Intentar cargar la última foto offline guardada para este campo (Legacy/Signature)
     await this.loadLatestOfflinePhotoForField();
+
+    // Cargar todas las fotos offline (Multi-photo support)
+    if (this.kindValue !== "signature") {
+      await this.loadAllOfflinePhotosForField();
+    }
 
     // Descargar y cachear thumbnail del servidor si hace falta
     await this.ensureLocalThumbnailFromServerIfNeeded();
+  }
+
+  async loadAllOfflinePhotosForField() {
+    try {
+      const photos = await this.offlineStorage.getPhotosForField(
+        this.formFillIdValue,
+        this.fieldNameValue,
+      );
+
+      const captureController =
+        this.application.getControllerForElementAndIdentifier(
+          this.element,
+          "photo-capture",
+        );
+
+      if (!captureController) return;
+
+      for (const photo of photos) {
+        // Si no está sincronizada, agregar a la galería como offline
+        if (!photo.metadata?.synced) {
+          captureController.addToGallery(photo.blob, photo.id, false);
+        }
+      }
+    } catch (error) {
+      console.error("[OfflinePhoto] Error loading offline photos:", error);
+    }
   }
 
   disconnect() {
@@ -199,8 +230,20 @@ export default class extends Controller {
         );
       }
 
-      this.photoIdValue = photoId;
-      await this.updatePreview(photoId);
+      if (this.kindValue === "signature") {
+        this.photoIdValue = photoId;
+        await this.updatePreview(photoId);
+      } else {
+        // Multi-photo: Add to gallery via photo-capture controller
+        const captureController =
+          this.application.getControllerForElementAndIdentifier(
+            this.element,
+            "photo-capture",
+          );
+        if (captureController) {
+          captureController.addToGallery(file, photoId, false);
+        }
+      }
     } catch (error) {
       console.error(
         "[OfflinePhotoController] Error storing photo offline:",
@@ -355,72 +398,89 @@ export default class extends Controller {
   /**
    * Elimina la foto
    */
-  async removePhoto() {
-    if (!this.photoIdValue) return;
+  async removePhoto(photoId) {
+    const targetId = photoId || this.photoIdValue;
+    if (!targetId) return;
 
     try {
       this.updateStatus("Deleting photo...", "info");
 
       // Eliminar de IndexedDB
-      await this.offlineStorage.removePhotoBlob(this.photoIdValue);
+      await this.offlineStorage.removePhotoBlob(targetId);
 
-      // Limpiar preview y controles
-      const imgEl = this.getPreviewImageElement();
-      const containerEl = this.getPreviewContainerElement();
-      if (imgEl) {
-        imgEl.src = "";
-      }
-      if (containerEl) {
-        containerEl.classList.add("hidden");
-      }
-      // Volver a mostrar el canvas de firma
-      const canvasEl = this.element.querySelector(
-        '[data-signature-pad-target="canvas"]',
-      );
-      if (canvasEl) {
-        canvasEl.classList.remove("hidden");
-      }
-      // Mostrar el botón Clear nuevamente cuando se regresa al canvas
-      const clearBtn = this.element.querySelector(
-        '[data-signature-pad-target="clearButton"]',
-      );
-      if (clearBtn) {
-        clearBtn.classList.remove("hidden");
-      }
-      if (this.hasRemoveButtonTarget) {
-        this.removeButtonTarget.style.display = "none";
+      // Limpiar preview y controles (Signature/Legacy)
+      if (this.kindValue === "signature" || targetId === this.photoIdValue) {
+        const imgEl = this.getPreviewImageElement();
+        const containerEl = this.getPreviewContainerElement();
+        if (imgEl) {
+          imgEl.src = "";
+        }
+        if (containerEl) {
+          containerEl.classList.add("hidden");
+        }
+        // Volver a mostrar el canvas de firma
+        const canvasEl = this.element.querySelector(
+          '[data-signature-pad-target="canvas"]',
+        );
+        if (canvasEl) {
+          canvasEl.classList.remove("hidden");
+        }
+        // Mostrar el botón Clear nuevamente cuando se regresa al canvas
+        const clearBtn = this.element.querySelector(
+          '[data-signature-pad-target="clearButton"]',
+        );
+        if (clearBtn) {
+          clearBtn.classList.remove("hidden");
+        }
+        if (this.hasRemoveButtonTarget) {
+          this.removeButtonTarget.style.display = "none";
+        }
+
+        this.updateFormData(null);
+        this.photoIdValue = "";
       }
 
-      // Limpiar datos del formulario
-      this.updateFormData(null);
       // También limpiar la data column local (attachment id) para este campo
-      await this.updateDataColumnQuietly(null, this.fieldNameValue);
+      await this.updateDataColumnQuietly(targetId, this.fieldNameValue, true);
 
-      // Persistir cambio en IndexedDB cuando estamos offline (sin encolar parches innecesarios)
+      // Persistir cambio en IndexedDB cuando estamos offline
       if (!navigator.onLine && this.offlineStorage) {
         const changedData = {};
         const kind =
           (this.kindValue && String(this.kindValue).trim()) || "photo";
-        const attachmentKey =
-          kind === "signature"
-            ? `${this.fieldNameValue}_signature_attachment_id`
-            : `${this.fieldNameValue}_photo_attachment_id`;
-        changedData[attachmentKey] = null;
-        changedData[this.fieldNameValue] = "";
+        // For array support, we rely on updateDataColumnQuietly updating the DOM dataset
+        // But here we want to update the FormFill object in IndexedDB.
+        // We might need to read the current dataset to know the new value.
+
+        // Queue delete job
+        const numericFormFillId = parseInt(this.formFillIdValue, 10);
+        let inspectionId = null;
         try {
-          await this.offlineStorage.saveFormFillData(
-            this.formFillIdValue,
-            changedData,
+          const ff =
+            await this.offlineStorage.getFormFillData(numericFormFillId);
+          inspectionId = ff?.inspection_id || null;
+        } catch (_) {}
+
+        const payload = {
+          form_fill_id: numericFormFillId,
+          field_name: this.fieldNameValue,
+          photo_id: targetId,
+        };
+
+        const queueType =
+          this.kindValue === "signature" ? "signature_delete" : "photo_delete";
+
+        try {
+          await this.offlineStorage.addToSyncQueue(
+            queueType,
+            inspectionId,
+            numericFormFillId,
+            payload,
           );
         } catch (e) {
-          console.warn(
-            "[OfflinePhoto] Failed to persist delete in IndexedDB:",
-            e,
-          );
+          console.warn("[OfflinePhoto] Failed to enqueue delete:", e);
         }
       }
-
-      this.photoIdValue = "";
 
       this.updateStatus("Photo deleted", "success");
     } catch (error) {
@@ -433,11 +493,30 @@ export default class extends Controller {
    * Sincroniza la foto con el servidor
    */
   async syncPhoto() {
+    if (this.kindValue === "signature") {
+      await this.syncSpecificPhoto(this.photoIdValue);
+    } else {
+      // Sync all unsynced photos for this field
+      try {
+        const photos = await this.offlineStorage.getPhotosForField(
+          this.formFillIdValue,
+          this.fieldNameValue,
+        );
+        for (const photo of photos) {
+          if (!photo.metadata?.synced) {
+            await this.syncSpecificPhoto(photo.id);
+          }
+        }
+      } catch (e) {
+        console.error("Error in multi-photo sync:", e);
+      }
+    }
+  }
+
+  async syncSpecificPhoto(photoId) {
     try {
-      if (!this.photoIdValue) return;
-      const photoData = await this.offlineStorage.getPhotoBlob(
-        this.photoIdValue,
-      );
+      if (!photoId) return;
+      const photoData = await this.offlineStorage.getPhotoBlob(photoId);
       if (!photoData?.blob) return;
 
       // Mostrar estado de subida
@@ -477,13 +556,13 @@ export default class extends Controller {
         photo_attachment_id: attachmentId,
         inspection_id: inspectionId,
       };
-      await this.offlineStorage.storePhotoBlob(
-        this.photoIdValue,
-        thumbBlob,
-        newMeta,
-      );
-      // Refrescar el preview para usar el nuevo blob
-      await this.updatePreview(this.photoIdValue);
+      await this.offlineStorage.storePhotoBlob(photoId, thumbBlob, newMeta);
+
+      // Refrescar el preview para usar el nuevo blob (Solo si es el actual o signature)
+      if (isSignature || photoId === this.photoIdValue) {
+        await this.updatePreview(photoId);
+      }
+
       // Mantener también referencia en el form_fill para depuración/consistencia
       try {
         await this.offlineStorage.updateFormFill(
@@ -491,7 +570,7 @@ export default class extends Controller {
           {},
           {
             [this.fieldNameValue]: {
-              id: this.photoIdValue,
+              id: photoId,
               synced: true,
               is_thumbnail: true,
               attachment_id: attachmentId,
@@ -505,9 +584,41 @@ export default class extends Controller {
         );
       }
 
-      // Actualizar preview y data column en el dataset
-      await this.updatePreview(this.photoIdValue);
+      // Actualizar data column en el dataset
       await this.updateDataColumnQuietly(attachmentId, this.fieldNameValue);
+
+      // If multi-photo, update gallery item status
+      if (!isSignature) {
+        const captureController =
+          this.application.getControllerForElementAndIdentifier(
+            this.element,
+            "photo-capture",
+          );
+        if (captureController) {
+          // We need a way to update status in gallery.
+          // Re-add it? Or update element?
+          // The photo-capture controller adds "Saved" label if synced.
+          // We can just re-render it or find it.
+          const galleryItem = document.getElementById(`photo-${photoId}`);
+          if (galleryItem) {
+            // Update ID to attachmentID?
+            // Wait, photoId is local GUID. attachmentId is server ID.
+            // When synced, we usually swap IDs or keep local mapped to server.
+            // The gallery uses `photo-${attachmentId}` if loaded from server.
+            // But if loaded from offline, it uses `photo-${photoId}`.
+            // When synced, we have `attachmentId`.
+            // We should update the gallery item ID and status.
+
+            galleryItem.id = `photo-${attachmentId}`;
+            const btn = galleryItem.querySelector("button");
+            if (btn) btn.dataset.photoId = attachmentId;
+
+            const statusBadge = galleryItem.querySelector(".bg-black\\/50");
+            if (statusBadge) statusBadge.textContent = "Saved";
+          }
+        }
+      }
+
       this.updateStatus("Saved", "success");
     } catch (error) {
       console.error("[OfflinePhotoController] Error syncing photo:", error);
@@ -517,17 +628,7 @@ export default class extends Controller {
 
   async tryAutoSync() {
     try {
-      if (!this.photoIdValue) return;
-      const photoData = await this.offlineStorage.getPhotoBlob(
-        this.photoIdValue,
-      );
-      if (
-        photoData &&
-        photoData.metadata &&
-        photoData.metadata.synced === false
-      ) {
-        await this.syncPhoto();
-      }
+      await this.syncPhoto();
     } catch (error) {
       console.error("[OfflinePhoto] Error en auto sync:", error);
     }
@@ -552,7 +653,7 @@ export default class extends Controller {
   /**
    * Actualiza silenciosamente la columna de datos con el attachment id
    */
-  async updateDataColumnQuietly(attachmentId, fieldName) {
+  async updateDataColumnQuietly(attachmentId, fieldName, isRemoval = false) {
     try {
       const formFillElement = document.querySelector(
         '[data-controller*="form-fill"]',
@@ -571,12 +672,38 @@ export default class extends Controller {
         kind === "signature"
           ? `${fieldName}_signature_attachment_id`
           : `${fieldName}_photo_attachment_id`;
-      // Si tenemos attachmentId válido, guardarlo; si no, eliminar la clave
-      if (attachmentId) {
-        currentData[key] = attachmentId;
+
+      if (kind === "signature") {
+        // Si tenemos attachmentId válido, guardarlo; si no, eliminar la clave
+        if (attachmentId && !isRemoval) {
+          currentData[key] = attachmentId;
+        } else {
+          delete currentData[key];
+        }
       } else {
-        delete currentData[key];
+        // Lógica para array de fotos
+        let ids = currentData[key];
+        if (!Array.isArray(ids)) {
+          ids = ids ? [ids] : [];
+        }
+
+        if (isRemoval) {
+          if (attachmentId) {
+            ids = ids.filter((id) => String(id) !== String(attachmentId));
+          }
+        } else if (attachmentId) {
+          if (!ids.includes(attachmentId)) {
+            ids.push(attachmentId);
+          }
+        }
+
+        if (ids.length > 0) {
+          currentData[key] = ids;
+        } else {
+          delete currentData[key];
+        }
       }
+
       formFillElement.dataset.formFillDataValue = JSON.stringify(currentData);
 
       // También marcar el cambio en el controlador form-fill (para guardado incremental)
@@ -602,7 +729,7 @@ export default class extends Controller {
           );
         }
         if (controller && controller.changedFields) {
-          controller.changedFields.set(key, attachmentId || "");
+          controller.changedFields.set(key, currentData[key] || "");
         }
       } catch (e) {
         console.warn(
@@ -859,88 +986,10 @@ export default class extends Controller {
     }
   }
 
-  async handleRemoveConfirmed(event) {
-    try {
-      event?.preventDefault();
-      event?.stopPropagation();
-    } catch (_) {}
-
-    // Borrar localmente solo luego de confirmación del usuario
-    await this.removePhoto();
-
-    const kind = (this.kindValue && String(this.kindValue).trim()) || "photo";
-    // Si estamos offline, encolar eliminación para sincronización
-    if (!navigator.onLine && this.offlineStorage) {
-      const numericFormFillId = parseInt(this.formFillIdValue, 10);
-      let inspectionId = null;
-      try {
-        const ff = await this.offlineStorage.getFormFillData(numericFormFillId);
-        inspectionId = ff?.inspection_id || null;
-      } catch (e) {
-        console.warn(
-          "[OfflinePhoto] Could not fetch form fill for inspection_id:",
-          e,
-        );
-      }
-      const payload = {
-        form_fill_id: numericFormFillId,
-        field_name: this.fieldNameValue,
-      };
-      try {
-        const queueType =
-          kind === "signature" ? "signature_delete" : "photo_delete";
-        await this.offlineStorage.addToSyncQueue(
-          queueType,
-          inspectionId,
-          numericFormFillId,
-          payload,
-        );
-        // Opcional: notificar a UI de que hay cambios pendientes
-        try {
-          const evt = new CustomEvent("sync:pending-changes", {
-            detail: { formFillId: numericFormFillId, pending: true },
-            bubbles: true,
-          });
-          document.dispatchEvent(evt);
-        } catch (e) {}
-      } catch (e) {
-        console.warn("[OfflinePhoto] Failed to enqueue photo_delete:", e);
-      }
-    }
-
-    // Si estamos online, ejecutar borrado inmediato en servidor
-    if (navigator.onLine) {
-      try {
-        const form = this.element.closest("form");
-        const formId = form?.dataset?.formFillIdValue || this.formFillIdValue;
-        const csrf =
-          document.querySelector('[name="csrf-token"]')?.content || "";
-        const endpoint =
-          kind === "signature" ? "remove_signature" : "remove_photo";
-        const resp = await fetch(`/form_fills/${formId}/${endpoint}`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": csrf,
-            Accept: "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ field_name: this.fieldNameValue }),
-        });
-        if (resp.ok) {
-          const json = await resp.json();
-          if (json?.success) {
-            await this.updateDataColumnQuietly(null, this.fieldNameValue);
-            this.updateStatus("Deleted", "success");
-          } else {
-            this.updateStatus("Server delete failed", "error");
-          }
-        } else {
-          this.updateStatus("Server delete failed", "error");
-        }
-      } catch (e) {
-        console.warn("[OfflinePhoto] Error deleting on server:", e);
-      }
+  handleRemoveConfirmed(event) {
+    const photoId = event.detail?.photoId || this.photoIdValue;
+    if (photoId) {
+      this.removePhoto(photoId);
     }
   }
 }

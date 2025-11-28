@@ -37,37 +37,42 @@
       
       <button type="button" data-action="click->photo-capture#openCamera" class="w-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-6 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-purple-400">
         <svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        <span class="text-lg"><% if field['photo_attachment_id'].present? %>Change Photo<% else %>Take Photo<% end %></span>
+        <span class="text-lg">Take Photo / Add More</span>
       </button>
+
+      <!-- Gallery of saved photos -->
+      <div class="grid grid-cols-2 gap-4 mt-4" data-photo-capture-target="gallery">
+        <% 
+           existing_photos = @form_fill.get_photos_for_field(field['name'])
+        %>
+        <% existing_photos.each do |photo| %>
+          <div class="relative bg-slate-700 rounded-2xl p-2 border-2 border-blue-400 group photo-item" id="photo-<%= photo.filename.to_s.split('.').first %>">
+            <%= image_tag rails_blob_path(photo), class: "w-full h-32 object-cover rounded-xl", alt: "Photo" %>
+            <button type="button" 
+                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-lg transform hover:scale-110 transition-all z-10"
+                    data-action="click->photo-capture#removePhoto"
+                    data-photo-id="<%= photo.filename.to_s.split('.').first %>"
+                    title="Remove photo">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">Saved</div>
+          </div>
+        <% end %>
+      </div>
       
-      <div id="photo-preview-<%= field_id %>" data-photo-capture-target="preview" class="mt-4 <%= field['photo_attachment_id'].present? ? '' : 'hidden' %>">
+      <div id="photo-preview-<%= field_id %>" data-photo-capture-target="preview" class="mt-4 hidden">
         <div class="relative bg-slate-700 rounded-2xl p-4 border-2 border-blue-400">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-white font-semibold text-sm"><% if field['photo_attachment_id'].present? %>Saved photo:<% else %>Captured photo:<% end %></span>
+            <span class="text-white font-semibold text-sm">Captured photo:</span>
             <div class="flex space-x-2">
               <% if Rails.env.development? %>
                 <button type="button" data-action="click->photo-capture#debugRemovePhoto" class="text-yellow-400 hover:text-yellow-300 transition-colors text-xs">🐛</button>
               <% end %>
-              <button type="button" data-offline-photo-target="removeButton" data-action="click->photo-capture#removePhoto" class="text-red-400 hover:text-red-300 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+              <button type="button" data-offline-photo-target="removeButton" data-action="click->photo-capture#cancelUpload" class="text-red-400 hover:text-red-300 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
           </div>
           
-          <% if field['photo_attachment_id'].present? %>
-            <% existing_photo = @form_fill.get_photo_for_field(field['name']) %>
-            <% if existing_photo.present? %>
-              <%= image_tag rails_blob_path(existing_photo), data: { photo_capture_target: "image", offline_photo_target: "preview" }, class: "w-full object-cover rounded-xl border border-slate-600", alt: "Photo of #{field['label_name'].presence || field['name']}" %>
-            <% else %>
-              <img data-photo-capture-target="image" data-offline-photo-target="preview" class="w-full object-cover rounded-xl border border-slate-600" alt="Captured photo" src="">
-            <% end %>
-          <% else %>
-            <img data-photo-capture-target="image" data-offline-photo-target="preview" class="w-full object-cover rounded-xl border border-slate-600" alt="Captured photo" src="">
-          <% end %>
-          
-          <% if field['photo_attachment_id'].present? %>
-            <div class="file-info text-xs text-slate-300 mt-2">
-              <div class="flex justify-between items-center"><span class="flex items-center"><svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg><%= field['label_name'].presence || field['name'] %></span><span class="text-green-400">Saved</span></div>
-            </div>
-          <% end %>
+          <img data-photo-capture-target="image" data-offline-photo-target="preview" class="w-full object-cover rounded-xl border border-slate-600" alt="Captured photo" src="">
           
           <div data-offline-photo-target="status" class="photo-status"></div>
         </div>
