@@ -433,6 +433,23 @@ export default class extends Controller {
     try {
       this.updateStatus("Deleting photo...", "info");
 
+      // Si estamos online, intentar eliminar del servidor inmediatamente
+      if (navigator.onLine) {
+        try {
+          const photoData = await this.offlineStorage.getPhotoBlob(targetId);
+          const attachmentId =
+            photoData?.metadata?.photo_attachment_id ||
+            photoData?.metadata?.attachment_id;
+          await this.deletePhotoFromServer(
+            targetId,
+            this.fieldNameValue,
+            attachmentId,
+          );
+        } catch (e) {
+          console.warn("[OfflinePhoto] Error trying to delete from server:", e);
+        }
+      }
+
       // Eliminar de IndexedDB
       await this.offlineStorage.removePhotoBlob(targetId);
 
@@ -514,6 +531,49 @@ export default class extends Controller {
     } catch (error) {
       console.error("[OfflinePhoto] Error removing photo:", error);
       this.updateStatus("Error deleting photo", "error");
+    }
+  }
+
+  /**
+   * Elimina la foto del servidor
+   */
+  async deletePhotoFromServer(photoId, fieldName, attachmentId) {
+    try {
+      const form = this.element.closest("form");
+      const formId = form?.dataset?.formFillIdValue || this.formFillIdValue;
+      const csrf = document.querySelector('[name="csrf-token"]')?.content || "";
+
+      let url, body;
+      const kind = (this.kindValue && String(this.kindValue).trim()) || "photo";
+
+      if (kind === "signature") {
+        url = `/form_fills/${formId}/remove_signature`;
+        body = JSON.stringify({ field_name: fieldName });
+      } else {
+        // Si es foto, necesitamos el attachment ID
+        if (!attachmentId) return;
+        url = `/form_fills/${formId}/remove_photo`;
+        body = JSON.stringify({
+          field_name: fieldName,
+          photo_id: attachmentId,
+        });
+      }
+
+      const resp = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+          Accept: "application/json",
+        },
+        body: body,
+      });
+
+      if (!resp.ok) {
+        console.error("Server delete failed with status:", resp.status);
+      }
+    } catch (e) {
+      console.error("Error deleting from server:", e);
     }
   }
 
@@ -1015,6 +1075,11 @@ export default class extends Controller {
   }
 
   handleRemoveConfirmed(event) {
+    if (!confirm("¿Are you sure you want to delete?")) {
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      return;
+    }
     const photoId = event.detail?.photoId || this.photoIdValue;
     if (photoId) {
       this.removePhoto(photoId);
