@@ -59,8 +59,9 @@ class GeneratePdfJob < ApplicationJob
           end
 
           # Partition photos into deficiency photos and pass photos
-          deficiency_photos = all_photos_with_context.select { |p| p[:field_type] == 'Photo' }
           pass_photos = all_photos_with_context.select { |p| p[:field_type] == 'pass_photo' }
+          # Any photo that is not a pass_photo is considered a deficiency photo (including 'Photo', 'Deficiency', etc.)
+          deficiency_photos = all_photos_with_context.select { |p| p[:field_type] != 'pass_photo' }
 
           # Add Deficiency Photos page if any exist
           if deficiency_photos.any?

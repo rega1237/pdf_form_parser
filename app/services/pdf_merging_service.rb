@@ -63,31 +63,29 @@ class PdfMergingService
 
           pdf.bounding_box([0, pdf.cursor], width: pdf.bounds.width, height: cell_height) do
             row_of_photos.each_with_index do |photo_data, col_index|
-              begin
-                image_blob_data = photo_data[:photo].download
-                sio = StringIO.new(image_blob_data)
-                x_position = col_index * (cell_width + padding)
+              image_blob_data = photo_data[:photo].download
+              sio = StringIO.new(image_blob_data)
+              x_position = col_index * (cell_width + padding)
 
-                pdf.bounding_box([x_position, pdf.bounds.top], width: cell_width, height: cell_height - label_height) do
-                  pdf.image(sio, fit: [pdf.bounds.width, pdf.bounds.height], position: :center, vposition: :center)
-                end
-
-                # Correct caption logic: use part after '|' from section_name, or fallback.
-                section_parts = (photo_data[:section_name] || '').split('|')
-                caption = if section_parts.length > 1
-                            section_parts[1].strip
-                          else
-                            photo_data[:label_name].presence || photo_data[:photo].filename.base.to_s
-                          end
-
-                pdf.bounding_box([x_position, pdf.bounds.top - (cell_height - label_height)], width: cell_width,
-                                                                                              height: label_height) do
-                  pdf.text caption.capitalize, size: 7, align: :center, valign: :center, overflow: :shrink_to_fit
-                end
-              rescue StandardError => e
-                Rails.logger.error "No se pudo procesar la imagen #{photo_data[:photo].filename}: #{e.message}"
-                next
+              pdf.bounding_box([x_position, pdf.bounds.top], width: cell_width, height: cell_height - label_height) do
+                pdf.image(sio, fit: [pdf.bounds.width, pdf.bounds.height], position: :center, vposition: :center)
               end
+
+              # Correct caption logic: use part after '|' from section_name, or fallback.
+              section_parts = (photo_data[:section_name] || '').split('|')
+              caption = if section_parts.length > 1
+                          section_parts[1].strip
+                        else
+                          photo_data[:label_name].presence || photo_data[:photo].filename.base.to_s
+                        end
+
+              pdf.bounding_box([x_position, pdf.bounds.top - (cell_height - label_height)], width: cell_width,
+                                                                                            height: label_height) do
+                pdf.text caption.capitalize, size: 7, align: :center, valign: :center, overflow: :shrink_to_fit
+              end
+            rescue StandardError => e
+              Rails.logger.error "No se pudo procesar la imagen #{photo_data[:photo].filename}: #{e.message}"
+              next
             end
           end
           pdf.move_down padding
@@ -145,4 +143,3 @@ class PdfMergingService
     pdf_object
   end
 end
-

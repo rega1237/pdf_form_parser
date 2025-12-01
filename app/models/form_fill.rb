@@ -27,7 +27,7 @@ class FormFill < ApplicationRecord
     "inspection_#{inspection.id}_#{parameterized_name}_#{random_suffix}"
   end
 
-  # Método para adjuntar foto a un campo específico
+  # Método para adjuntar foto a un campo específico (soporta múltiples fotos)
   def attach_photo_for_field(field_name, photo_file)
     return { success: false, error: 'Campo o archivo vacío' } if field_name.blank? || photo_file.blank?
 
@@ -44,8 +44,7 @@ class FormFill < ApplicationRecord
       # Usar el section_name si existe, de lo contrario, usar el field_name como fallback
       field_section = field_data&.dig('section_name').presence || field_name
 
-      # 2. PRIMERO eliminar todas las fotos existentes para este campo
-      remove_all_photos_for_field(field_name)
+      # 2. NO eliminar fotos existentes, para permitir múltiples
 
       # 3. Generar el ID único usando el section_name
       unique_attachment_id = generate_unique_photo_attachment_id(field_section)
@@ -58,8 +57,8 @@ class FormFill < ApplicationRecord
         content_type: photo_file.content_type || 'image/jpeg'
       )
 
-      # 5. Actualizar la estructura del formulario con el ID del adjunto
-      success = update_photo_attachment_id_in_structure(field_name, unique_attachment_id)
+      # 5. Actualizar la estructura del formulario añadiendo el ID del adjunto a la lista
+      success = add_photo_attachment_id_to_structure(field_name, unique_attachment_id)
 
       if success
         Rails.logger.info "Photo attached for field: #{field_name} with ID: #{unique_attachment_id}"
@@ -348,40 +347,78 @@ class FormFill < ApplicationRecord
     end
   end
 
-  # Método para actualizar photo_attachment_id en data column (updated for new structure)
-  def update_photo_attachment_id_in_structure(field_name, attachment_id)
+  # Método para añadir un ID de foto a la estructura (soporta múltiples)
+  def add_photo_attachment_id_to_structure(field_name, attachment_id)
     return false if field_name.blank?
 
     begin
-      # Store photo attachment ID in the data column instead of form_structure
       photo_data_key = "#{field_name}_photo_attachment_id"
-      set_field_value(photo_data_key, attachment_id)
+      current_value = get_field_value(photo_data_key)
 
-      Rails.logger.info "Updated photo attachment ID for field '#{field_name}': #{attachment_id}"
+      # Normalizar a array
+      ids = if current_value.is_a?(Array)
+              current_value
+            elsif current_value.present?
+              [current_value]
+            else
+              []
+            end
+
+      # Añadir si no existe
+      unless ids.include?(attachment_id)
+        ids << attachment_id
+        set_field_value(photo_data_key, ids)
+      end
+
+      Rails.logger.info "Added photo attachment ID for field '#{field_name}': #{attachment_id}. Total: #{ids.count}"
       true
     rescue StandardError => e
-      Rails.logger.error "Error updating photo attachment ID for field #{field_name}: #{e.message}"
+      Rails.logger.error "Error adding photo attachment ID for field #{field_name}: #{e.message}"
       false
     end
   end
 
-  # Método para obtener foto por campo (updated for new data structure)
+  # Deprecated: Alias para compatibilidad si es necesario, pero preferible usar add_...
+  def update_photo_attachment_id_in_structure(field_name, attachment_id)
+    add_photo_attachment_id_to_structure(field_name, attachment_id)
+  end
+
+  # Método para obtener foto por campo (Devuelve la ÚLTIMA foto para compatibilidad)
   def get_photo_for_field(field_name)
-    return nil if field_name.blank?
+    photos = get_photos_for_field(field_name)
+    photos.last
+  end
+
+  # Nuevo método: Obtener todas las fotos de un campo
+  def get_photos_for_field(field_name)
+    return [] if field_name.blank?
 
     begin
-      # Get photo attachment ID from data column instead of form_structure
       photo_data_key = "#{field_name}_photo_attachment_id"
-      attachment_id = get_field_value(photo_data_key)
+      attachment_ids = get_field_value(photo_data_key)
 
-      # Return nil if no attachment ID is stored
-      return nil unless attachment_id.present?
+      # Rails.logger.info "[DEBUG] get_photos_for_field #{field_name}: IDs found in data: #{attachment_ids.inspect}"
 
-      # Buscamos la foto por el nombre de archivo, que es el ID único que guardamos
-      photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
+      # Normalizar a array de strings
+      target_ids = if attachment_ids.is_a?(Array)
+                     attachment_ids.map(&:to_s)
+                   elsif attachment_ids.present?
+                     [attachment_ids.to_s]
+                   else
+                     []
+                   end
+
+      return [] if target_ids.empty?
+
+      # Buscar fotos que comiencen con alguno de los IDs
+      photos.select do |photo|
+        target_ids.any? { |id| photo.filename.to_s.start_with?(id) }
+      end
+
+      # Rails.logger.info "[DEBUG] get_photos_for_field #{field_name}: Photos found in ActiveStorage: #{found_photos.count}"
     rescue StandardError => e
-      Rails.logger.error "Error getting photo for field #{field_name}: #{e.message}"
-      nil
+      Rails.logger.error "Error getting photos for field #{field_name}: #{e.message}"
+      []
     end
   end
 
@@ -398,19 +435,29 @@ class FormFill < ApplicationRecord
 
       # Extract field name by removing the suffix
       field_name = key.gsub('_photo_attachment_id', '')
-      attachment_id = value
 
-      # Find the corresponding photo
-      photo = photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
+      # Handle array or single value
+      attachment_ids = value.is_a?(Array) ? value : [value]
 
-      next unless photo
+      Rails.logger.info "[DEBUG] get_photos_by_field: Field '#{field_name}' has IDs: #{attachment_ids.inspect}"
 
-      photos_hash[field_name] = {
-        photo: photo,
-        attachment_id: attachment_id
-        # URL se genera dinámicamente cuando sea necesario
-      }
+      field_photos = attachment_ids.filter_map do |attachment_id|
+        photo = photos.find { |p| p.filename.to_s.start_with?(attachment_id) }
+        unless photo
+          Rails.logger.warn "[DEBUG] Warning: Photo with ID prefix '#{attachment_id}' listed in data but not found in ActiveStorage attachments."
+        end
+        next unless photo
+
+        {
+          photo: photo,
+          attachment_id: attachment_id
+        }
+      end
+
+      photos_hash[field_name] = field_photos if field_photos.any?
     end
+
+    Rails.logger.info "[DEBUG] get_photos_by_field: Total fields with photos: #{photos_hash.keys.count}. Total photos: #{photos_hash.values.flatten.count}"
 
     photos_hash
   end
@@ -474,26 +521,59 @@ class FormFill < ApplicationRecord
   end
 
   # Método para eliminar foto de un campo específico (interfaz pública)
-  def remove_photo_for_field(field_name)
+  def remove_photo_for_field(field_name, photo_id = nil)
     return { success: false, error: 'Campo vacío' } if field_name.blank?
 
     begin
-      # Usar el método que elimina todas las fotos del campo
-      remove_all_photos_for_field(field_name)
-
-      # Actualizar form_structure para limpiar photo_attachment_id
-      success = clear_photo_attachment_id_in_structure(field_name)
-
-      if success
-        Rails.logger.info "Photo removed completely for field: #{field_name}"
-        { success: true, message: 'Foto eliminada exitosamente' }
+      if photo_id.present?
+        remove_specific_photo(field_name, photo_id)
       else
-        { success: false, error: 'Error al actualizar estructura del formulario' }
+        # Usar el método que elimina todas las fotos del campo
+        remove_all_photos_for_field(field_name)
+
+        # Actualizar form_structure para limpiar photo_attachment_id
+        success = clear_photo_attachment_id_in_structure(field_name)
+
+        if success
+          Rails.logger.info "Photo removed completely for field: #{field_name}"
+          { success: true, message: 'Foto eliminada exitosamente' }
+        else
+          { success: false, error: 'Error al actualizar estructura del formulario' }
+        end
       end
     rescue StandardError => e
       Rails.logger.error "Error removing photo for field #{field_name}: #{e.message}"
       { success: false, error: e.message }
     end
+  end
+
+  def remove_specific_photo(field_name, photo_id)
+    # 1. Find photo
+    photo = photos.find { |p| p.filename.to_s.start_with?(photo_id) }
+
+    if photo
+      photo.purge
+    else
+      Rails.logger.warn "Photo not found for removal: #{photo_id}"
+    end
+
+    # 2. Remove from data array
+    photo_data_key = "#{field_name}_photo_attachment_id"
+    current_value = get_field_value(photo_data_key)
+
+    ids = if current_value.is_a?(Array)
+            current_value
+          else
+            (current_value.present? ? [current_value] : [])
+          end
+
+    if ids.include?(photo_id)
+      ids.delete(photo_id)
+      set_field_value(photo_data_key, ids)
+      Rails.logger.info "Removed photo ID #{photo_id} from field #{field_name}"
+    end
+
+    { success: true, message: 'Foto eliminada exitosamente' }
   end
 
   # Método para limpiar photo_attachment_id en data column (updated for new structure)
@@ -909,17 +989,37 @@ class FormFill < ApplicationRecord
       structure_map = JSON.parse(form_structure).index_by { |field| field['name'] }
       photos_by_field = get_photos_by_field # Usamos el método que ya existe
 
-      photos_by_field.map do |field_name, photo_data|
-        field_info = structure_map[field_name]
-        Rails.logger.info "--- [PDF_DEBUG] Photo context for field_name '#{field_name}': #{field_info.inspect}"
-        next nil unless field_info && %w[Photo pass_photo].include?(field_info['type'])
+      # Create a case-insensitive map as fallback
+      structure_map_ci = structure_map.transform_keys(&:downcase)
 
-        {
-          photo: photo_data[:photo],
-          field_type: field_info['type'], # 'Photo' o 'pass_photo'
-          section_name: field_info['section_name'],
-          label_name: field_info['label_name']
-        }
+      photos_by_field.flat_map do |field_name, photo_list|
+        # Try exact match first, then case-insensitive
+        field_info = structure_map[field_name] || structure_map_ci[field_name.downcase]
+
+        unless field_info
+          Rails.logger.warn "[DEBUG] get_photos_with_context: Field '#{field_name}' not found in form_structure (checked case-insensitive). Skipping #{photo_list.count} photos."
+          # Optional: List similar keys to help debugging
+          similar_keys = structure_map.keys.select { |k| k.downcase.include?(field_name.downcase) }
+          if similar_keys.any?
+            Rails.logger.warn "[DEBUG] get_photos_with_context: Did you mean one of these? #{similar_keys.join(', ')}"
+          end
+          next []
+        end
+
+        unless %w[Photo pass_photo].include?(field_info['type'])
+          Rails.logger.warn "[DEBUG] get_photos_with_context: Field '#{field_name}' has type '#{field_info['type']}', but has photo attachments. Including it."
+          # We allow it to proceed, assuming if it has a photo attachment, it should be included.
+        end
+
+        # Normalizar a array y mapear
+        Array(photo_list).map do |photo_data|
+          {
+            photo: photo_data[:photo],
+            field_type: field_info['type'], # 'Photo' o 'pass_photo'
+            section_name: field_info['section_name'],
+            label_name: field_info['label_name']
+          }
+        end
       end.compact
     rescue JSON::ParserError => e
       Rails.logger.error "Error parsing form_structure in get_photos_with_context: #{e.message}"

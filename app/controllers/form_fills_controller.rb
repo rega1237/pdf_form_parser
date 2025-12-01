@@ -209,6 +209,7 @@ class FormFillsController < ApplicationController
       {}
     end
     field_name = request_data['field_name'] || params[:field_name]
+    photo_id = request_data['photo_id'] || params[:photo_id]
 
     if field_name.blank?
       render json: {
@@ -220,7 +221,7 @@ class FormFillsController < ApplicationController
 
     begin
       # Use the model method that already works with data column
-      result = @form_fill.remove_photo_for_field(field_name)
+      result = @form_fill.remove_photo_for_field(field_name, photo_id)
 
       if result[:success]
         render json: {

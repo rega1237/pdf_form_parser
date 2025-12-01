@@ -5,23 +5,27 @@ export default class extends Controller {
   static values = { inputId: String };
 
   connect() {
-    // Buscar el input file asociado y agregar event listener
+    // Buscar el input file asociado
     this.fileInput = document.getElementById(this.inputIdValue);
+
+    // Evitar doble binding si offline-photo está presente (él maneja el evento change)
+    const controllers = this.element.dataset.controller || "";
+    if (controllers.includes("offline-photo")) {
+      // console.log("[PhotoCapture] Delegating file handling to offline-photo controller");
+      return;
+    }
+
+    // Agregar event listener solo si no delegamos
     if (this.fileInput) {
-      this.fileInput.addEventListener(
-        "change",
-        this.handleFileChange.bind(this),
-      );
+      this.boundHandleFileChange = this.handleFileChange.bind(this);
+      this.fileInput.addEventListener("change", this.boundHandleFileChange);
     }
   }
 
   disconnect() {
     // Limpiar event listener al desconectar
-    if (this.fileInput) {
-      this.fileInput.removeEventListener(
-        "change",
-        this.handleFileChange.bind(this),
-      );
+    if (this.fileInput && this.boundHandleFileChange) {
+      this.fileInput.removeEventListener("change", this.boundHandleFileChange);
     }
   }
 
@@ -29,7 +33,9 @@ export default class extends Controller {
   openCamera() {
     // Si estamos offline, usar el input del controlador offline-photo para evitar intentos de subida
     if (!navigator.onLine) {
-      const offlineInput = this.element.querySelector('input[data-offline-photo-target="input"]');
+      const offlineInput = this.element.querySelector(
+        'input[data-offline-photo-target="input"]',
+      );
       if (offlineInput) {
         offlineInput.click();
         return;
@@ -45,34 +51,52 @@ export default class extends Controller {
   }
 
   // Método para manejar cambio de archivo
-  handleFileChange(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+  async handleFileChange(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     // Si estamos offline, delega a offline-photo y no intentes subir
     if (!navigator.onLine) {
       // No mostramos preview aquí para evitar duplicados; offline-photo lo hará
-      console.log('[PhotoCapture] Offline: se delega preview/almacenamiento al controlador offline-photo');
+      console.log(
+        "[PhotoCapture] Offline: se delega preview/almacenamiento al controlador offline-photo",
+      );
       return;
     }
 
-    // Validar que sea una imagen
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor seleccione un archivo de imagen válido.');
-      this.clearFileInput();
-      return;
+    // Procesar archivos secuencialmente para evitar conflictos
+    for (const file of Array.from(files)) {
+      // Validar que sea una imagen
+      if (!file.type.startsWith("image/")) {
+        alert(`El archivo ${file.name} no es una imagen válida.`);
+        continue;
+      }
+
+      // Validar tamaño del archivo (máximo 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+      if (file.size > maxSize) {
+        alert(
+          `El archivo ${file.name} es demasiado grande. Máximo permitido: 10MB.`,
+        );
+        continue;
+      }
+
+      // Verificar si tenemos galería para determinar cómo procesar
+      const gallery = this.element.querySelector(
+        '[data-photo-capture-target="gallery"]',
+      );
+
+      if (gallery) {
+        // Si hay galería, subimos directamente (la galería maneja múltiples items)
+        await this.uploadPhotoToServer(file);
+      } else {
+        // Si no hay galería (modo legacy/single), usamos displayPhoto
+        this.displayPhoto(file);
+      }
     }
 
-    // Validar tamaño del archivo (máximo 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB en bytes
-    if (file.size > maxSize) {
-      alert('El archivo es demasiado grande. Máximo permitido: 10MB.');
-      this.clearFileInput();
-      return;
-    }
-
-    // Mostrar vista previa y subir cuando estamos online
-    this.displayPhoto(file);
+    // Limpiar el input al final
+    this.clearFileInput();
   }
 
   // Método para mostrar vista previa de la foto
@@ -142,8 +166,12 @@ export default class extends Controller {
   }
 
   // Método principal para eliminar foto (llamado desde la vista)
-  removePhoto() {
-    const confirmMessage = "Are you sure you want to delete this photo? This action cannot be undone.";
+  removePhoto(event) {
+    // Intentar obtener ID de la foto específica si existe (para galería)
+    const photoId = event.currentTarget.dataset.photoId;
+
+    const confirmMessage =
+      "Are you sure you want to delete this photo? This action cannot be undone.";
     if (!confirm(confirmMessage)) return;
 
     const fieldName = this.getFieldNameFromInput();
@@ -151,42 +179,54 @@ export default class extends Controller {
 
     // Si estamos offline, nunca intentes eliminar en servidor. Delega a offline.
     if (!navigator.onLine) {
-      this.dispatchConfirmedRemove();
-      this.clearPreviewOnly();
+      this.dispatchConfirmedRemove(photoId);
+      if (photoId) {
+        // Remove from gallery UI immediately
+        const photoElement = document.getElementById(`photo-${photoId}`);
+        if (photoElement) photoElement.remove();
+      } else {
+        this.clearPreviewOnly();
+      }
       return;
     }
 
-    if (hasServerPhoto && fieldName) {
-      // Hay foto en el servidor, eliminar completamente
+    if (photoId) {
+      // Eliminación específica de la galería
+      this.removePhotoCompletely(fieldName, photoId);
+    } else if (hasServerPhoto && fieldName) {
+      // Hay foto en el servidor (modo legacy o preview único), eliminar completamente
       this.removePhotoCompletely(fieldName);
     } else {
       // Solo hay preview local: solicitar al controlador offline que borre la foto en IndexedDB
-      this.dispatchConfirmedRemove();
+      this.dispatchConfirmedRemove(null); // No ID implies current preview
       // Limpiar la vista por si no existe controlador offline
       this.clearPreviewOnly();
     }
   }
 
   // Método para eliminar foto completamente del servidor
-  removePhotoCompletely(fieldName) {
+  removePhotoCompletely(fieldName, photoId = null) {
     // Mostrar estado de carga
     this.showLoadingState();
 
     // Llamar al endpoint para eliminar la foto del servidor
-    this.removePhotoFromServer(fieldName)
+    this.removePhotoFromServer(fieldName, photoId)
       .then((result) => {
         if (result.success) {
-          // Limpiar la vista previa
-          this.clearPreviewAndInput();
-
-          // Actualizar el botón
-          this.updateButtonText("Take Photo");
-
-          // Mostrar mensaje de éxito
-          this.showSuccessMessage("Photo deleted successfully");
+          if (photoId) {
+            // Si es foto de galería, eliminar elemento del DOM
+            const photoElement = document.getElementById(`photo-${photoId}`);
+            if (photoElement) photoElement.remove();
+            this.showSuccessMessage("Photo deleted successfully");
+          } else {
+            // Limpiar la vista previa (modo legacy/single)
+            this.clearPreviewAndInput();
+            this.updateButtonText("Take Photo / Add More");
+            this.showSuccessMessage("Photo deleted successfully");
+          }
 
           // También eliminar cualquier copia local (thumbnail/offline) una vez confirmada la eliminación
-          this.dispatchConfirmedRemove();
+          this.dispatchConfirmedRemove(photoId);
         } else {
           alert(`Error deleting photo: ${result.error}`);
         }
@@ -201,8 +241,11 @@ export default class extends Controller {
       });
   }
 
-  dispatchConfirmedRemove() {
-    const evt = new CustomEvent('photo-remove-confirmed', { bubbles: true });
+  dispatchConfirmedRemove(photoId) {
+    const evt = new CustomEvent("photo-remove-confirmed", {
+      bubbles: true,
+      detail: { photoId: photoId },
+    });
     this.element.dispatchEvent(evt);
   }
 
@@ -214,6 +257,12 @@ export default class extends Controller {
     // Ocultar vista previa
     if (this.hasPreviewTarget) {
       this.previewTarget.classList.add("hidden");
+
+      // Remover información del archivo
+      const infoElement = this.previewTarget.querySelector(".file-info");
+      if (infoElement) {
+        infoElement.remove();
+      }
     }
 
     // Limpiar imagen
@@ -222,22 +271,23 @@ export default class extends Controller {
       this.imageTarget.alt = "";
     }
 
-    // Remover información del archivo
-    const infoElement = this.previewTarget?.querySelector(".file-info");
-    if (infoElement) {
-      infoElement.remove();
-    }
-
     console.log("Photo preview cleared (local only)");
   }
 
   // Método para eliminar foto del servidor (updated for data column)
-  async removePhotoFromServer(fieldName) {
+  async removePhotoFromServer(fieldName, photoId = null) {
     try {
       const formElement = document.querySelector(
         '[data-controller*="form-fill"]',
       );
       const formId = formElement.action.split("/").pop().split("?")[0];
+
+      const body = {
+        field_name: fieldName,
+      };
+      if (photoId) {
+        body.photo_id = photoId;
+      }
 
       // Use the updated endpoint that clears data column entries
       const response = await fetch(`/form_fills/${formId}/remove_photo`, {
@@ -246,9 +296,7 @@ export default class extends Controller {
           "Content-Type": "application/json",
           "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
         },
-        body: JSON.stringify({
-          field_name: fieldName,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -259,7 +307,8 @@ export default class extends Controller {
 
       if (result.success) {
         // Update local data store to reflect photo removal
-        await this.updateDataColumnQuietly(null, fieldName);
+        // If photoId is provided, we are removing just one.
+        await this.updateDataColumnQuietly(photoId, fieldName, true);
       }
 
       return result;
@@ -306,14 +355,20 @@ export default class extends Controller {
     // Método 1: Buscar el indicador "Guardada" en el texto
     const fileInfoElement = this.previewTarget.querySelector(".file-info");
     if (fileInfoElement) {
-      const guardadaText = fileInfoElement.textContent.includes("Guardada") || fileInfoElement.textContent.includes("Saved");
+      const guardadaText =
+        fileInfoElement.textContent.includes("Guardada") ||
+        fileInfoElement.textContent.includes("Saved");
       if (guardadaText) return true;
     }
 
     // Método 2: Buscar elementos con class text-green-400 que contengan "Guardada"
-    const greenElements = this.previewTarget.querySelectorAll(".text-green-400");
+    const greenElements =
+      this.previewTarget.querySelectorAll(".text-green-400");
     for (let element of greenElements) {
-      if (element.textContent.includes("Guardada") || element.textContent.includes("Saved")) {
+      if (
+        element.textContent.includes("Guardada") ||
+        element.textContent.includes("Saved")
+      ) {
         return true;
       }
     }
@@ -323,8 +378,12 @@ export default class extends Controller {
       const src = this.imageTarget.src;
       const isDataUrl = src.startsWith("data:");
       const isBlobUrl = src.startsWith("blob:");
-      const isHttpUrl = src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/");
-      const hasValidServerSrc = isHttpUrl && !isDataUrl && !isBlobUrl && src.length > 0;
+      const isHttpUrl =
+        src.startsWith("http://") ||
+        src.startsWith("https://") ||
+        src.startsWith("/");
+      const hasValidServerSrc =
+        isHttpUrl && !isDataUrl && !isBlobUrl && src.length > 0;
 
       if (hasValidServerSrc) {
         const isVisible = !this.previewTarget.classList.contains("hidden");
@@ -338,7 +397,9 @@ export default class extends Controller {
   // método para verificar la data column para fotos
   checkFormStructureForPhoto(fieldName) {
     try {
-      const formFillElement = document.querySelector('[data-controller*="form-fill"]');
+      const formFillElement = document.querySelector(
+        '[data-controller*="form-fill"]',
+      );
       if (!formFillElement) return false;
 
       const dataValue = formFillElement.dataset.formFillDataValue;
@@ -368,18 +429,18 @@ export default class extends Controller {
     // Ocultar vista previa
     if (this.hasPreviewTarget) {
       this.previewTarget.classList.add("hidden");
+
+      // Remover información del archivo
+      const infoElement = this.previewTarget.querySelector(".file-info");
+      if (infoElement) {
+        infoElement.remove();
+      }
     }
 
     // Limpiar imagen
     if (this.hasImageTarget) {
       this.imageTarget.src = "";
       this.imageTarget.alt = "";
-    }
-
-    // Remover información del archivo
-    const infoElement = this.previewTarget?.querySelector(".file-info");
-    if (infoElement) {
-      infoElement.remove();
     }
 
     console.log("Photo preview and input cleared");
@@ -545,8 +606,8 @@ export default class extends Controller {
         // LIMPIAR EL INPUT INMEDIATAMENTE
         this.clearFileInput();
 
-        // Actualizar la vista previa para mostrar que está guardada
-        this.updatePreviewToSavedState(file.name);
+        // Agregar a la galería
+        this.addToGallery(file, result.attachment_id);
 
         // Actualizar la data column directamente (new approach)
         await this.updateDataColumnQuietly(result.attachment_id, fieldName);
@@ -568,9 +629,69 @@ export default class extends Controller {
     }
   }
 
+  addToGallery(fileOrUrl, attachmentId, isSynced = true) {
+    if (!attachmentId) return;
+
+    const gallery = this.element.querySelector(
+      '[data-photo-capture-target="gallery"]',
+    );
+    if (!gallery) {
+      console.error("Gallery target not found");
+      this.reloadFromServer(this.getFieldNameFromInput());
+      return;
+    }
+
+    // Check if photo already exists in gallery to avoid duplicates
+    if (document.getElementById(`photo-${attachmentId}`)) {
+      return;
+    }
+
+    // Create new item
+    const div = document.createElement("div");
+    div.className =
+      "relative bg-slate-700 rounded-2xl p-2 border-2 border-blue-400 group photo-item";
+    div.id = `photo-${attachmentId}`;
+
+    // Determine image source
+    let imgSrc;
+    if (typeof fileOrUrl === "string") {
+      imgSrc = fileOrUrl;
+    } else if (fileOrUrl instanceof Blob || fileOrUrl instanceof File) {
+      imgSrc = URL.createObjectURL(fileOrUrl);
+    } else {
+      // Fallback to current preview if available
+      imgSrc = this.imageTarget.src;
+    }
+
+    div.innerHTML = `
+        <img src="${imgSrc}" class="w-full h-48 object-cover rounded-xl" alt="Photo">
+        <button type="button" 
+                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg transform hover:scale-110 transition-all z-10"
+                data-action="click->photo-capture#removePhoto"
+                data-photo-id="${attachmentId}"
+                title="Remove photo">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+            ${isSynced ? "Saved" : "Offline"}
+        </div>
+      `;
+
+    gallery.appendChild(div);
+
+    // Clear preview
+    this.clearPreviewOnly();
+  }
+
+  cancelUpload() {
+    this.clearPreviewOnly();
+  }
+
   // Método para mostrar estado de subida
   showUploadingState() {
-    const infoElement = this.previewTarget?.querySelector(".file-info");
+    if (!this.hasPreviewTarget) return;
+
+    const infoElement = this.previewTarget.querySelector(".file-info");
     if (infoElement) {
       infoElement.innerHTML = `
         <div class="flex justify-between items-center">
@@ -594,7 +715,9 @@ export default class extends Controller {
 
   // Método para actualizar la vista previa a estado guardado
   updatePreviewToSavedState(fileName) {
-    const infoElement = this.previewTarget?.querySelector(".file-info");
+    if (!this.hasPreviewTarget) return;
+
+    const infoElement = this.previewTarget.querySelector(".file-info");
     if (infoElement) {
       infoElement.innerHTML = `
         <div class="flex justify-between items-center">
@@ -611,7 +734,7 @@ export default class extends Controller {
   }
 
   // Método para actualizar la data column sin recargar la página
-  async updateDataColumnQuietly(attachmentId, fieldName) {
+  async updateDataColumnQuietly(attachmentId, fieldName, isRemoval = false) {
     try {
       const formFillElement = document.querySelector(
         '[data-controller*="form-fill"]',
@@ -629,10 +752,36 @@ export default class extends Controller {
       // Usar la misma nomenclatura que el modelo de Rails.
       const attachmentKey = `${fieldName}_photo_attachment_id`;
 
-      if (attachmentId) {
-        currentData[attachmentKey] = attachmentId;
-      } else {
-        delete currentData[attachmentKey];
+      if (isRemoval) {
+        // Removal logic
+        if (attachmentId) {
+          // Remove specific ID from array
+          let currentVal = currentData[attachmentKey];
+          if (Array.isArray(currentVal)) {
+            currentData[attachmentKey] = currentVal.filter(
+              (id) => id !== attachmentId,
+            );
+          } else if (currentVal === attachmentId) {
+            delete currentData[attachmentKey];
+          }
+        } else {
+          // Remove all
+          delete currentData[attachmentKey];
+        }
+      } else if (attachmentId) {
+        // Append logic
+        let currentVal = currentData[attachmentKey];
+        if (Array.isArray(currentVal)) {
+          if (!currentVal.includes(attachmentId)) {
+            currentVal.push(attachmentId);
+          }
+        } else if (currentVal && typeof currentVal === "string") {
+          // Convert to array and append
+          currentData[attachmentKey] = [currentVal, attachmentId];
+        } else {
+          // New array
+          currentData[attachmentKey] = [attachmentId];
+        }
       }
 
       formFillElement.dataset.formFillDataValue = JSON.stringify(currentData);
@@ -642,15 +791,16 @@ export default class extends Controller {
       if (formFillController) {
         // Update the controller's changed fields to include this photo change
         if (formFillController.changedFields) {
+          // We store the new value (array or string)
           formFillController.changedFields.set(
             attachmentKey,
-            attachmentId || "",
+            currentData[attachmentKey] || "",
           );
         }
       }
 
       console.log(
-        `Data column updated for field: ${fieldName}, attachment: ${attachmentId}`,
+        `Data column updated for field: ${fieldName}, attachment: ${attachmentId}, removed: ${isRemoval}`,
       );
     } catch (error) {
       console.error("Error updating data column:", error);

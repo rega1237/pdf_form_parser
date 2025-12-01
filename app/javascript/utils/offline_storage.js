@@ -868,6 +868,20 @@ class OfflineStorage {
     }
   }
 
+  // New: Get all photos for a specific field in a form_fill
+  async getPhotosForField(formFillId, fieldName) {
+    try {
+      const photos = await this.getPhotosByFormFill(formFillId)
+      const candidates = (photos || []).filter(p => String(p?.metadata?.field_name) === String(fieldName))
+      // Sort by stored_at (oldest first for gallery usually, or newest? Let's use oldest first to match visual order of addition)
+      candidates.sort((a, b) => new Date(a.metadata?.stored_at || 0) - new Date(b.metadata?.stored_at || 0))
+      return candidates
+    } catch (error) {
+      console.error('[OfflineStorage] Error getting photos for field:', error)
+      return []
+    }
+  }
+
   // New: Remove all photos by inspection_id
   async removePhotosByInspection(inspectionId) {
     const db = await this.openDB()
