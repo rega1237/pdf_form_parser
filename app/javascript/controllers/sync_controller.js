@@ -197,22 +197,19 @@ export default class extends Controller {
 
       // Transform pending form fills to ephemeral sync items (full payload + patches acumulados)
       const ephemeralItems = (pendingFormFills || []).map((ff) => {
-        // Use local DB data (ff.data) as the source of truth.
-        // We do NOT merge aggregatedChangesByFF because queue items might be unordered
-        // (sorted by UUID in IndexedDB) and contain stale patches that would overwrite
-        // the fresher ff.data. ff.data is always updated synchronously before queueing.
+        // Use the latest data from the local database as the source of truth.
+        // This avoids issues where 'aggregatedChanges' might be incomplete or stale.
         const mergedData = ff.data || {};
 
         return {
           id: `ephemeral-${ff.id}-${Date.now()}`,
           type: "form_fill",
           form_fill_id: ff.id,
-          _local_updated_at: ff.updated_at, // Capture local timestamp for race condition check
+          _local_updated_at: ff.updated_at, // Capture timestamp for race condition check
           payload: {
             id: ff.id,
             updated_at: new Date(ff.updated_at || Date.now()).toISOString(),
             data: mergedData,
-            // Prefer local version automatically to avoid unnecessary conflict prompts
             resolve_strategy: "use_local",
           },
           ephemeral: true,

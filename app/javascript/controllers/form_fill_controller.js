@@ -1082,6 +1082,11 @@ export default class extends Controller {
       if (currentValue !== fieldValue) {
         this.changedFields.set(fieldName, fieldValue);
 
+        // Special handling for deficiency collections (hidden inputs updated by DeficiencyListController)
+        if (fieldName.endsWith("_collection")) {
+          console.log(`[FormFill] Deficiency collection updated for ${fieldName}. Count: ${JSON.parse(fieldValue || '[]').length}`);
+        }
+
         // Si el campo que cambió es un checkbox 'C' o 'D' de una deficiencia...
         if (fieldName.endsWith("_c") || fieldName.endsWith("_d")) {
           // ... y si el checkbox fue marcado (no desmarcado).
