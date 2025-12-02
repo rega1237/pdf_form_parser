@@ -74,6 +74,18 @@ class FormFillsController < ApplicationController
             field['Riser'] = data["#{field_name}_riser"] || field['Riser'] || ''
             field['C'] = data["#{field_name}_c"] || field['C'] || ''
             field['D'] = data["#{field_name}_d"] || field['D'] || ''
+
+            # Agregar la colección de deficiencias
+            collection_json = data["#{field_name}_collection"]
+            if collection_json.present?
+              begin
+                field["#{field_name}_collection"] = JSON.parse(collection_json)
+              rescue JSON::ParserError
+                field["#{field_name}_collection"] = []
+              end
+            else
+              field["#{field_name}_collection"] = []
+            end
           else
             # Para otros tipos de campo, carga el valor desde `data`
             field['value'] = data[field_name] || field['value'] || ''
@@ -274,13 +286,25 @@ class FormFillsController < ApplicationController
 
           when 'Deficiency'
             # La lógica para los campos de deficiencia se mantiene, ya que es correcta.
-            field['value'] = data["#{field_name}_select"] || ''
-            field['select'] = data["#{field_name}_select"] || ''
-            field['comment_value'] = data["#{field_name}_comment"] || ''
-            field['Item'] = data["#{field_name}_item"] || ''
-            field['Riser'] = data["#{field_name}_riser"] || ''
-            field['C'] = data["#{field_name}_c"] || ''
-            field['D'] = data["#{field_name}_d"] || ''
+            field['value'] = data["#{field_name}_select"].presence || field['value'] || ''
+            field['select'] = data["#{field_name}_select"].presence || field['select'] || ''
+            field['comment_value'] = data["#{field_name}_comment"].presence || field['comment_value'] || ''
+            field['Item'] = data["#{field_name}_item"].presence || field['Item'] || ''
+            field['Riser'] = data["#{field_name}_riser"].presence || field['Riser'] || ''
+            field['C'] = data["#{field_name}_c"].presence || field['C'] || ''
+            field['D'] = data["#{field_name}_d"].presence || field['D'] || ''
+
+            # Agregar la colección de deficiencias
+            collection_json = data["#{field_name}_collection"]
+            if collection_json.present?
+              begin
+                field["#{field_name}_collection"] = JSON.parse(collection_json)
+              rescue JSON::ParserError
+                field["#{field_name}_collection"] = []
+              end
+            else
+              field["#{field_name}_collection"] = []
+            end
 
           else
             # Lógica por defecto para todos los demás tipos de campo.
@@ -743,6 +767,7 @@ class FormFillsController < ApplicationController
         field_name = field['name']
 
         # Permitir todos los subcampos de deficiency
+        deficiency_params["#{field_name}_collection"] = params.dig(:form_fill, "#{field_name}_collection")
         deficiency_params["#{field_name}_select"] = params.dig(:form_fill, "#{field_name}_select")
         deficiency_params["#{field_name}_comment"] = params.dig(:form_fill, "#{field_name}_comment")
         deficiency_params["#{field_name}_item"] = params.dig(:form_fill, "#{field_name}_item")
@@ -964,6 +989,11 @@ class FormFillsController < ApplicationController
       elsif key_str.end_with?('_c')
         field_name = key_str.gsub('_c', '')
         deficiency_data["#{field_name}_c"] = value == '1' ? 'Yes' : ''
+
+      # Handle deficiency collection
+      elsif key_str.end_with?('_collection')
+        field_name = key_str.gsub('_collection', '')
+        deficiency_data["#{field_name}_collection"] = value if value.present?
 
       # Handle deficiency D values
       elsif key_str.end_with?('_d')

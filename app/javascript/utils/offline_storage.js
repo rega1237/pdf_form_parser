@@ -417,30 +417,58 @@ class OfflineStorage {
 
   /**
    * Marca un form_fill como sincronizado
+   * @param {string|number} formFillId - ID del form_fill
+   * @param {number|null} syncedTimestamp - Timestamp (updated_at) de la versión que se sincronizó.
+   *                                        Si se proporciona, solo se marcará como synced si no ha habido cambios posteriores.
    */
-  async markFormFillAsSynced(formFillId) {
+  async markFormFillAsSynced(formFillId, syncedTimestamp = null) {
     const db = await this.openDB()
     const tx = db.transaction(['form_fills'], 'readwrite')
     
     try {
       const store = tx.objectStore('form_fills')
-      const formFill = await this.promisifyRequest(store.get(formFillId))
+      const numericFormFillId = parseInt(formFillId, 10)
+      let formFill = await this.promisifyRequest(
+        store.get(Number.isNaN(numericFormFillId) ? formFillId : numericFormFillId)
+      )
       
+      // Fallback: si no se encuentra por número y el ID original era string, probar con string
+      if (!formFill && !Number.isNaN(numericFormFillId) && typeof formFillId === 'string') {
+        formFill = await this.promisifyRequest(store.get(formFillId))
+      }
+
       if (formFill) {
-        formFill.synced_at = Date.now()
-        formFill.has_pending_changes = false
+        // Protección contra Race Condition:
+        // Si pasamos un timestamp de referencia (syncedTimestamp), verificamos que
+        // el registro no haya sido modificado localmente DESPUÉS de ese timestamp.
+        // Si formFill.updated_at > syncedTimestamp, significa que el usuario hizo cambios
+        // mientras se estaba sincronizando. En ese caso, actualizamos synced_at pero
+        // MANTENEMOS has_pending_changes = true para que la próxima sincronización lo recoja.
+        
+        if (syncedTimestamp && formFill.updated_at && formFill.updated_at > syncedTimestamp) {
+          console.log(`[OfflineStorage] Form fill ${formFillId} updated during sync (local: ${formFill.updated_at}, synced: ${syncedTimestamp}). Keeping has_pending_changes=true.`)
+          formFill.synced_at = Date.now()
+          // NO ponemos has_pending_changes = false
+        } else {
+          formFill.synced_at = Date.now()
+          formFill.has_pending_changes = false
+          console.log(`[OfflineStorage] Marked form fill ${formFillId} as synced`)
+        }
+
         await this.promisifyRequest(store.put(formFill))
-        console.log(`[OfflineStorage] Marked form fill ${formFillId} as synced`)
 
         // Notificar inmediatamente a la UI que el estado de cambios pendientes ha cambiado
-        try {
-          const evt = new CustomEvent('sync:pending-changes', {
-            detail: { formFillId, pending: false },
-            bubbles: true
-          })
-          document.dispatchEvent(evt)
-        } catch (e) {
-          console.warn('[OfflineStorage] Failed to dispatch pending-changes event (mark synced):', e)
+        // Solo si realmente marcamos como synced (false)
+        if (formFill.has_pending_changes === false) {
+          try {
+            const evt = new CustomEvent('sync:pending-changes', {
+              detail: { formFillId, pending: false },
+              bubbles: true
+            })
+            document.dispatchEvent(evt)
+          } catch (e) {
+            console.warn('[OfflineStorage] Failed to dispatch pending-changes event (mark synced):', e)
+          }
         }
       }
     } catch (error) {

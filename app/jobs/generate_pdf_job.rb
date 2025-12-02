@@ -143,25 +143,57 @@ class GeneratePdfJob < ApplicationJob
     data = main_form_fill.data || {}
 
     # Merge data into fields (same logic as before)
-    main_form_fields = all_fields.map do |field|
+    main_form_fields = all_fields.flat_map do |field|
       field_copy = field.dup
       name = field_copy['name']
-      next field_copy unless name.present?
+      next [field_copy] unless name.present?
 
       case field_copy['type']
       when 'Photo'
         field_copy['photo_attachment_id'] = data["#{name}_photo_attachment_id"]
+        [field_copy]
       when 'Deficiency'
-        field_copy['value'] = data["#{name}_select"]
-        field_copy['comment_value'] = data["#{name}_comment"]
-        field_copy['Item'] = data["#{name}_item"]
-        field_copy['Riser'] = data["#{name}_riser"]
-        field_copy['C'] = data["#{name}_c"]
-        field_copy['D'] = data["#{name}_d"]
+        collection_json = data["#{name}_collection"]
+        if collection_json.present?
+          begin
+            collection = JSON.parse(collection_json)
+            if collection.is_a?(Array) && collection.any?
+              collection.map do |deficiency_data|
+                new_field = field.dup
+                new_field['value'] = deficiency_data['value']
+                new_field['comment_value'] = deficiency_data['comment_value']
+                new_field['Item'] = deficiency_data['Item']
+                new_field['Riser'] = deficiency_data['Riser']
+                new_field['C'] = deficiency_data['C']
+                new_field['D'] = deficiency_data['D']
+                new_field
+              end
+            else
+              [field_copy]
+            end
+          rescue JSON::ParserError => e
+            Rails.logger.warn "Error parsing deficiency collection for #{name}: #{e.message}"
+            field_copy['value'] = data["#{name}_select"]
+            field_copy['comment_value'] = data["#{name}_comment"]
+            field_copy['Item'] = data["#{name}_item"]
+            field_copy['Riser'] = data["#{name}_riser"]
+            field_copy['C'] = data["#{name}_c"]
+            field_copy['D'] = data["#{name}_d"]
+            [field_copy]
+          end
+        else
+          field_copy['value'] = data["#{name}_select"]
+          field_copy['comment_value'] = data["#{name}_comment"]
+          field_copy['Item'] = data["#{name}_item"]
+          field_copy['Riser'] = data["#{name}_riser"]
+          field_copy['C'] = data["#{name}_c"]
+          field_copy['D'] = data["#{name}_d"]
+          [field_copy]
+        end
       else
         field_copy['value'] = data[name]
+        [field_copy]
       end
-      field_copy
     end
 
     # Process deficiencies using all collected deficiencies
@@ -187,9 +219,14 @@ class GeneratePdfJob < ApplicationJob
     return nil unless @unprocessed_deficiencies&.any?
 
     deficiencies_template = FormTemplate.find_by(name: 'Deficiencies')
-    deficiencies_form_fill = inspection.form_fills.find_by(form_template: deficiencies_template)
+    return nil unless deficiencies_template&.original_file&.attached?
 
-    return nil unless deficiencies_form_fill && deficiencies_form_fill.form_template.original_file.attached?
+    deficiencies_form_fill = inspection.form_fills.find_or_create_by(form_template: deficiencies_template) do |ff|
+      ff.name = "Deficiencies - #{inspection.property&.property_name || 'Inspection'}"
+      ff.form_structure = deficiencies_template.form_structure
+    end
+
+    return nil unless deficiencies_form_fill&.form_structure.present?
 
     deficiencies_form_fields = JSON.parse(deficiencies_form_fill.form_structure)
     target_deficiency_fields = deficiencies_form_fields.select { |f| f['type'] == 'Deficiency_field' }

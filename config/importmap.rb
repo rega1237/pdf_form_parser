@@ -14,6 +14,7 @@ pin "controllers/choice_buttons_controller", to: "controllers/choice_buttons_con
 pin "controllers/customer_properties_controller", to: "controllers/customer_properties_controller.js"
 pin "controllers/date_fix_controller", to: "controllers/date_fix_controller.js"
 pin "controllers/datepicker_controller", to: "controllers/datepicker_controller.js"
+pin "controllers/deficiency_list_controller", to: "controllers/deficiency_list_controller.js"
 pin "controllers/drag_controller", to: "controllers/drag_controller.js"
 pin "controllers/email_sender_controller", to: "controllers/email_sender_controller.js"
 pin "controllers/external_form_action_controller", to: "controllers/external_form_action_controller.js"
