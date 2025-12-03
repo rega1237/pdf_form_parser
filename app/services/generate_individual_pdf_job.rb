@@ -49,25 +49,64 @@ class GenerateIndividualPdfJob < ApplicationJob
     all_fields = JSON.parse(form_fill.form_structure)
     data = form_fill.data || {}
 
-    all_fields.map do |field|
+    all_fields.flat_map do |field|
       field_copy = field.dup
       name = field_copy['name']
-      next field_copy unless name.present?
+      next [field_copy] unless name.present?
 
       case field_copy['type']
       when 'Photo'
         field_copy['photo_attachment_id'] = data["#{name}_photo_attachment_id"]
+        [field_copy]
       when 'Deficiency'
-        field_copy['value'] = data["#{name}_select"]
-        field_copy['comment_value'] = data["#{name}_comment"]
-        field_copy['Item'] = data["#{name}_item"]
-        field_copy['Riser'] = data["#{name}_riser"]
-        field_copy['C'] = data["#{name}_c"]
-        field_copy['D'] = data["#{name}_d"]
+        # Nuevo soporte para Multi-Deficiencies
+        collection_json = data["#{name}_collection"]
+        
+        if collection_json.present?
+          begin
+            collection = JSON.parse(collection_json)
+            if collection.is_a?(Array) && collection.any?
+              # Mapear cada deficiencia de la colección a una copia del campo original
+              collection.map do |deficiency_data|
+                new_field = field.dup
+                # Asignar valores desde el objeto de la colección
+                new_field['value'] = deficiency_data['value']
+                new_field['comment_value'] = deficiency_data['comment_value']
+                new_field['Item'] = deficiency_data['Item']
+                new_field['Riser'] = deficiency_data['Riser']
+                new_field['C'] = deficiency_data['C']
+                new_field['D'] = deficiency_data['D']
+                new_field
+              end
+            else
+              # Array vacío o inválido, retornar campo vacío
+              [field_copy]
+            end
+          rescue JSON::ParserError => e
+            Rails.logger.warn "Error parsing deficiency collection for #{name}: #{e.message}"
+            # Fallback a comportamiento antiguo si falla el parsing
+            field_copy['value'] = data["#{name}_select"]
+            field_copy['comment_value'] = data["#{name}_comment"]
+            field_copy['Item'] = data["#{name}_item"]
+            field_copy['Riser'] = data["#{name}_riser"]
+            field_copy['C'] = data["#{name}_c"]
+            field_copy['D'] = data["#{name}_d"]
+            [field_copy]
+          end
+        else
+          # Fallback para datos antiguos planos (si los hubiera) o campo vacío
+          field_copy['value'] = data["#{name}_select"]
+          field_copy['comment_value'] = data["#{name}_comment"]
+          field_copy['Item'] = data["#{name}_item"]
+          field_copy['Riser'] = data["#{name}_riser"]
+          field_copy['C'] = data["#{name}_c"]
+          field_copy['D'] = data["#{name}_d"]
+          [field_copy]
+        end
       else
         field_copy['value'] = data[name]
+        [field_copy]
       end
-      field_copy
     end
   end
 

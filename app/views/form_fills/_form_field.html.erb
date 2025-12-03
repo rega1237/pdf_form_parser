@@ -143,64 +143,129 @@
     </div>
   </div>
 <% elsif field['type'] == "Deficiency" %>
-  <div class="space-y-4">
-    <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+          <div class="space-y-4" 
+               data-controller="deficiency-list" 
+               data-deficiency-list-default-item-value="<%= field['Item'] %>">
+            <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+    
+    <%# Input hidden principal que almacena la colección JSON %>
+    <% collection_value = field["#{field['name']}_collection"] %>
+    <% collection_value = collection_value.to_json if collection_value.is_a?(Array) %>
+    <%= form.hidden_field "#{field['name']}_collection", 
+        id: "#{field_id}_collection", 
+        value: collection_value || '[]',
+        data: { deficiency_list_target: "input" } %>
 
-    <div class="relative hidden"><svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg><%= form.text_field "#{field['name']}_item", id: "#{field_id}_item", value: field['Item'] || '', class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20", placeholder: "Item..." %></div>
-    <div class="relative"><svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg><%= form.number_field "#{field['name']}_riser", id: "#{field_id}_riser", value: field['Riser'] || '', required: field['required'] == true, class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20", placeholder: "Riser Number..." %></div>
-    <div class="grid grid-cols-2 gap-4">
-      <div class="relative inline-block w-full checkbox-button"><%= check_box_tag "#{field['name']}_c", 'Yes', field['C'] == 'Yes', { id: "#{field_id}_c", class: "hidden peer" } %><label for="<%= "#{field_id}_c" %>" class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br from-blue-100 to-blue-200 border-2 border-blue-600 text-blue-900 hover:from-blue-200 hover:to-blue-400 hover:border-blue-700 hover:-translate-y-0.5 hover:shadow-lg peer-checked:from-blue-600 peer-checked:to-blue-700 peer-checked:border-blue-900 peer-checked:text-white peer-checked:shadow-xl">C</label></div>
-      <div class="relative inline-block w-full checkbox-button"><%= check_box_tag "#{field['name']}_d", 'Yes', field['D'] == 'Yes', { id: "#{field_id}_d", class: "hidden peer" } %><label for="<%= "#{field_id}_d" %>" class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 hover:from-red-200 hover:to-red-400 hover:border-red-700 hover:-translate-y-0.5 hover:shadow-lg peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">D</label></div>
+    <%# List Container %>
+    <div data-deficiency-list-target="listContainer">
+      <%# Lista de deficiencias agregadas %>
+      <div data-deficiency-list-target="list" class="space-y-3 mb-4">
+        <!-- Renderizado por JS -->
+      </div>
+
+      <%# Botón para agregar nueva deficiencia %>
+      <button type="button" 
+              data-action="click->deficiency-list#showForm"
+              class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Add Deficiency
+      </button>
     </div>
-    <div data-controller="searchable-select">
-      <%= form.hidden_field "#{field['name']}_select", 
-            id: "#{field_id}_select", 
-            value: field['value'], 
-            required: field['required'] == true, 
-            data: { searchable_select_target: "hiddenInput" } %>
-      <div class="relative">
-        <%# Botón que muestra la selección actual y abre el dropdown %>
-        <button type="button" 
-                data-action="click->searchable-select#toggle" 
-          data-searchable-select-target="button" 
-          class="relative w-full rounded-2xl py-4 pl-14 pr-24 text-left text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20">
-          
-          <span data-searchable-select-target="buttonText">Select an option</span>
-          <%# Botón para limpiar selección %>
-          <button type="button" 
-                  class="absolute inset-y-0 right-10 flex items-center px-2 text-sm text-blue-700 hover:text-blue-900 hover:bg-blue-50 rounded-md"
-                  title="Clear selection" aria-label="Clear selection"
-                  data-action="click->searchable-select#clear">
-            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
-          <span class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-            <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.53.22l3.5 3.5a.75.75 0 01-1.06 1.06L10 4.81 6.53 8.28a.75.75 0 01-1.06-1.06l3.5-3.5A.75.75 0 0110 3zm-3.72 9.28a.75.75 0 011.06 0L10 15.19l3.47-3.47a.75.75 0 111.06 1.06l-4 4a.75.75 0 01-1.06 0l-4-4a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
-          </span>
+
+    <%# Form Container (Replacing Modal) %>
+    <div data-deficiency-list-target="formContainer" class="hidden bg-slate-800 rounded-2xl p-4 border border-slate-700 space-y-4 mt-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl leading-6 font-bold text-white" data-deficiency-list-target="formTitle">
+          Add Deficiency
+        </h3>
+        <button type="button" data-action="click->deficiency-list#showList" class="bg-slate-800 rounded-md text-gray-400 hover:text-white focus:outline-none">
+          <span class="sr-only">Close</span>
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
-        <%# Contenedor del Dropdown (Búsqueda + Opciones) %>
-        <div data-searchable-select-target="optionsContainer" 
-             class="hidden absolute z-10 mt-2 w-full bg-white rounded-2xl shadow-lg border border-blue-600 overflow-hidden">
-          <div class="p-2">
-            <input type="text" 
-                   data-action="input->searchable-select#search" 
-            data-searchable-select-target="searchInput" 
-            placeholder="Search deficiencies..." 
-            class="w-full rounded-lg py-2 px-3 text-base font-medium transition-all duration-200 bg-slate-100 border-2 border-slate-300 text-slate-800 placeholder:text-slate-500 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-800/30">
+      </div>
+
+      <div class="space-y-4">
+        <%# Item %>
+        <div class="relative">
+            <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+            <input type="text" data-deficiency-list-target="modalItem" class="w-full rounded-2xl py-3 pl-14 pr-4 text-base font-medium bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" placeholder="Item..." value="<%= field['Item'] || '' %>">
+        </div>
+
+        <%# Riser %>
+        <div class="relative">
+            <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
+            <input type="number" data-deficiency-list-target="modalRiser" class="w-full rounded-2xl py-3 pl-14 pr-4 text-base font-medium bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" placeholder="Riser Number..." value="<%= field['Riser'] || '' %>">
+        </div>
+
+        <%# Checkboxes C/D %>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="relative inline-block w-full checkbox-button">
+            <input type="checkbox" id="<%= field_id %>_modal_c" data-deficiency-list-target="modalC" class="hidden peer">
+            <label for="<%= field_id %>_modal_c" class="checkbox-button-label flex items-center justify-center text-center py-3 px-4 font-semibold rounded-2xl cursor-pointer transition-all shadow-md bg-gradient-to-br from-blue-100 to-blue-200 border-2 border-blue-600 text-blue-900 peer-checked:from-blue-600 peer-checked:to-blue-700 peer-checked:border-blue-900 peer-checked:text-white">C</label>
           </div>
-          <ul data-searchable-select-target="optionsList" class="max-h-60 overflow-y-auto p-2">
-            <%# Itera sobre las deficiencias cargadas en el controlador de Rails %>
-            <% @deficiencies.each do |deficiency| %>
-              <li data-action="click->searchable-select#select" 
-                data-value="<%= deficiency.name %>" 
-                class="p-3 text-blue-900 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
-                <%= deficiency.name %>
-              </li>
-            <% end %>
-          </ul>
+          <div class="relative inline-block w-full checkbox-button">
+            <input type="checkbox" id="<%= field_id %>_modal_d" data-deficiency-list-target="modalD" class="hidden peer">
+            <label for="<%= field_id %>_modal_d" class="checkbox-button-label flex items-center justify-center text-center py-3 px-4 font-semibold rounded-2xl cursor-pointer transition-all shadow-md bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-600 text-red-900 peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white">D</label>
+          </div>
+        </div>
+
+        <%# Searchable Select (Anidado) %>
+        <div data-controller="searchable-select">
+          <input type="hidden" data-deficiency-list-target="modalSelect" data-searchable-select-target="hiddenInput">
+          
+          <div class="relative">
+            <button type="button" 
+                    data-action="click->searchable-select#toggle" 
+                    data-searchable-select-target="button" 
+                    class="relative w-full rounded-2xl py-3 pl-4 pr-12 text-left text-base font-medium transition-all shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20">
+              <span data-searchable-select-target="buttonText" data-deficiency-list-target="searchableSelectButtonText">Select an option</span>
+              <button type="button" 
+                      class="absolute inset-y-0 right-10 flex items-center px-2 text-sm text-blue-700 hover:text-blue-900 hover:bg-blue-50 rounded-md"
+                      data-action="click->searchable-select#clear">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+              <span class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.53.22l3.5 3.5a.75.75 0 01-1.06 1.06L10 4.81 6.53 8.28a.75.75 0 01-1.06-1.06l3.5-3.5A.75.75 0 0110 3zm-3.72 9.28a.75.75 0 011.06 0L10 15.19l3.47-3.47a.75.75 0 111.06 1.06l-4 4a.75.75 0 01-1.06 0l-4-4a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
+              </span>
+            </button>
+
+            <div data-searchable-select-target="optionsContainer" class="hidden absolute z-20 mt-2 w-full bg-white rounded-2xl shadow-lg border border-blue-600 overflow-hidden">
+              <div class="p-2">
+                <input type="text" 
+                       data-action="input->searchable-select#search" 
+                       data-searchable-select-target="searchInput" 
+                       placeholder="Search..." 
+                       class="w-full rounded-lg py-2 px-3 text-base font-medium bg-slate-100 border-2 border-slate-300 text-slate-800 placeholder:text-slate-500 focus:bg-white focus:border-blue-600 focus:outline-none">
+              </div>
+              <ul data-searchable-select-target="optionsList" class="max-h-40 overflow-y-auto p-2">
+                <% @deficiencies.each do |deficiency| %>
+                  <li data-action="click->searchable-select#select" 
+                      data-value="<%= deficiency.name %>" 
+                      class="p-2 text-blue-900 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                    <%= deficiency.name %>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <%# Comment %>
+        <div class="relative">
+            <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+            <input type="text" data-deficiency-list-target="modalComment" class="w-full rounded-2xl py-3 pl-14 pr-4 text-base font-medium bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" placeholder="Enter comments..." value="<%= field['comment_value'] || '' %>">
         </div>
       </div>
+
+      <div class="mt-5 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 grid-flow-row-dense">
+        <button type="button" data-action="click->deficiency-list#saveDeficiency" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm">
+          Save
+        </button>
+        <button type="button" data-action="click->deficiency-list#showList" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm">
+          Cancel
+        </button>
+      </div>
     </div>
-    <div class="relative"><svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg><%= form.text_field "#{field['name']}_comment", id: "#{field_id}_comment", value: field['comment_value'] || '', class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20", placeholder: "Enter additional comments..." %></div>
   </div>
 <% elsif field['type'] == "Button" %>
   <div class="relative inline-block w-full checkbox-button">

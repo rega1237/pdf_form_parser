@@ -959,27 +959,53 @@ class FormFill < ApplicationRecord
 
       deficiency_fields.each do |field|
         field_name = field['name']
+        collection_json = data["#{field_name}_collection"]
 
-        # Build deficiency data from the data column
-        deficiency_data = {
-          'name' => field_name,
-          'value' => data["#{field_name}_select"] || '',
-          'comment_value' => data["#{field_name}_comment"] || '',
-          'Item' => data["#{field_name}_item"] || '',
-          'Riser' => data["#{field_name}_riser"] || '',
-          'C' => data["#{field_name}_c"] || '',
-          'D' => data["#{field_name}_d"] || ''
-        }
-
-        # Only include if any field has data
-        deficiencies_with_data << deficiency_data if deficiency_data.values.any?(&:present?)
+        if collection_json.present?
+          begin
+            collection = JSON.parse(collection_json)
+            if collection.is_a?(Array)
+              collection.each do |item|
+                deficiencies_with_data << {
+                  'name' => field_name,
+                  'value' => item['value'] || '',
+                  'comment_value' => item['comment_value'] || '',
+                  'Item' => item['Item'] || '',
+                  'Riser' => item['Riser'] || '',
+                  'C' => item['C'] || '',
+                  'D' => item['D'] || ''
+                }
+              end
+            end
+          rescue JSON::ParserError => e
+            Rails.logger.warn "Error parsing deficiency collection for #{field_name}: #{e.message}"
+            # Fallback to single deficiency logic if parsing fails
+            deficiencies_with_data << build_single_deficiency_data(field_name)
+          end
+        else
+          # Fallback for legacy data or single deficiency
+          deficiencies_with_data << build_single_deficiency_data(field_name)
+        end
       end
 
-      deficiencies_with_data
+      # Filter out empty deficiencies
+      deficiencies_with_data.select { |d| d.values.any?(&:present?) }
     rescue JSON::ParserError => e
       Rails.logger.error "Error parsing form_structure in get_deficiencies_for_processing: #{e.message}"
       []
     end
+  end
+
+  def build_single_deficiency_data(field_name)
+    {
+      'name' => field_name,
+      'value' => data["#{field_name}_select"] || '',
+      'comment_value' => data["#{field_name}_comment"] || '',
+      'Item' => data["#{field_name}_item"] || '',
+      'Riser' => data["#{field_name}_riser"] || '',
+      'C' => data["#{field_name}_c"] || '',
+      'D' => data["#{field_name}_d"] || ''
+    }
   end
 
   def get_photos_with_context
