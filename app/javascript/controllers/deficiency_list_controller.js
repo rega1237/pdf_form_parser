@@ -3,16 +3,17 @@ import { Controller } from "@hotwired/stimulus";
 export default class extends Controller {
   static targets = [
     "list",
-    "modal",
+    "listContainer",
+    "formContainer",
     "input",
-    "modalTitle",
+    "formTitle",
     "modalItem",
     "modalRiser",
     "modalC",
     "modalD",
     "modalSelect",
     "modalComment",
-    "searchableSelectButtonText", // Target para actualizar el texto del botón del searchable-select manualmente si es necesario
+    "searchableSelectButtonText",
   ];
 
   static values = {
@@ -27,6 +28,7 @@ export default class extends Controller {
     // Cargar datos iniciales
     this.loadFromInput();
     this.renderList();
+    this.showList(); // Ensure list is shown by default
   }
 
   loadFromInput() {
@@ -106,18 +108,22 @@ export default class extends Controller {
       .join("");
   }
 
-  openModal() {
-    console.log("Opening modal");
-    // alert("Opening modal debug"); // Descomentar si es necesario depurar
+  showForm() {
+    console.log("Showing form");
     this.editingId = null;
-    this.modalTitleTarget.textContent = "Add Deficiency";
-    this.resetModalForm();
-    this.modalTarget.classList.remove("hidden");
+    if (this.hasFormTitleTarget) {
+      this.formTitleTarget.textContent = "Add Deficiency";
+    }
+    this.resetForm();
+    this.listContainerTarget.classList.add("hidden");
+    this.formContainerTarget.classList.remove("hidden");
   }
 
-  closeModal() {
-    this.modalTarget.classList.add("hidden");
-    this.resetModalForm();
+  showList() {
+    console.log("Showing list");
+    this.formContainerTarget.classList.add("hidden");
+    this.listContainerTarget.classList.remove("hidden");
+    this.resetForm();
   }
 
   saveDeficiency() {
@@ -149,7 +155,7 @@ export default class extends Controller {
 
     this.updateInput();
     this.renderList();
-    this.closeModal();
+    this.showList();
   }
 
   edit(event) {
@@ -159,7 +165,9 @@ export default class extends Controller {
     if (!deficiency) return;
 
     this.editingId = id;
-    this.modalTitleTarget.textContent = "Edit Deficiency";
+    if (this.hasFormTitleTarget) {
+      this.formTitleTarget.textContent = "Edit Deficiency";
+    }
 
     // Popular formulario
     this.modalItemTarget.value = deficiency.Item || "";
@@ -170,15 +178,14 @@ export default class extends Controller {
 
     // Actualizar searchable select
     this.modalSelectTarget.value = deficiency.value || "";
-    // Actualizar visualmente el botón del select si tenemos acceso al texto
-    // Esto depende de cómo searchable-select maneje actualizaciones externas.
-    // Intentaremos disparar un evento o actualizar el texto directamente si es simple.
+
     if (this.hasSearchableSelectButtonTextTarget) {
       this.searchableSelectButtonTextTarget.textContent =
         deficiency.value || "Select an option";
     }
 
-    this.modalTarget.classList.remove("hidden");
+    this.listContainerTarget.classList.add("hidden");
+    this.formContainerTarget.classList.remove("hidden");
   }
 
   remove(event) {
@@ -190,7 +197,7 @@ export default class extends Controller {
     this.renderList();
   }
 
-  resetModalForm() {
+  resetForm() {
     this.modalItemTarget.value = this.hasDefaultItemValue
       ? this.defaultItemValue
       : "";
@@ -198,10 +205,10 @@ export default class extends Controller {
     this.modalCTarget.checked = false;
     this.modalDTarget.checked = false;
     this.modalSelectTarget.value = "";
-    this.modalCommentTarget.value = "";
     if (this.hasSearchableSelectButtonTextTarget) {
       this.searchableSelectButtonTextTarget.textContent = "Select an option";
     }
+    this.modalCommentTarget.value = "";
   }
 
   generateId() {
