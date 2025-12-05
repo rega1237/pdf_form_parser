@@ -11,60 +11,58 @@ class HeaderAutoFillerService
   def call
     Rails.logger.info "[HeaderAutoFillerService] STARTING for Inspection ##{@inspection.id}"
 
-    unless main_form_fill
-      Rails.logger.warn "[HeaderAutoFillerService] ABORTING: Main FormFill not found for Inspection ##{@inspection.id}"
-      return
-    end
-
     unless @contractor_info && @license_info
       Rails.logger.warn '[HeaderAutoFillerService] ABORTING: ContractorInfo or LicenseInfo not found.'
       return
     end
 
-    Rails.logger.info "[HeaderAutoFillerService] Found Main FormFill ##{main_form_fill.id}"
-
-    header_data = build_header_data
-
-    if header_data.empty?
-      Rails.logger.warn '[HeaderAutoFillerService] No matching header fields found in form structure. Nothing to update.'
-      return
-    end
-
-    Rails.logger.info "[HeaderAutoFillerService] Built header data: #{header_data.inspect}"
-
-    new_data = main_form_fill.data.merge(header_data)
-    Rails.logger.info "[HeaderAutoFillerService] Merged data for update: #{new_data.inspect}"
-
-    if main_form_fill.update(data: new_data)
-      Rails.logger.info "[HeaderAutoFillerService] SUCCESS: Updated FormFill ##{main_form_fill.id}"
-    else
-      Rails.logger.error "[HeaderAutoFillerService] FAILED to update FormFill ##{main_form_fill.id}: #{main_form_fill.errors.full_messages.join(', ')}"
+    @inspection.form_fills.find_each do |form_fill|
+      process_form_fill(form_fill)
     end
   end
 
   private
 
-  def main_form_fill
-    @main_form_fill ||= @inspection.form_fills.find_by(form_template_id: @inspection.form_template_id)
+  def process_form_fill(form_fill)
+    Rails.logger.info "[HeaderAutoFillerService] Processing FormFill ##{form_fill.id}"
+
+    header_data = build_header_data(form_fill)
+
+    if header_data.empty?
+      Rails.logger.info "[HeaderAutoFillerService] No matching header fields found in FormFill ##{form_fill.id}. Nothing to update."
+      return
+    end
+
+    Rails.logger.info "[HeaderAutoFillerService] Built header data for FormFill ##{form_fill.id}: #{header_data.inspect}"
+
+    new_data = form_fill.data.merge(header_data)
+
+    if form_fill.update(data: new_data)
+      Rails.logger.info "[HeaderAutoFillerService] SUCCESS: Updated FormFill ##{form_fill.id}"
+    else
+      Rails.logger.error "[HeaderAutoFillerService] FAILED to update FormFill ##{form_fill.id}: #{form_fill.errors.full_messages.join(', ')}"
+    end
   end
 
-  def build_header_data
+  def build_header_data(form_fill)
     structure = begin
-      JSON.parse(main_form_fill.form_structure)
+      JSON.parse(form_fill.form_structure)
     rescue StandardError
       []
     end
     data_to_update = {}
-    Rails.logger.info "[HeaderAutoFillerService] Parsing form structure with #{structure.count} fields."
+    Rails.logger.info "[HeaderAutoFillerService] Parsing form structure for FormFill ##{form_fill.id} with #{structure.count} fields."
 
     structure.each do |field|
-      next unless field['label_name'].present? && field['id'].present?
+      # Fallback to 'name' if 'id' is missing (seen in Corrected Deficiencies form)
+      field_id = field['id'] || field['name']
+      next unless field['label_name'].present? && field_id.present?
 
       value = find_value_for_field(field)
 
       if value.present?
-        Rails.logger.info "[HeaderAutoFillerService] MATCH: Found value for field id '#{field['id']}' (Label: '#{field['label_name']}'). Assigning value: '#{value}'"
-        data_to_update[field['id']] = value
+        Rails.logger.info "[HeaderAutoFillerService] MATCH: Found value for field id '#{field_id}' (Label: '#{field['label_name']}'). Assigning value: '#{value}'"
+        data_to_update[field_id] = value
       end
     end
 
