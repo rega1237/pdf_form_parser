@@ -229,6 +229,18 @@ class GeneratePdfJob < ApplicationJob
     return nil unless deficiencies_form_fill&.form_structure.present?
 
     deficiencies_form_fields = JSON.parse(deficiencies_form_fill.form_structure)
+
+    # Merge existing form data (headers) into fields before processing deficiencies
+    # This ensures headers like "Building Name", "Address", etc. are populated
+    data = deficiencies_form_fill.data || {}
+    deficiencies_form_fields.each do |field|
+      name = field['name']
+      next unless name.present?
+      next if field['type'] == 'Deficiency_field' # These are handled by the processor
+
+      field['value'] = data[name] if data[name].present?
+    end
+
     target_deficiency_fields = deficiencies_form_fields.select { |f| f['type'] == 'Deficiency_field' }
 
     deficiencies_processor = DeficiencyProcessorService.new(

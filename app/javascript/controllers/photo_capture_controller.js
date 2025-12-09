@@ -2,11 +2,15 @@ import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
   static targets = ["preview", "image"];
-  static values = { inputId: String };
+  static values = { inputId: String, cameraInputId: String };
 
   connect() {
     // Buscar el input file asociado
     this.fileInput = document.getElementById(this.inputIdValue);
+    // Buscar el input de cámara si existe
+    if (this.hasCameraInputIdValue) {
+      this.cameraInput = document.getElementById(this.cameraInputIdValue);
+    }
 
     // Evitar doble binding si offline-photo está presente (él maneja el evento change)
     const controllers = this.element.dataset.controller || "";
@@ -47,6 +51,19 @@ export default class extends Controller {
       this.fileInput.click();
     } else {
       console.error(`File input with ID ${this.inputIdValue} not found`);
+    }
+  }
+
+  // Método específico para abrir solo cámara (Workaround Android)
+  openNativeCamera() {
+    if (this.cameraInput) {
+      this.cameraInput.click();
+    } else if (this.hasCameraInputIdValue) {
+      // Fallback por si no se inicializó en connect
+      const input = document.getElementById(this.cameraInputIdValue);
+      if (input) input.click();
+    } else {
+      console.error("Camera input ID not provided");
     }
   }
 
