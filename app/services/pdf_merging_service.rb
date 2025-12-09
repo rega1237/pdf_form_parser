@@ -164,6 +164,11 @@ class PdfMergingService
         # --- Middle Section (Grey Bar) ---
         pdf.fill_color 'E0E0E0'
         pdf.fill_rectangle([0, pdf.cursor], pdf.bounds.width, 25)
+
+        # Add border
+        pdf.stroke_color '000000'
+        pdf.stroke_rectangle([0, pdf.cursor], pdf.bounds.width, 25)
+
         pdf.fill_color '000000'
 
         pdf.text_box 'Customers Signature', at: [10, pdf.cursor - 7], size: 10, style: :bold
