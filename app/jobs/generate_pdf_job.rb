@@ -88,7 +88,7 @@ class GeneratePdfJob < ApplicationJob
       begin
         annex_signatures = collect_annex_signatures(main_form_fill)
         if final_pdf_object && annex_signatures.any?
-          final_pdf_object = PdfMergingService.add_signature_annexes(final_pdf_object, annex_signatures)
+          final_pdf_object = PdfMergingService.add_signature_annexes(final_pdf_object, annex_signatures, inspection)
           Rails.logger.info "Appended #{annex_signatures.count} client signature annex page(s)"
         end
       rescue StandardError => e
