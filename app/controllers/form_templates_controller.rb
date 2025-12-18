@@ -211,7 +211,7 @@ class FormTemplatesController < ApplicationController
   end
 
   def set_system_categories
-    @system_categories = SystemCategory.all
+    @system_categories = SystemCategory.order(name: :asc)
   end
 
   # Only allow a list of trusted parameters through.

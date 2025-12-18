@@ -80,17 +80,10 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m7 0V5a2 2 0 012-2h2a2 2 0 012 2v6m-6 0H6"></path>
                 </svg>
               </div>
-              <%= form.select :system_category, [
-                "Wet Pipe Fire Sprinkler System",
-                "Fire Pump",
-                "Dry Pipe Fire Sprinkler System",
-                "Stand Pipe",
-                "Water Tank",
-                "Foam",
-                "Water Spray",
-                "Private Fire Service Main"
-              ], { prompt: "Select System Category" },
-                  class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" %>
+              <%= form.select :system_category,
+                              @system_categories.map(&:name),
+                              { prompt: "Select System Category" },
+                              class: "w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" %>
             </div>
           </div>
 
