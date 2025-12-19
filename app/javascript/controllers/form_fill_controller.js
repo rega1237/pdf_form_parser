@@ -19,13 +19,20 @@ export default class extends Controller {
       3000,
     );
     this.offlineStorage = new OfflineStorage();
-    console.log(this.offlineStorage)
+    console.log(this.offlineStorage);
 
     // Prevent double-submit when both touchstart and click fire
     this._pdfSubmitting = false;
 
     // Offline-First: Inicializar estructura+datos desde IndexedDB
-    this.initializeFromIndexedDB()
+    this.initializeFromIndexedDB();
+
+    this._boundPageChanged = this.handlePageChanged.bind(this);
+    this.element.addEventListener("pageChanged", this._boundPageChanged);
+
+    if (this.inspectionDateValue) {
+      requestAnimationFrame(() => this.initializeDateFields());
+    }
 
     // Agregar event listener para recargar valores del formulario
     this.element.addEventListener(
@@ -38,6 +45,12 @@ export default class extends Controller {
 
     // Set up Pass/Fail field tracking
     this.setupPassFailTracking();
+  }
+
+  handlePageChanged() {
+    if (this.inspectionDateValue) {
+      this.initializeDateFields();
+    }
   }
 
   // Cargar estructura y datos desde IndexedDB; fallback al servidor solo si es necesario
@@ -71,7 +84,10 @@ export default class extends Controller {
           }
           this.element.dataset.formFillFormStructureValue = structureJSONString;
         } catch (e) {
-          console.warn("[form_fill_controller] Failed to normalize form_structure: ", e);
+          console.warn(
+            "[form_fill_controller] Failed to normalize form_structure: ",
+            e,
+          );
           this.element.dataset.formFillFormStructureValue = "[]";
         }
 
@@ -101,10 +117,16 @@ export default class extends Controller {
               rawDate = ff.inspection_date;
             } else if (ff.inspection_id) {
               try {
-                const inspection = await this.offlineStorage.getInspection(ff.inspection_id);
-                rawDate = inspection?.date || inspection?.inspection_date || null;
+                const inspection = await this.offlineStorage.getInspection(
+                  ff.inspection_id,
+                );
+                rawDate =
+                  inspection?.date || inspection?.inspection_date || null;
               } catch (e) {
-                console.warn("[form_fill_controller] Failed to retrieve inspection from IndexedDB:", e);
+                console.warn(
+                  "[form_fill_controller] Failed to retrieve inspection from IndexedDB:",
+                  e,
+                );
               }
             }
 
@@ -145,7 +167,10 @@ export default class extends Controller {
             }
           }
         } catch (e) {
-          console.warn("[form_fill_controller] Failed to set inspection date dataset from IndexedDB:", e);
+          console.warn(
+            "[form_fill_controller] Failed to set inspection date dataset from IndexedDB:",
+            e,
+          );
         }
 
         const hiddenInput = document.getElementById("form_fill_form_structure");
@@ -160,11 +185,16 @@ export default class extends Controller {
         if (navigator.onLine) {
           await this.syncPhotoStructure();
         } else {
-          console.warn("[form_fill_controller] No local form_fill and offline; cannot load structure.");
+          console.warn(
+            "[form_fill_controller] No local form_fill and offline; cannot load structure.",
+          );
         }
       }
     } catch (error) {
-      console.error("[form_fill_controller] Error initializing from IndexedDB:", error);
+      console.error(
+        "[form_fill_controller] Error initializing from IndexedDB:",
+        error,
+      );
       // As a last resort, try server if online
       if (navigator.onLine) {
         await this.syncPhotoStructure();
@@ -318,8 +348,12 @@ export default class extends Controller {
       if (numericFormId) {
         const ff = await this.offlineStorage.getFormFillData(numericFormId);
         if (ff && ff.form_structure) {
-          this.element.dataset.formFillFormStructureValue = JSON.stringify(ff.form_structure);
-          const hiddenInput = document.getElementById("form_fill_form_structure");
+          this.element.dataset.formFillFormStructureValue = JSON.stringify(
+            ff.form_structure,
+          );
+          const hiddenInput = document.getElementById(
+            "form_fill_form_structure",
+          );
           if (hiddenInput) {
             hiddenInput.value = this.element.dataset.formFillFormStructureValue;
           }
@@ -342,7 +376,9 @@ export default class extends Controller {
           const data = await response.json();
           this.element.dataset.formFillFormStructureValue = data.form_structure;
 
-          const hiddenInput = document.getElementById("form_fill_form_structure");
+          const hiddenInput = document.getElementById(
+            "form_fill_form_structure",
+          );
           if (hiddenInput) {
             hiddenInput.value = data.form_structure;
           }
@@ -350,7 +386,9 @@ export default class extends Controller {
           this.loadFormValues();
         }
       } else {
-        console.warn("[form_fill_controller] No form_structure in IndexedDB and offline; skipping.");
+        console.warn(
+          "[form_fill_controller] No form_structure in IndexedDB and offline; skipping.",
+        );
       }
     } catch (error) {
       console.error("Error syncing photo structure:", error);
@@ -363,6 +401,10 @@ export default class extends Controller {
       "reload-form-values",
       this.handleReloadFormValues.bind(this),
     );
+
+    if (this._boundPageChanged) {
+      this.element.removeEventListener("pageChanged", this._boundPageChanged);
+    }
   }
 
   // Método para manejar el evento de recarga de valores del formulario
@@ -385,7 +427,10 @@ export default class extends Controller {
         try {
           parsed = JSON.parse(parsed);
         } catch (e) {
-          console.warn("[form_fill_controller] Double-encoded structure string failed to parse:", e);
+          console.warn(
+            "[form_fill_controller] Double-encoded structure string failed to parse:",
+            e,
+          );
         }
       }
       if (Array.isArray(parsed)) {
@@ -410,7 +455,9 @@ export default class extends Controller {
 
     // Fallback: if structure is not an array, populate fields directly from data
     if (!Array.isArray(formStructureData) || formStructureData.length === 0) {
-      console.warn("[form_fill_controller] Form structure is empty or invalid. Falling back to data-only population.");
+      console.warn(
+        "[form_fill_controller] Form structure is empty or invalid. Falling back to data-only population.",
+      );
       try {
         Object.keys(dataFromColumn || {}).forEach((name) => {
           const inputElement = formElements[`form_fill[${name}]`];
@@ -425,7 +472,9 @@ export default class extends Controller {
             inputElement.type === "radio"
           ) {
             inputElement.checked =
-              value === inputElement.value || value === true || value === "true";
+              value === inputElement.value ||
+              value === true ||
+              value === "true";
           } else {
             inputElement.value = value || "";
           }
@@ -459,7 +508,17 @@ export default class extends Controller {
           }
         } else {
           // Handle other field types normally
-          const inputElement = formElements[`form_fill[${field.name}]`];
+          let inputElement = formElements[`form_fill[${field.name}]`];
+
+          if (
+            inputElement &&
+            !inputElement.tagName &&
+            typeof inputElement.length === "number"
+          ) {
+            inputElement = inputElement.item
+              ? inputElement.item(0)
+              : inputElement[0];
+          }
 
           if (inputElement) {
             if (inputElement.type === "file") {
@@ -482,26 +541,26 @@ export default class extends Controller {
                   field.value === true ||
                   field.value === "true";
               }
-          } else {
-            // Handle date fields with inspection date
-            if (field.type === "Date") {
-              if (inputElement.dataset.controller.includes("datepicker")) {
+            } else {
+              // Handle date fields with inspection date
+              if (field.type === "Date") {
+                if (inputElement.dataset?.controller?.includes("datepicker")) {
+                  const valueFromData = dataFromColumn[field.name];
+                  const finalValue = valueFromData || field.value || "";
+                  inputElement.value = finalValue;
+                  inputElement.setAttribute("value", finalValue);
+                } else {
+                  this.loadDateField(inputElement, field);
+                }
+              } else {
                 const valueFromData = dataFromColumn[field.name];
-                const finalValue = valueFromData || field.value || "";
+                const finalValue =
+                  valueFromData !== undefined && valueFromData !== null
+                    ? valueFromData
+                    : field.value || "";
                 inputElement.value = finalValue;
                 inputElement.setAttribute("value", finalValue);
-              } else {
-                this.loadDateField(inputElement, field);
               }
-            } else {
-              const valueFromData = dataFromColumn[field.name];
-              const finalValue =
-                valueFromData !== undefined && valueFromData !== null
-                  ? valueFromData
-                  : field.value || "";
-              inputElement.value = finalValue;
-              inputElement.setAttribute("value", finalValue);
-            }
             }
           }
         }
@@ -510,9 +569,10 @@ export default class extends Controller {
           // Prefer values from data column (offline/online), fallback to structure
           const selectElement = formElements[`form_fill[${field.name}_select]`];
           const selectFromData = dataFromColumn?.[`${field.name}_select`];
-          const finalSelectValue = (selectFromData !== undefined && selectFromData !== null)
-            ? selectFromData
-            : (field.select || field.value || "");
+          const finalSelectValue =
+            selectFromData !== undefined && selectFromData !== null
+              ? selectFromData
+              : field.select || field.value || "";
           if (selectElement) {
             selectElement.value = finalSelectValue;
             selectElement.setAttribute("value", finalSelectValue);
@@ -534,11 +594,13 @@ export default class extends Controller {
           }
 
           // Comment
-          const commentElement = formElements[`form_fill[${field.name}_comment]`];
+          const commentElement =
+            formElements[`form_fill[${field.name}_comment]`];
           const commentFromData = dataFromColumn?.[`${field.name}_comment`];
-          const finalComment = (commentFromData !== undefined && commentFromData !== null)
-            ? commentFromData
-            : (field.comment_value || "");
+          const finalComment =
+            commentFromData !== undefined && commentFromData !== null
+              ? commentFromData
+              : field.comment_value || "";
           if (commentElement) {
             commentElement.value = finalComment;
             commentElement.setAttribute("value", finalComment);
@@ -547,9 +609,10 @@ export default class extends Controller {
           // Item
           const itemElement = formElements[`form_fill[${field.name}_item]`];
           const itemFromData = dataFromColumn?.[`${field.name}_item`];
-          const finalItem = (itemFromData !== undefined && itemFromData !== null)
-            ? itemFromData
-            : (field.Item || "");
+          const finalItem =
+            itemFromData !== undefined && itemFromData !== null
+              ? itemFromData
+              : field.Item || "";
           if (itemElement) {
             itemElement.value = finalItem;
             itemElement.setAttribute("value", finalItem);
@@ -558,9 +621,10 @@ export default class extends Controller {
           // Riser
           const riserElement = formElements[`form_fill[${field.name}_riser]`];
           const riserFromData = dataFromColumn?.[`${field.name}_riser`];
-          const finalRiser = (riserFromData !== undefined && riserFromData !== null)
-            ? riserFromData
-            : (field.Riser || "");
+          const finalRiser =
+            riserFromData !== undefined && riserFromData !== null
+              ? riserFromData
+              : field.Riser || "";
           if (riserElement) {
             riserElement.value = finalRiser;
             riserElement.setAttribute("value", finalRiser);
@@ -570,9 +634,13 @@ export default class extends Controller {
           const cElement = formElements[`${field.name}_c`];
           const cFromData = dataFromColumn?.[`${field.name}_c`];
           if (cElement) {
-            const cChecked = (cFromData !== undefined && cFromData !== null)
-              ? (cFromData === cElement.value || cFromData === true || cFromData === "true" || cFromData === "Yes")
-              : (field.C === "Yes" || field.C === true);
+            const cChecked =
+              cFromData !== undefined && cFromData !== null
+                ? cFromData === cElement.value ||
+                  cFromData === true ||
+                  cFromData === "true" ||
+                  cFromData === "Yes"
+                : field.C === "Yes" || field.C === true;
             cElement.checked = !!cChecked;
           }
 
@@ -580,9 +648,13 @@ export default class extends Controller {
           const dElement = formElements[`${field.name}_d`];
           const dFromData = dataFromColumn?.[`${field.name}_d`];
           if (dElement) {
-            const dChecked = (dFromData !== undefined && dFromData !== null)
-              ? (dFromData === dElement.value || dFromData === true || dFromData === "true" || dFromData === "Yes")
-              : (field.D === "Yes" || field.D === true);
+            const dChecked =
+              dFromData !== undefined && dFromData !== null
+                ? dFromData === dElement.value ||
+                  dFromData === true ||
+                  dFromData === "true" ||
+                  dFromData === "Yes"
+                : field.D === "Yes" || field.D === true;
             dElement.checked = !!dChecked;
           }
         }
@@ -614,7 +686,10 @@ export default class extends Controller {
       if ((!dateField.value || dateField.value.trim() === "") && savedValue) {
         let valueToSet = savedValue;
         // Normalizar posibles valores ISO a formato US
-        if (typeof valueToSet === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)) {
+        if (
+          typeof valueToSet === "string" &&
+          /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)
+        ) {
           const [y, m, d] = valueToSet.split("-");
           valueToSet = `${m}/${d}/${y}`;
         }
@@ -631,7 +706,10 @@ export default class extends Controller {
           "date-fix",
         );
 
-      if ((!dateField.value || dateField.value.trim() === "") && dateFixController?.setInspectionDateIfEmpty) {
+      if (
+        (!dateField.value || dateField.value.trim() === "") &&
+        dateFixController?.setInspectionDateIfEmpty
+      ) {
         // Esto disparará eventos input/change y será capturado por changedFields
         dateFixController.setInspectionDateIfEmpty();
       } else if (!dateField.value || dateField.value.trim() === "") {
@@ -681,7 +759,10 @@ export default class extends Controller {
           console.log("Using window.formFillData:", parsedGlobal);
           return parsedGlobal;
         } catch (e) {
-          console.warn("[form_fill_controller] Failed to parse window.formFillData:", e);
+          console.warn(
+            "[form_fill_controller] Failed to parse window.formFillData:",
+            e,
+          );
           return {};
         }
       }
@@ -697,7 +778,10 @@ export default class extends Controller {
             try {
               parsedData = JSON.parse(parsedData);
             } catch (e) {
-              console.warn("[form_fill_controller] Double-encoded data string failed to parse:", e);
+              console.warn(
+                "[form_fill_controller] Double-encoded data string failed to parse:",
+                e,
+              );
             }
           }
         } catch (e) {
@@ -990,7 +1074,6 @@ export default class extends Controller {
     }
   }
 
-
   // Load date field with inspection date as default
   loadDateField(inputElement, field) {
     // Priority: 1. Saved value from data (dataFromColumn), 2. Saved value from structure, 3. Inspection date, 4. Empty
@@ -1010,7 +1093,10 @@ export default class extends Controller {
     if (savedValue && String(savedValue).trim() !== "") {
       // Normalizar posibles valores ISO a formato US
       let valueToSet = savedValue;
-      if (typeof valueToSet === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)) {
+      if (
+        typeof valueToSet === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)
+      ) {
         const [y, m, d] = valueToSet.split("-");
         valueToSet = `${m}/${d}/${y}`;
       }
@@ -1084,7 +1170,9 @@ export default class extends Controller {
 
         // Special handling for deficiency collections (hidden inputs updated by DeficiencyListController)
         if (fieldName.endsWith("_collection")) {
-          console.log(`[FormFill] Deficiency collection updated for ${fieldName}. Count: ${JSON.parse(fieldValue || '[]').length}`);
+          console.log(
+            `[FormFill] Deficiency collection updated for ${fieldName}. Count: ${JSON.parse(fieldValue || "[]").length}`,
+          );
         }
 
         // Si el campo que cambió es un checkbox 'C' o 'D' de una deficiencia...
@@ -1205,7 +1293,10 @@ export default class extends Controller {
 
     // Offline-First: siempre guardar en IndexedDB y dejar que el proceso
     // de sincronización suba cambios (si online, se encola automáticamente)
-    console.log("💾 Saving changes to IndexedDB (offline-first)...", changedData);
+    console.log(
+      "💾 Saving changes to IndexedDB (offline-first)...",
+      changedData,
+    );
     await this.saveOffline(formId, changedData);
   }
 
@@ -1312,7 +1403,10 @@ export default class extends Controller {
             newStructure,
           );
         } catch (e) {
-          console.warn("No se pudo parsear la estructura para guardar offline:", e);
+          console.warn(
+            "No se pudo parsear la estructura para guardar offline:",
+            e,
+          );
         }
 
         await this.offlineStorage.saveFormFillData(
@@ -1360,7 +1454,9 @@ export default class extends Controller {
     // Debounce to avoid double handling between touchstart and click
     if (this._pdfSubmitting) return;
     this._pdfSubmitting = true;
-    setTimeout(() => { this._pdfSubmitting = false; }, 800);
+    setTimeout(() => {
+      this._pdfSubmitting = false;
+    }, 800);
 
     // Ensure mobile browsers don't treat this as a ghost click or let any ancestor intercept
     event.preventDefault();
@@ -1385,10 +1481,16 @@ export default class extends Controller {
     const tempForm = document.createElement("form");
     tempForm.method = "POST";
     // Preserve the existing nested resource endpoint
-    tempForm.action = this.element.action.replace(/(\/form_fills\/\d+).*/, "$1/submit_form");
+    tempForm.action = this.element.action.replace(
+      /(\/form_fills\/\d+).*/,
+      "$1/submit_form",
+    );
 
     // CSRF token (Rails authenticity token)
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || this.csrfToken;
+    const csrfToken =
+      document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content") || this.csrfToken;
 
     const csrfInput = document.createElement("input");
     csrfInput.type = "hidden";
