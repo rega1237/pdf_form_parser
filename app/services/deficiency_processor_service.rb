@@ -19,7 +19,7 @@ class DeficiencyProcessorService
     sorted_group_keys = deficiency_field_groups.keys.sort_by { |name| name.scan(/\d+/).first.to_i }
 
     valid_deficiencies.each_with_index do |deficiency, index|
-      next unless deficiency.is_a?(Hash) && deficiency['name'].present?
+      next unless deficiency.is_a?(Hash) && deficiency["name"].present?
 
       if index < sorted_group_keys.length
         target_group_key = sorted_group_keys[index]
@@ -44,12 +44,12 @@ class DeficiencyProcessorService
     return false unless deficiency.is_a?(Hash)
 
     meaningful_fields = [
-      deficiency['value'],
-      deficiency['comment_value'],
-      deficiency['Item'],
-      deficiency['Riser'],
-      deficiency['C'],
-      deficiency['D']
+      deficiency["value"],
+      deficiency["comment_value"],
+      deficiency["Item"],
+      deficiency["Riser"],
+      deficiency["C"],
+      deficiency["D"]
     ]
 
     # Check if any field has actual content (not just empty or whitespace)
@@ -57,48 +57,48 @@ class DeficiencyProcessorService
   end
 
   def group_target_fields_by_section
-    valid_fields = @target_fields.select { |field| field.is_a?(Hash) && field['section_name'].present? }
-    valid_fields.group_by { |field| field['section_name'] }
+    valid_fields = @target_fields.select { |field| field.is_a?(Hash) && field["section_name"].present? }
+    valid_fields.group_by { |field| field["section_name"] }
   end
 
   def process_single_deficiency(deficiency, target_group)
     formatted_date = get_formatted_date
 
     unified_dc_field = target_group.find do |f|
-      name_down = f['name'].to_s.downcase
-      label_down = f['label_name'].to_s.downcase
-      name_down.include?('cbdorc') || label_down.include?('cbdorc') || name_down == 'defdc' || label_down == 'defdc' || name_down.include?('defdorc') || label_down.include?('defdorc')
+      name_down = f["name"].to_s.downcase
+      label_down = f["label_name"].to_s.downcase
+      name_down.include?("cbdorc") || label_down.include?("cbdorc") || name_down == "defdc" || label_down == "defdc" || name_down.include?("defdorc") || label_down.include?("defdorc")
     end
 
     if unified_dc_field
       Rails.logger.debug "  [Lógica] Se detectó un campo unificado D/C: '#{unified_dc_field['name']}'"
     else
-      Rails.logger.debug '  [Lógica] No se encontró campo unificado D/C. Se procesarán D y C por separado.'
+      Rails.logger.debug "  [L\u00F3gica] No se encontr\u00F3 campo unificado D/C. Se procesar\u00E1n D y C por separado."
     end
 
     if unified_dc_field
-      if deficiency['D'] == 'Yes'
-        add_processed_field(unified_dc_field, 'Choice1', deficiency['name'])
-      elsif deficiency['C'] == 'Yes'
-        add_processed_field(unified_dc_field, 'Choice2', deficiency['name'])
+      if deficiency["D"] == "Yes"
+        add_processed_field(unified_dc_field, "Choice1", deficiency["name"])
+      elsif deficiency["C"] == "Yes"
+        add_processed_field(unified_dc_field, "Choice2", deficiency["name"])
       end
 
       target_group.each do |field|
         next if field == unified_dc_field
 
         value_to_set = map_standard_fields(field, deficiency, formatted_date)
-        add_processed_field(field, value_to_set, deficiency['name']) if value_to_set.present?
+        add_processed_field(field, value_to_set, deficiency["name"]) if value_to_set.present?
       end
     else
       target_group.each do |field|
         value_to_set = map_standard_fields(field, deficiency, formatted_date)
-        add_processed_field(field, value_to_set, deficiency['name']) if value_to_set.present?
+        add_processed_field(field, value_to_set, deficiency["name"]) if value_to_set.present?
       end
     end
   end
 
   def map_standard_fields(field, deficiency, formatted_date)
-    label_name = field['label_name'].to_s.downcase.strip
+    label_name = field["label_name"].to_s.downcase.strip
 
     Rails.logger.debug "    [Mapeo] Intentando mapear campo del PDF: '#{field['name']}' (Label: '#{label_name}')"
 
@@ -114,13 +114,13 @@ class DeficiencyProcessorService
       deficiency_text = "#{deficiency['value'].presence}  #{deficiency['comment_value']}"
       deficiency_text.strip.present? ? deficiency_text : nil
     when /^item/
-      deficiency['Item'].present? ? deficiency['Item'] : nil
+      deficiency["Item"].present? ? deficiency["Item"] : nil
     when /^riser/
-      deficiency['Riser'].present? ? deficiency['Riser'] : nil
+      deficiency["Riser"].present? ? deficiency["Riser"] : nil
     when /\Ad\d*\z/
-      deficiency['D'] == 'Yes' ? 'X' : nil
+      deficiency["D"] == "Yes" ? "X" : nil
     when /\Ac\d*\z/
-      deficiency['C'] == 'Yes' ? 'X' : nil
+      deficiency["C"] == "Yes" ? "X" : nil
     else
       nil
     end
@@ -129,22 +129,22 @@ class DeficiencyProcessorService
   # Check if deficiency has actual content beyond just checkboxes
   def has_deficiency_content?(deficiency)
     content_fields = [
-      deficiency['value'],
-      deficiency['comment_value'],
-      deficiency['Item'],
-      deficiency['Riser']
+      deficiency["value"],
+      deficiency["comment_value"],
+      deficiency["Item"],
+      deficiency["Riser"]
     ]
 
-    checkbox_fields = [deficiency['C'], deficiency['D']]
+    checkbox_fields = [ deficiency["C"], deficiency["D"] ]
 
     # Has content if there's text in content fields OR checkboxes are checked
     content_fields.any? { |field| field.present? && field.to_s.strip.present? } ||
-      checkbox_fields.any? { |field| field == 'Yes' }
+      checkbox_fields.any? { |field| field == "Yes" }
   end
 
   def add_processed_field(field, value, source_deficiency_name)
     processed_field = field.dup
-    processed_field['value'] = value
+    processed_field["value"] = value
     @processed_fields << processed_field
     Rails.logger.info "  -> Mapeo desde '#{source_deficiency_name}': El campo '#{field['name']}' se llenará con '#{value}'."
   end
@@ -154,6 +154,6 @@ class DeficiencyProcessorService
     date_to_use = @inspection_date || Date.current
 
     # Format as MM/DD/YY (abbreviated year)
-    date_to_use.strftime('%m/%d/%y')
+    date_to_use.strftime("%m/%d/%y")
   end
 end

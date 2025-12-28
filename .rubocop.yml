@@ -1,0 +1,21 @@
+inherit_gem:
+  rubocop-rails-omakase: rubocop.yml
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Metrics/AbcSize:
+  Exclude:
+    - 'scripts/update_form_structure.rb'
+
+Metrics/MethodLength:
+  Exclude:
+    - 'scripts/update_form_structure.rb'
+
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - 'scripts/update_form_structure.rb'
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - 'scripts/update_form_structure.rb'
