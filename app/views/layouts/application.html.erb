@@ -24,7 +24,7 @@
       /* Asegurar que el body tenga el fondo correcto */
       body {
         min-height: 100vh;
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        background: linear-gradient(135deg, #000000 0%, #1e293b 50%, #000000 100%);
       }
 
       /* Estructura flex para sticky footer */
@@ -44,7 +44,7 @@
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
-  <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" data-controller="pwa" data-pwa-debug-value="true">
+  <body class="bg-gradient-to-br from-black-900 via-black-800 to-black-900" data-controller="pwa" data-pwa-debug-value="true">
     <!-- Global hidden controllers to ensure online/offline detection and auto-sync on every page -->
     <div class="hidden" data-controller="offline-status sync">
       <!-- Optional targets for offline-status (UI not displayed here) -->
