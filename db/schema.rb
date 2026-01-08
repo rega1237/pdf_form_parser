@@ -21,8 +21,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_02_203902) do
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
-    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness",
-                                                             unique: true
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
   end
 
   create_table "active_storage_blobs", force: :cascade do |t|
@@ -84,7 +83,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_02_203902) do
     t.string "form_structure"
     t.bigint "inspection_id"
     t.string "pdf_generation_status", default: "ready"
-    t.jsonb "data", default: {}, null: false
+    t.jsonb "data", default: {}
     t.boolean "pdf_created", default: false, null: false
     t.index ["data"], name: "index_form_fills_on_data", using: :gin
     t.index ["form_template_id"], name: "index_form_fills_on_form_template_id"
@@ -108,8 +107,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_02_203902) do
     t.bigint "interval_category_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["form_template_id", "interval_category_id"], name: "index_form_templates_interval_categories_unique",
-                                                          unique: true
+    t.index ["form_template_id", "interval_category_id"], name: "index_form_templates_interval_categories_unique", unique: true
     t.index ["form_template_id"], name: "index_form_templates_interval_categories_on_form_template_id"
     t.index ["interval_category_id"], name: "idx_on_interval_category_id_f793246e4d"
   end

@@ -1,0 +1,465 @@
+/*
+ * This is a manifest file that'll be compiled into application.css.
+ *
+ * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
+ * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
+ * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
+ * depending on specificity.
+ *
+ * Consider organizing styles into separate files for maintainability.
+ */
+
+/* =============================================================================
+   COMPONENTS - CHECKBOX BUTTON
+   ============================================================================= */
+
+.checkbox-button input[type="checkbox"]:checked+.checkbox-button-label::before {
+  content: "✓";
+  margin-right: 8px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* =============================================================================
+   COMPONENTS - CHOICE BUTTONS
+   ============================================================================= */
+
+.choice-button-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.choice-button {
+  flex-grow: 1;
+  padding: 12px 10px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-align: center;
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  .choice-button {
+    padding: 14px 15px;
+    font-size: 16px;
+  }
+}
+
+.choice-button.selected {
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.choice-button[data-value="Pass"] {
+  background-color: #c6f6d5;
+  border-color: #68d391;
+  color: #2f855a;
+}
+
+.choice-button[data-value="Pass"]:hover {
+  background-color: #9ae6b4;
+}
+
+.choice-button[data-value="Pass"].selected {
+  background-color: #38a169;
+  border-color: #2f855a;
+  color: white;
+}
+
+.choice-button[data-value="Fail"] {
+  background-color: #fed7d7;
+  border-color: #fc8181;
+  color: #c53030;
+}
+
+.choice-button[data-value="Fail"]:hover {
+  background-color: #fbb6b6;
+}
+
+.choice-button[data-value="Fail"].selected {
+  background-color: #e53e3e;
+  border-color: #c53030;
+  color: white;
+}
+
+.choice-button[data-value="N/A"] {
+  background-color: #e2e8f0;
+  border-color: #a0aec0;
+  color: #4a5568;
+}
+
+.choice-button[data-value="N/A"]:hover {
+  background-color: #cbd5e0;
+}
+
+.choice-button[data-value="N/A"].selected {
+  background-color: #718096;
+  border-color: #4a5568;
+  color: white;
+}
+
+/* =============================================================================
+   COMPONENTS - KANIMARI
+   ============================================================================= */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pagination .page-item {
+  display: flex;
+}
+
+.pagination .page-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  color: rgb(148, 163, 184);
+  /* text-slate-400 */
+  background-color: rgba(255, 255, 255, 0.05);
+  /* bg-white/5 */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* border-white/10 */
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.pagination .page-link:hover {
+  color: rgb(255, 255, 255);
+  background-color: rgba(255, 255, 255, 0.1);
+  /* bg-white/10 */
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.pagination .page-item.active .page-link {
+  color: rgb(255, 255, 255);
+  background: linear-gradient(to right,
+      rgb(79, 70, 229),
+      rgb(99, 102, 241));
+  /* bg-gradient-to-r from-indigo-600 to-indigo-700 */
+  border-color: rgb(79, 70, 229);
+}
+
+.pagination .page-item.disabled .page-link {
+  color: rgb(100, 116, 139);
+  /* text-slate-500 */
+  background-color: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.05);
+  cursor: not-allowed;
+}
+
+.pagination .page-item.disabled .page-link:hover {
+  transform: none;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* =============================================================================
+   COMPONENTS - SYSTEM SELECTOR INSPECTION
+   ============================================================================= */
+
+[data-inspection-modal-target="formContent"],
+[data-inspection-modal-target="systemSelection"],
+[data-inspection-modal-target="intervalSelection"] {
+  transition: all 0.3s ease-out;
+}
+
+/* Button hover effects */
+.system-category-btn:hover,
+.interval-category-btn:hover {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.3),
+    0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+.system-category-btn:active,
+.interval-category-btn:active {
+  transform: scale(0.98);
+}
+
+/* Ensure proper z-index for form elements */
+[data-inspection-modal-target="systemCategoryButton"],
+[data-inspection-modal-target="intervalCategoryButton"] {
+  position: relative;
+  z-index: 1;
+}
+
+/* Animation keyframes */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out;
+}
+
+/* Responsive adjustments for system category buttons */
+@media (max-width: 768px) {
+  .system-category-btn {
+    padding: 1rem;
+    min-height: 120px;
+  }
+
+  .system-category-btn span {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .system-category-btn img {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .interval-category-btn {
+    padding: 1.5rem;
+  }
+
+  .interval-category-btn span:first-of-type {
+    font-size: 1rem;
+  }
+
+  .interval-category-btn span:last-of-type {
+    font-size: 0.75rem;
+  }
+
+  /* Adjust grid for mobile */
+  [data-inspection-modal-target="systemSelection"] .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  [data-inspection-modal-target="intervalSelection"] .grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .system-category-btn {
+    padding: 0.75rem;
+    min-height: 100px;
+  }
+
+  .system-category-btn span {
+    font-size: 0.6rem;
+    line-height: 1.1;
+  }
+
+  .system-category-btn img {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+/* Ensure images in system category buttons are properly sized */
+.system-category-btn img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Smooth transitions for all interactions */
+.system-category-btn,
+.interval-category-btn {
+  transition: all 0.2s ease-out;
+}
+
+/* Header spacing adjustments */
+[data-inspection-modal-target="systemSelection"] h2,
+[data-inspection-modal-target="intervalSelection"] h2 {
+  line-height: 1.2;
+}
+
+/* Improved button states 
+   .system-category-btn:focus,
+   .interval-category-btn:focus {
+     outline: none;
+     ring: 2px;
+     ring-color: rgba(99, 102, 241, 0.5);
+     ring-offset: 2px;
+     ring-offset-color: transparent;
+   }*/
+
+/* Better visual hierarchy */
+[data-inspection-modal-target="intervalSelection"] .interval-category-btn span:last-of-type {
+  opacity: 0.8;
+}
+
+/* =============================================================================
+   ANIMATIONS - FADE IN
+   ============================================================================= */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+/* =============================================================================
+   ANIMATIONS - SLIDE UP
+   ============================================================================= */
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out;
+}
+
+/* =============================================================================
+   ANIMATIONS - SCALE IN
+   ============================================================================= */
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+animate-scale-in {
+  animation: scaleIn 0.4s ease-out;
+}
+
+/* =============================================================================
+   ANIMATIONS - PULSE
+   ============================================================================= */
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-hover {
+  animation: pulse 2s infinite;
+}
+
+/* =============================================================================
+   ANIMATIONS - BOUNCE SUBTLE
+   ============================================================================= */
+
+@keyframes bounceSubtle {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounceSubtle 2s infinite;
+}
+
+
+/* =============================================================================
+   CUSTOM GRID COLUMN CLASSES
+   ============================================================================= */
+@media (min-width: 768px) {
+  .custom-col-span-1 {
+    grid-column: span 1 / span 1;
+  }
+
+  .custom-col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+
+  .custom-col-span-3 {
+    grid-column: span 3 / span 3;
+  }
+
+  .custom-col-span-4 {
+    grid-column: span 4 / span 4;
+  }
+
+  .custom-col-span-5 {
+    grid-column: span 5 / span 5;
+  }
+
+  .custom-col-span-6 {
+    grid-column: span 6 / span 6;
+  }
+
+  .custom-col-span-7 {
+    grid-column: span 7 / span 7;
+  }
+
+  .custom-col-span-8 {
+    grid-column: span 8 / span 8;
+  }
+
+  .custom-col-span-9 {
+    grid-column: span 9 / span 9;
+  }
+}

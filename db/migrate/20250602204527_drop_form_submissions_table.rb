@@ -1,5 +1,5 @@
 class DropFormSubmissionsTable < ActiveRecord::Migration[8.0]
   def change
-    drop_table :form_submissions
+    drop_table :form_submissions, if_exists: true
   end
 end
