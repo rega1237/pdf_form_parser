@@ -42,7 +42,7 @@ gem "thruster", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # Use Active Storage for file uploads in Rails
 gem "activestorage"
-# gem "image_processing", "~> 1.2"
+gem "image_processing", "~> 1.2"
 
 # File processing gems
 gem "pdf-forms" # For reading PDF forms

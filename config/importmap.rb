@@ -45,3 +45,5 @@ pin "controllers/signature_pad_controller", to: "controllers/signature_pad_contr
 
 pin "utils/offline_storage", to: "utils/offline_storage.js"
 pin "utils/network_status", to: "utils/network_status.js"
+pin "trix"
+pin "@rails/actiontext", to: "actiontext.esm.js"
