@@ -23,6 +23,11 @@ class PwaController < ApplicationController
       categories: %w[business productivity],
       icons: [
         {
+          src: '/icon.png',
+          type: 'image/png',
+          sizes: '100x100'
+        },
+        {
           src: '/icon_192.png',
           type: 'image/png',
           sizes: '192x192'
@@ -36,7 +41,7 @@ class PwaController < ApplicationController
           src: '/icon_512.png',
           type: 'image/png',
           sizes: '512x512',
-          purpose: 'maskable'
+          purpose: 'any maskable'
         }
       ],
       screenshots: [
@@ -68,7 +73,7 @@ class PwaController < ApplicationController
       # '/form_fills',
       view_context.asset_path('application.js'),
       view_context.asset_path('application.css'),
-      '/icon.svg',
+      '/icon.png',
       '/icon_192.png',
       '/icon_512.png'
     ]

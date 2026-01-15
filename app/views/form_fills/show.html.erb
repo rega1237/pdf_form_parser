@@ -25,11 +25,11 @@
     /* Estilos para el toggle */
     .additional-fields { max-height: 0; opacity: 0; overflow: hidden; transform: translateY(-10px); transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
     .additional-fields.show { max-height: 2000px; opacity: 1; transform: translateY(0); }
-    .toggle-button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: all 0.3s ease; position: relative; overflow: hidden; }
+    .toggle-button { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); transition: all 0.3s ease; position: relative; overflow: hidden; }
     .toggle-button::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent); transition: left 0.5s; }
     .toggle-button:hover::before { left: 100%; }
     .toggle-button:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-    .toggle-button.expanded { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .toggle-button.expanded { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
     .field-appear { animation: fieldAppear 0.6s ease-out forwards; }
     @keyframes fieldAppear { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
     .icon-rotate { transition: transform 0.3s ease; }
@@ -58,18 +58,18 @@
       cursor: not-allowed;
       transform: none !important;
     }
-    
+
     .email-button-loading:hover {
       transform: none !important;
       box-shadow: none !important;
     }
-    
+
     .email-button-disabled {
       opacity: 0.5;
       cursor: not-allowed;
       transform: none !important;
     }
-    
+
     .email-button-disabled:hover {
       transform: none !important;
       box-shadow: none !important;
@@ -80,7 +80,7 @@
       z-index: 1000;
       pointer-events: none;
     }
-    
+
     .tooltip-arrow {
       filter: drop-shadow(0 -1px 1px rgba(0, 0, 0, 0.1));
     }
@@ -157,17 +157,19 @@
     }
   </style>
 <% end %>
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900" data-controller="notification" data-action="show-notification@window->notification#showNotification">
+<div class="min-h-screen" data-controller="notification" data-action="show-notification@window->notification#showNotification">
   <div class="container mx-auto px-4 py-6 lg:pt-12 lg:pb-5">
     <%# --- HEADER --- %>
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
       <div class="mb-4 sm:mb-0">
         <h1 class="text-2xl lg:text-4xl font-bold text-white mb-2"><%= @form_fill.name %></h1>
-        <p class="text-blue-200 text-base md:text-lg">Complete all required fields to submit the inspection</p>
+        <p class="text-slate-300 text-base md:text-lg">Complete all required fields to submit the inspection</p>
       </div>
 
-      <%= link_to inspections_path, class: "inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl" do %>
-        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      <%= link_to inspections_path, class: "inline-flex items-center bg-white/10 hover:bg-white/15 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border border-white/20 backdrop-blur-sm" do %>
+        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
         <span class="text-base lg:text-lg">Back to inspections</span>
       <% end %>
     </div>
@@ -176,23 +178,25 @@
 
     <div data-controller="searchable-select page-navigation" data-page-navigation-pagination-outlet="#form-fill-main-form" class="w-[50%] mb-3.5 relative">
       <!-- Input oculto que guarda el valor seleccionado y dispara el salto de página -->
-      <input type="hidden" data-searchable-select-target="hiddenInput" data-action="change->page-navigation#jump" />
+      <input type="hidden" data-searchable-select-target="hiddenInput" data-action="change->page-navigation#jump">
 
       <!-- Botón visible que abre/cierra el dropdown -->
       <button type="button" data-searchable-select-target="button" data-action="click->searchable-select#toggle"
-        class="w-full bg-slate-700 text-white font-semibold border-2 border-slate-500 rounded-lg py-2 px-4 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        class="w-full bg-white/10 text-white font-semibold border border-white/20 rounded-lg py-2 px-4 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/60 transition backdrop-blur-sm">
         <span data-searchable-select-target="buttonText">Jump to a section...</span>
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-300" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clip-rule="evenodd"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-300" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clip-rule="evenodd" />
+        </svg>
       </button>
 
       <!-- Contenedor del dropdown con campo de búsqueda y lista -->
       <!-- Dropdown en overlay: no empuja el layout -->
-      <div data-searchable-select-target="optionsContainer" class="hidden absolute top-full left-0 right-0 z-[1000] bg-slate-800 border border-slate-600 rounded-lg shadow-xl w-full">
-        <input type="text" data-searchable-select-target="searchInput" data-action="input->searchable-select#search"
+      <div data-searchable-select-target="optionsContainer" class="hidden absolute top-full left-0 right-0 z-[1000] bg-slate-900/95 border border-white/20 rounded-lg shadow-xl w-full backdrop-blur-sm">
+        <input type="text" data-searchable-select-target="searchInput" data-action="input->searchable-select#search" autocomplete="off"
                placeholder="Search sections..."
-               class="w-full bg-slate-700 text-white border-0 rounded-t-lg py-2 px-4 placeholder-slate-300 focus:outline-none" />
+               class="w-full bg-white/5 text-white border-0 rounded-t-lg py-2 px-4 placeholder-slate-400 focus:outline-none">
 
-        <ul data-searchable-select-target="optionsList" class="max-h-64 overflow-auto divide-y divide-slate-700">
+        <ul data-searchable-select-target="optionsList" class="max-h-64 overflow-auto divide-y divide-white/10">
           <li class="py-2 px-4 text-slate-300">Jump to a section...</li>
           <% @navigation_sections.each do |section| %>
             <%
@@ -202,21 +206,21 @@
               end
             %>
             <li data-action="click->searchable-select#select" data-value="<%= section[:page] - 1 %>"
-                class="cursor-pointer py-2 px-4 hover:bg-slate-700 text-white">
+                class="cursor-pointer py-2 px-4 hover:bg-white/10 text-white">
               Page <%= section[:page] %>: <%= section_name %>
             </li>
           <% end %>
         </ul>
       </div>
     </div>
-    
+
     <div data-controller="field-toggle">
       <%= form_with model: @form_fill, url: form_fill_path(@form_fill), method: :patch, data: { controller: "pagination form-fill", turbo: false, "form-fill-form-structure-value": @form_fill.form_structure, "form-fill-form-fields-value": @form_fields.to_json, "form-fill-data-value": @form_fill.data.to_json, "form-fill-inspection-date-value": @inspection_date&.strftime("%m/%d/%Y") }, id: "form-fill-main-form", local: true, class: "space-y-8" do |form| %>
         <%= form.hidden_field :form_structure, id: 'form_fill_form_structure' %>
         <%= form.submit "Submit", class: "hidden" %>
         <% if @form_fields.blank? %>
-          <div class="bg-red-50 border-2 border-red-200 rounded-3xl p-8">
-            <p class="text-red-700 text-lg">No fields available in this form.</p>
+          <div class="bg-red-500/10 border border-red-500/30 rounded-3xl p-8">
+            <p class="text-red-200 text-lg">No fields available in this form.</p>
           </div>
         <% else %>
           <% valid_fields = @form_fields.reject { |f| f['page_number'].to_i == 0 } %>
@@ -224,7 +228,7 @@
           <div class="relative z-10" data-pagination-target="pageContainer">
             <% pages.each_with_index do |(page_num, fields_on_page), page_index| %>
               <div class="page-content <%= page_index == 0 ? '' : 'hidden' %>" data-pagination-target="pageContent">
-                <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-blue-400 shadow-2xl">
+                <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border border-white/20 shadow-2xl">
                   <div class="mb-10">
                     <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3">Page <%= page_num %></h2>
                     <div class="w-20 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
@@ -232,7 +236,7 @@
                   <% fields_on_page.group_by { |f| f['section_name'].presence || "General" }.each do |section_name, fields_in_section| %>
                     <div class="mb-10 last:mb-0">
                       <div class="flex items-center mb-8">
-                        <div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center mr-4 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
+                        <div class="w-12 h-12 bg-blue-500/20 border border-blue-400/30 rounded-2xl flex items-center justify-center mr-4 shadow-lg"><svg class="w-6 h-6 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
                         <h3 class="text-white font-bold text-xl lg:text-2xl"><%= section_name.humanize %></h3>
                       </div>
                       <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
@@ -280,7 +284,7 @@
 
             <!-- Finish Inspection button -->
             <div class="page-content hidden" data-pagination-target="pageContent">
-              <div class="bg-slate-800/95 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border-2 border-red-400 shadow-2xl flex flex-col items-center justify-center h-full">
+              <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-8 lg:p-10 border border-red-500/30 shadow-2xl flex flex-col items-center justify-center h-full">
                 <h2 class="text-3xl font-bold text-white mb-6">End of Inspection</h2>
                 <p class="text-red-300 text-lg mb-8">Click the button below to finalize and return to the inspection summary.</p>
                 <button type="button"
@@ -295,22 +299,22 @@
               </div>
             </div>
 
-            <button type="button" data-action="click->pagination#backPage" data-pagination-target="backPageBtn" class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out left-[-25px] md:left-[-30px] bg-slate-600 hover:bg-slate-700 text-white shadow-xl hover:shadow-2xl disabled:opacity-30 disabled:transform-none"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
-            <button type="button" 
-              data-action="click->pagination#nextPage" 
-              data-pagination-target="nextPageBtn" 
-              class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out right-[-25px] md:right-[-30px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl">
+            <button type="button" data-action="click->pagination#backPage" data-pagination-target="backPageBtn" class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out left-[-25px] md:left-[-30px] bg-white/10 hover:bg-white/20 text-white shadow-xl hover:shadow-2xl border border-white/20 disabled:opacity-30 disabled:transform-none backdrop-blur-sm"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+            <button type="button"
+              data-action="click->pagination#nextPage"
+              data-pagination-target="nextPageBtn"
+              class="absolute top-1/2 -translate-y-1/2 z-10 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center transition-all duration-300 ease-in-out right-[-25px] md:right-[-30px] bg-blue-600/90 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl border border-blue-400/30 backdrop-blur-sm">
               <svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
             </button>
           </div>
-            <div class="bg-slate-800/90 backdrop-blur-sm rounded-3xl mt-8 p-8 border-2 border-blue-400 animate-fade-in shadow-lg relative z-20">
+            <div class="bg-white/10 backdrop-blur-sm rounded-3xl mt-8 p-8 border border-white/20 animate-fade-in shadow-lg relative z-20">
               <div class="flex items-start space-x-4 mb-6">
-                <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center mt-1 shadow-lg"><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                <div class="w-12 h-12 bg-emerald-500/20 border border-emerald-400/30 rounded-2xl flex items-center justify-center mt-1 shadow-lg"><svg class="w-6 h-6 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
                 <div>
                   <h3 class="text-white font-bold text-xl mb-2">Form Actions</h3>
-                  <p class="text-blue-300 text-base mb-4">Save your progress or generate the final PDF</p>
+                  <p class="text-slate-300 text-base mb-4">Save your progress or generate the final PDF</p>
                 </div>
               </div>
               <!-- Sync Button and Status -->
@@ -324,14 +328,14 @@
                   Sync (<span data-sync-target="syncCount">0</span>)
                 </button>
                 <div data-sync-target="syncStatus" class="ml-4 hidden">
-                  <div class="w-32 bg-slate-700 rounded-full h-2">
+                  <div class="w-32 bg-white/10 rounded-full h-2 border border-white/10">
                     <div data-sync-target="progressBar" class="bg-orange-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
                   </div>
                   <div data-sync-target="progressText" class="text-xs text-slate-300 mt-1">Syncing...</div>
                 </div>
               </div>
-              <div class="flex flex-wrap items-center gap-4" 
-                 data-controller="pdf-status" 
+              <div class="flex flex-wrap items-center gap-4"
+                 data-controller="pdf-status"
                  data-pdf-status-status-value="<%= @form_fill.pdf_generation_status %>"
                  data-pdf-status-refresh-interval-value="5000">
               <%# --- Botón Generate PDF con estado --- %>
@@ -371,11 +375,11 @@
                 <%= link_to 'Corrected Deficiencies', form_fill_path(@corrections_form_fill),
                   class: 'inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg' %>
               <% end %>
-              
+
               <%# --- Botón para el PDF Principal --- %>
               <% if @form_fill.filled_pdf.attached? && @form_fill.completed? %>
-                <a href="<%= download_pdf_form_fill_path(@form_fill, disposition: 'inline') %>" 
-                  target="_blank" 
+                <a href="<%= download_pdf_form_fill_path(@form_fill, disposition: 'inline') %>"
+                  target="_blank"
                   class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
                   <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                   View Main PDF
@@ -395,22 +399,22 @@
               %>
               <%# --- Botón para el PDF de Deficiencias (solo si existe y tiene archivo) --- %>
               <% if @deficiencies_form_fill&.filled_pdf&.attached? %>
-                <a href="<%= download_pdf_form_fill_path(@deficiencies_form_fill, disposition: 'inline') %>" 
-                  target="_blank" 
+                <a href="<%= download_pdf_form_fill_path(@deficiencies_form_fill, disposition: 'inline') %>"
+                  target="_blank"
                   class="inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
                   <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
                   View Deficiencies PDF
                 </a>
               <% end %>
-              
+
               <%# --- Email Button --- %>
-              <% 
+              <%
                 # Check if PDF is available and customer has email
                 pdf_available = @form_fill.filled_pdf.attached? && @form_fill.completed?
                 customer_email_available = @form_fill.inspection&.property&.customer&.email.present?
                 email_enabled = pdf_available && customer_email_available
               %>
-              
+
               <% if email_enabled %>
                 <div class="relative group">
                   <button type="button"
