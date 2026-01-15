@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-  static targets = ["buttonText", "spinner"];
+  static targets = ["template"];
   static values = {
     recipientEmail: String,
     formFillId: Number,
@@ -10,23 +10,63 @@ export default class extends Controller {
 
   connect() {
     console.log("Email sender controller connected");
-    this.originalButtonText = this.hasButtonTextTarget
-      ? this.buttonTextTarget.textContent
-      : "Send Email";
+  }
+
+  openModal() {
+    const content = this.templateTarget.content.cloneNode(true);
+    document.body.appendChild(content);
+
+    // Get reference to the modal element (it's the last child of body now)
+    // Note: This relies on the template having a single root element which is the modal wrapper
+    this.activeModal = document.body.lastElementChild;
+    document.body.classList.add("overflow-hidden");
+
+    // Add event listeners manually since we are outside of Stimulus scope
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    if (!this.activeModal) return;
+
+    // Close buttons
+    const closeButtons = this.activeModal.querySelectorAll('[data-action="close"]');
+    closeButtons.forEach(btn => {
+      btn.addEventListener("click", () => this.closeModal());
+    });
+
+    // Send button
+    const sendButton = this.activeModal.querySelector('[data-action="send"]');
+    if (sendButton) {
+      sendButton.addEventListener("click", (e) => this.sendEmail(e));
+    }
+  }
+
+  closeModal() {
+    if (this.activeModal) {
+      this.activeModal.remove();
+      this.activeModal = null;
+      document.body.classList.remove("overflow-hidden");
+    }
   }
 
   async sendEmail(event) {
     event.preventDefault();
 
-    // Prevent double submission
-    if (this.element.disabled || this.isLoading) {
-      return false;
-    }
+    if (this.isLoading) return;
 
-    // Show confirmation dialog
-    const confirmed = await this.showConfirmationDialog();
-    if (!confirmed) {
-      return false;
+    // Get values from active modal
+    const subjectInput = this.activeModal.querySelector("input[name='subject']");
+    const subject = subjectInput ? subjectInput.value : "";
+    
+    // For Trix, we need to find the hidden input or the editor value
+    // rich_text_area_tag creates a hidden input with name="email_body"
+    // But since it's dynamically inserted, let's verify if Trix synced
+    const bodyInput = this.activeModal.querySelector("input[name='email_body']");
+    const body = bodyInput ? bodyInput.value : "";
+
+    if (!subject) {
+      this.handleError("Please enter a subject");
+      return;
     }
 
     // Show loading state
@@ -34,112 +74,33 @@ export default class extends Controller {
 
     try {
       // Send AJAX request
-      const response = await this.sendEmailRequest();
+      const response = await this.sendEmailRequest(subject, body);
 
       if (response.ok) {
         const data = await response.json();
+        this.closeModal();
         this.handleSuccess(data.message || "Email sent successfully!");
       } else {
         const errorData = await response.json();
         this.handleError(
           errorData.message || "Failed to send email. Please try again.",
         );
+        this.hideLoadingState(); // Only hide loading if error, otherwise modal closes
       }
     } catch (error) {
       console.error("Email sending error:", error);
       this.handleError(
         "Network error occurred. Please check your connection and try again.",
       );
-    } finally {
       this.hideLoadingState();
     }
   }
 
-  async showConfirmationDialog() {
-    return new Promise((resolve) => {
-      // Create custom confirmation modal
-      const modal = this.createConfirmationModal();
-      document.body.appendChild(modal);
-
-      // Handle confirm button
-      const confirmBtn = modal.querySelector('[data-action="confirm"]');
-      const cancelBtn = modal.querySelector('[data-action="cancel"]');
-
-      const cleanup = () => {
-        modal.remove();
-      };
-
-      confirmBtn.addEventListener("click", () => {
-        cleanup();
-        resolve(true);
-      });
-
-      cancelBtn.addEventListener("click", () => {
-        cleanup();
-        resolve(false);
-      });
-
-      // Handle escape key
-      const handleEscape = (e) => {
-        if (e.key === "Escape") {
-          cleanup();
-          document.removeEventListener("keydown", handleEscape);
-          resolve(false);
-        }
-      };
-      document.addEventListener("keydown", handleEscape);
-
-      // Show modal with animation
-      setTimeout(() => {
-        modal.classList.remove("opacity-0");
-        modal.querySelector(".transform").classList.remove("scale-95");
-        modal.querySelector(".transform").classList.add("scale-100");
-      }, 10);
-    });
-  }
-
-  createConfirmationModal() {
-    const modal = document.createElement("div");
-    modal.className =
-      "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 opacity-0 transition-opacity duration-300";
-
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg shadow-xl transform scale-95 transition-transform duration-300 max-w-md w-full mx-4">
-        <div class="p-6">
-          <div class="flex items-center mb-4">
-            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-              </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900">Confirm Email Sending</h3>
-          </div>
-          
-          <p class="text-gray-600 mb-2">
-            Are you sure you want to send the inspection PDF to:
-          </p>
-          <p class="font-semibold text-gray-900 mb-6">
-            ${this.recipientEmailValue || "the customer"}
-          </p>
-          
-          <div class="flex justify-end space-x-3">
-            <button data-action="cancel" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200">
-              Cancel
-            </button>
-            <button data-action="confirm" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
-              Send Email
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    return modal;
-  }
-
-  async sendEmailRequest() {
+  async sendEmailRequest(subject, body) {
     const formData = new FormData();
     formData.append("authenticity_token", this.csrfTokenValue);
+    formData.append("subject", subject);
+    formData.append("body", body);
 
     return fetch(`/form_fills/${this.formFillIdValue}/send_email`, {
       method: "POST",
@@ -153,50 +114,30 @@ export default class extends Controller {
 
   showLoadingState() {
     this.isLoading = true;
-
-    // Disable the button
-    this.element.disabled = true;
-
-    // Update button text and show spinner
-    if (this.hasButtonTextTarget) {
-      this.buttonTextTarget.textContent = "Sending...";
+    const submitButton = this.activeModal.querySelector('[data-action="send"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+      const originalText = submitButton.innerHTML;
+      submitButton.dataset.originalText = originalText;
+      submitButton.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Sending...
+      `;
     }
-
-    if (this.hasSpinnerTarget) {
-      this.spinnerTarget.classList.remove("hidden");
-    }
-
-    // Add visual loading state classes
-    this.element.classList.add("email-button-loading");
-    this.element.classList.remove(
-      "hover:scale-[1.02]",
-      "hover:from-purple-600",
-      "hover:to-purple-800",
-    );
   }
 
   hideLoadingState() {
     this.isLoading = false;
-
-    // Re-enable the button
-    this.element.disabled = false;
-
-    // Reset button text and hide spinner
-    if (this.hasButtonTextTarget) {
-      this.buttonTextTarget.textContent = this.originalButtonText;
+    const submitButton = this.activeModal?.querySelector('[data-action="send"]');
+    if (submitButton) {
+      submitButton.disabled = false;
+      if (submitButton.dataset.originalText) {
+        submitButton.innerHTML = submitButton.dataset.originalText;
+      }
     }
-
-    if (this.hasSpinnerTarget) {
-      this.spinnerTarget.classList.add("hidden");
-    }
-
-    // Remove visual loading state classes and restore hover effects
-    this.element.classList.remove("email-button-loading");
-    this.element.classList.add(
-      "hover:scale-[1.02]",
-      "hover:from-purple-600",
-      "hover:to-purple-800",
-    );
   }
 
   handleSuccess(message) {
@@ -221,10 +162,5 @@ export default class extends Controller {
         },
       }),
     );
-  }
-
-  // Handle page reload/navigation to reset state if needed
-  disconnect() {
-    this.hideLoadingState();
   }
 }

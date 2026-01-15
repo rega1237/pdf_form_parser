@@ -12,14 +12,14 @@ class EmailService
 
   # Error codes for different failure scenarios
   ERROR_CODES = {
-    pdf_not_available: 'PDF_NOT_AVAILABLE',
-    customer_email_missing: 'CUSTOMER_EMAIL_MISSING',
-    invalid_email_format: 'INVALID_EMAIL_FORMAT',
-    mailer_error: 'MAILER_ERROR',
-    attachment_too_large: 'ATTACHMENT_TOO_LARGE',
-    smtp_connection_failed: 'SMTP_CONNECTION_FAILED',
-    smtp_authentication_failed: 'SMTP_AUTHENTICATION_FAILED',
-    unknown_error: 'UNKNOWN_ERROR'
+    pdf_not_available: "PDF_NOT_AVAILABLE",
+    customer_email_missing: "CUSTOMER_EMAIL_MISSING",
+    invalid_email_format: "INVALID_EMAIL_FORMAT",
+    mailer_error: "MAILER_ERROR",
+    attachment_too_large: "ATTACHMENT_TOO_LARGE",
+    smtp_connection_failed: "SMTP_CONNECTION_FAILED",
+    smtp_authentication_failed: "SMTP_AUTHENTICATION_FAILED",
+    unknown_error: "UNKNOWN_ERROR"
   }.freeze
 
   # Maximum attachment size (25MB - typical email limit)
@@ -29,12 +29,14 @@ class EmailService
     # Main method to send inspection PDF via email
     # @param form_fill [FormFill] The form fill containing the PDF to send
     # @param recipient_email [String, nil] Optional override for recipient email
+    # @param subject [String, nil] Optional email subject
+    # @param body [String, nil] Optional email body
     # @return [Result] Success/failure result with message and error code
-    def send_inspection_pdf(form_fill, recipient_email = nil)
+    def send_inspection_pdf(form_fill, recipient_email = nil, subject = nil, body = nil)
       if form_fill.nil?
         return Result.new(
           success: false,
-          message: 'Invalid inspection data',
+          message: "Invalid inspection data",
           error_code: ERROR_CODES[:unknown_error]
         )
       end
@@ -60,7 +62,7 @@ class EmailService
         Rails.logger.info "EmailService: Property: #{property.property_name}, Customer: #{customer.name}"
 
         # Send email via mailer
-        InspectionMailer.send_inspection_pdf(form_fill.id, final_recipient).deliver_now
+        InspectionMailer.send_inspection_pdf(form_fill.id, final_recipient, subject, body).deliver_now
 
         # Log successful email sending
         Rails.logger.info "EmailService: Successfully sent email to #{final_recipient} for FormFill ##{form_fill.id}"
@@ -70,39 +72,39 @@ class EmailService
           message: "Email sent successfully to #{final_recipient}"
         )
       rescue Net::SMTPAuthenticationError => e
-        error_message = 'SMTP authentication failed'
+        error_message = "SMTP authentication failed"
         Rails.logger.error "EmailService: #{error_message} for FormFill ##{form_fill.id}: #{e.message}"
 
         Result.new(
           success: false,
-          message: 'Email service authentication failed. Please contact administrator.',
+          message: "Email service authentication failed. Please contact administrator.",
           error_code: ERROR_CODES[:smtp_authentication_failed]
         )
       rescue Net::SMTPServerBusy, Net::SMTPFatalError, Net::SMTPSyntaxError => e
-        error_message = 'SMTP connection failed'
+        error_message = "SMTP connection failed"
         Rails.logger.error "EmailService: #{error_message} for FormFill ##{form_fill.id}: #{e.message}"
 
         Result.new(
           success: false,
-          message: 'Email service is currently unavailable. Please try again later.',
+          message: "Email service is currently unavailable. Please try again later.",
           error_code: ERROR_CODES[:smtp_connection_failed]
         )
       rescue ArgumentError => e
         # Handle specific mailer errors (PDF not available, etc.)
-        if e.message.include?('PDF not available')
+        if e.message.include?("PDF not available")
           Rails.logger.error "EmailService: PDF not available for FormFill ##{form_fill.id}: #{e.message}"
 
           Result.new(
             success: false,
-            message: 'PDF is not available for email attachment',
+            message: "PDF is not available for email attachment",
             error_code: ERROR_CODES[:pdf_not_available]
           )
-        elsif e.message.include?('No recipient email')
+        elsif e.message.include?("No recipient email")
           Rails.logger.error "EmailService: No recipient email for FormFill ##{form_fill.id}: #{e.message}"
 
           Result.new(
             success: false,
-            message: 'Customer email address is not available',
+            message: "Customer email address is not available",
             error_code: ERROR_CODES[:customer_email_missing]
           )
         else
@@ -110,7 +112,7 @@ class EmailService
 
           Result.new(
             success: false,
-            message: 'Email configuration error. Please contact administrator.',
+            message: "Email configuration error. Please contact administrator.",
             error_code: ERROR_CODES[:mailer_error]
           )
         end
@@ -121,7 +123,7 @@ class EmailService
 
         Result.new(
           success: false,
-          message: 'An unexpected error occurred while sending email. Please try again.',
+          message: "An unexpected error occurred while sending email. Please try again.",
           error_code: ERROR_CODES[:unknown_error]
         )
       end
@@ -139,7 +141,7 @@ class EmailService
         Rails.logger.error "EmailService: Invalid form_fill or missing associations for FormFill ##{form_fill&.id}"
         return Result.new(
           success: false,
-          message: 'Invalid inspection data',
+          message: "Invalid inspection data",
           error_code: ERROR_CODES[:unknown_error]
         )
       end
@@ -149,7 +151,7 @@ class EmailService
         Rails.logger.warn "EmailService: PDF not available for FormFill ##{form_fill.id}"
         return Result.new(
           success: false,
-          message: 'PDF is not available. Please generate the PDF first.',
+          message: "PDF is not available. Please generate the PDF first.",
           error_code: ERROR_CODES[:pdf_not_available]
         )
       end
@@ -163,7 +165,7 @@ class EmailService
       return email_validation_result if email_validation_result.failure?
 
       # All validations passed
-      Result.new(success: true, message: 'Validation successful')
+      Result.new(success: true, message: "Validation successful")
     end
 
     # Check if PDF is available for the form fill
@@ -171,14 +173,14 @@ class EmailService
     # @return [Boolean] True if PDF is available
     def pdf_available?(form_fill)
       form_fill.filled_pdf.attached? &&
-        form_fill.pdf_generation_status == 'completed'
+        form_fill.pdf_generation_status == "completed"
     end
 
     # Validate PDF file size
     # @param form_fill [FormFill] The form fill to check
     # @return [Result] Validation result
     def validate_pdf_size(form_fill)
-      return Result.new(success: true, message: 'PDF size validation passed') unless form_fill.filled_pdf.attached?
+      return Result.new(success: true, message: "PDF size validation passed") unless form_fill.filled_pdf.attached?
 
       pdf_size = form_fill.filled_pdf.byte_size
 
@@ -191,7 +193,7 @@ class EmailService
         )
       end
 
-      Result.new(success: true, message: 'PDF size validation passed')
+      Result.new(success: true, message: "PDF size validation passed")
     end
 
     # Validate customer email availability and format
@@ -207,7 +209,7 @@ class EmailService
         Rails.logger.warn "EmailService: No email available for customer #{customer.name} (FormFill ##{form_fill.id})"
         return Result.new(
           success: false,
-          message: 'Customer email address is not available. Please update customer information.',
+          message: "Customer email address is not available. Please update customer information.",
           error_code: ERROR_CODES[:customer_email_missing]
         )
       end
@@ -217,12 +219,12 @@ class EmailService
         Rails.logger.warn "EmailService: Invalid email format '#{email_to_validate}' for FormFill ##{form_fill.id}"
         return Result.new(
           success: false,
-          message: 'Customer email address format is invalid. Please update customer information.',
+          message: "Customer email address format is invalid. Please update customer information.",
           error_code: ERROR_CODES[:invalid_email_format]
         )
       end
 
-      Result.new(success: true, message: 'Email validation passed')
+      Result.new(success: true, message: "Email validation passed")
     end
 
     # Validate email format using a simple regex
@@ -231,7 +233,7 @@ class EmailService
     def valid_email_format?(email)
       # Simple email validation regex - more strict to avoid consecutive dots
       email_regex = /\A[\w+\-.]+@[a-z\d-]+(\.[a-z\d-]+)*\.[a-z]+\z/i
-      return false if email.include?('..') # Reject consecutive dots
+      return false if email.include?("..") # Reject consecutive dots
 
       email.match?(email_regex)
     end

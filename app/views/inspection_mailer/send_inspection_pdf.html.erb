@@ -49,26 +49,30 @@
   </div>
 
   <div class="content">
-    <p>Dear <%= @customer.name %>,</p>
+    <% if @custom_body.present? %>
+      <%= @custom_body.html_safe %>
+    <% else %>
+      <p>Dear <%= @customer.name %>,</p>
 
-    <p>Please find attached a copy of the inspection report for <strong><%= @property.property_name %></strong>.</p>
-    
-    <p>This report contains the complete inspection documentation including all findings and any deficiencies identified during the inspection process.</p>
+      <p>Please find attached a copy of the inspection report for <strong><%= @property.property_name %></strong>.</p>
+      
+      <p>This report contains the complete inspection documentation including all findings and any deficiencies identified during the inspection process.</p>
 
-    <div class="inspection-details">
-      <h3>Inspection Details</h3>
-      <ul>
-        <li><strong>Property:</strong> <%= @property.property_name %></li>
-        <li><strong>Address:</strong> <%= @property.address %></li>
-        <li><strong>Inspection Date:</strong> <%= @inspection.date.strftime('%B %d, %Y') %></li>
-        <li><strong>Inspector:</strong> <%= @inspector.name %></li>
-        <li><strong>Form Template:</strong> <%= @inspection.form_template.name %></li>
-      </ul>
-    </div>
+      <div class="inspection-details">
+        <h3>Inspection Details</h3>
+        <ul>
+          <li><strong>Property:</strong> <%= @property.property_name %></li>
+          <li><strong>Address:</strong> <%= @property.address %></li>
+          <li><strong>Inspection Date:</strong> <%= @inspection.date.strftime('%B %d, %Y') %></li>
+          <li><strong>Inspector:</strong> <%= @inspector.name %></li>
+          <li><strong>Form Template:</strong> <%= @inspection.form_template.name %></li>
+        </ul>
+      </div>
 
-    <p>The attached PDF contains the complete inspection report with all findings and recommendations. Please review the document carefully and contact us if you have any questions.</p>
+      <p>The attached PDF contains the complete inspection report with all findings and recommendations. Please review the document carefully and contact us if you have any questions.</p>
 
-    <p>Thank you for choosing our inspection services.</p>
+      <p>Thank you for choosing our inspection services.</p>
+    <% end %>
   </div>
 
   <div class="footer">

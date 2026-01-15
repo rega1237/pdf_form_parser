@@ -24,8 +24,8 @@ class FormFillsControllerTest < ActionDispatch::IntegrationTest
     get form_fill_url(@form_fill)
     assert_response :success
 
-    # Check that the Send Email button is present
-    assert_select "span[data-email-sender-target='buttonText']", text: 'Send Email'
+    # Check that the Send Email button is present (text check)
+    assert_select "button", text: /Send Email/
   end
 
   test 'should show disabled email button when PDF not available' do
