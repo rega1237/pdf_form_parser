@@ -21,13 +21,13 @@ export default class extends Controller {
 
   showLoadingState() {
     this.propertySelectTarget.innerHTML =
-      '<option value="">Cargando propiedades...</option>';
+      '<option value="">Loading Properties...</option>';
     this.propertySelectTarget.style.opacity = "0.6";
   }
 
   resetPropertySelect() {
     this.propertySelectTarget.innerHTML =
-      '<option value="">Seleccionar propiedad</option>';
+      '<option value="">Select Property</option>';
     this.propertySelectTarget.style.opacity = "1";
   }
 
@@ -51,7 +51,7 @@ export default class extends Controller {
 
   populateProperties(properties) {
     this.propertySelectTarget.innerHTML =
-      '<option value="">Seleccionar propiedad</option>';
+      '<option value="">Select Property</option>';
 
     properties.forEach((property) => {
       const option = document.createElement("option");
@@ -65,7 +65,7 @@ export default class extends Controller {
 
   showErrorState() {
     this.propertySelectTarget.innerHTML =
-      '<option value="">Error cargando propiedades</option>';
+      '<option value="">Error loading properties</option>';
     this.propertySelectTarget.style.opacity = "1";
   }
 }
