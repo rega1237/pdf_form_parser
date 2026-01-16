@@ -12,10 +12,10 @@ class FormFillsController < ApplicationController
     rescue StandardError
       {}
     end
-    field_name = request_data['field_name'] || params[:field_name]
+    field_name = request_data["field_name"] || params[:field_name]
 
     if field_name.blank?
-      render json: { success: false, error: 'Field name is required' }, status: :bad_request
+      render json: { success: false, error: "Field name is required" }, status: :bad_request
       return
     end
 
@@ -25,9 +25,9 @@ class FormFillsController < ApplicationController
       success = @form_fill.clear_signature_attachment_id_in_structure(field_name)
 
       if success
-        render json: { success: true, message: 'Signature removed successfully', field_name: field_name }
+        render json: { success: true, message: "Signature removed successfully", field_name: field_name }
       else
-        render json: { success: false, error: 'Error updating form structure', field_name: field_name },
+        render json: { success: false, error: "Error updating form structure", field_name: field_name },
                status: :unprocessable_entity
       end
     rescue StandardError => e
@@ -47,8 +47,8 @@ class FormFillsController < ApplicationController
 
     if @inspection
       @main_form_fill = @inspection.form_fills.find_by(form_template_id: @inspection.form_template_id)
-      @additional_risers_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
-      @corrections_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Corrected Deficiencies' })
+      @additional_risers_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: "Additional Risers" })
+      @corrections_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: "Corrected Deficiencies" })
     end
 
     # Get inspection date for date fields
@@ -61,19 +61,19 @@ class FormFillsController < ApplicationController
 
         # Itera sobre los campos y fusiona los datos guardados
         form_fields.each do |field|
-          next unless field['name'].present?
+          next unless field["name"].present?
 
-          field_name = field['name']
+          field_name = field["name"]
 
-          if field['type'] == 'Deficiency'
+          if field["type"] == "Deficiency"
             # Para los campos Deficiency, carga cada sub-campo desde la columna `data`
-            field['value'] = data["#{field_name}_select"] || field['value'] || ''
-            field['select'] = data["#{field_name}_select"] || field['select'] || '' # Agregamos 'select' por consistencia
-            field['comment_value'] = data["#{field_name}_comment"] || field['comment_value'] || ''
-            field['Item'] = data["#{field_name}_item"] || field['Item'] || ''
-            field['Riser'] = data["#{field_name}_riser"] || field['Riser'] || ''
-            field['C'] = data["#{field_name}_c"] || field['C'] || ''
-            field['D'] = data["#{field_name}_d"] || field['D'] || ''
+            field["value"] = data["#{field_name}_select"] || field["value"] || ""
+            field["select"] = data["#{field_name}_select"] || field["select"] || "" # Agregamos 'select' por consistencia
+            field["comment_value"] = data["#{field_name}_comment"] || field["comment_value"] || ""
+            field["Item"] = data["#{field_name}_item"] || field["Item"] || ""
+            field["Riser"] = data["#{field_name}_riser"] || field["Riser"] || ""
+            field["C"] = data["#{field_name}_c"] || field["C"] || ""
+            field["D"] = data["#{field_name}_d"] || field["D"] || ""
 
             # Agregar la colección de deficiencias
             collection_json = data["#{field_name}_collection"]
@@ -88,7 +88,7 @@ class FormFillsController < ApplicationController
             end
           else
             # Para otros tipos de campo, carga el valor desde `data`
-            field['value'] = data[field_name] || field['value'] || ''
+            field["value"] = data[field_name] || field["value"] || ""
           end
         end
         @form_fields = form_fields
@@ -109,7 +109,7 @@ class FormFillsController < ApplicationController
                              .left_joins(:form_fill)
                              .where(form_fills: { id: nil })
                              .map do |inspection|
-      ["#{inspection.property.customer.name} - #{inspection.property.property_name}", inspection.id]
+      [ "#{inspection.property.customer.name} - #{inspection.property.property_name}", inspection.id ]
     end
 
     # Asignar inspection_id si viene en los parámetros
@@ -131,16 +131,16 @@ class FormFillsController < ApplicationController
 
   def create
     @form_fill = FormFill.new(form_fill_params)
-    @form_fill.form_structure = @form_fill.form_template['form_structure']
+    @form_fill.form_structure = @form_fill.form_template["form_structure"]
 
     if @form_fill.save
       # Si el form_fill está asociado a una inspección, actualizar la inspección
       if @form_fill.inspection_id.present?
         inspection = Inspection.find(@form_fill.inspection_id)
         inspection.update(form_fill_id: @form_fill.id)
-        redirect_to inspection_path(inspection), notice: 'Formulario creado exitosamente para la inspección.'
+        redirect_to inspection_path(inspection), notice: "Formulario creado exitosamente para la inspecci\u00F3n."
       else
-        redirect_to form_fill_path(@form_fill), notice: 'Formulario creado exitosamente.'
+        redirect_to form_fill_path(@form_fill), notice: "Formulario creado exitosamente."
       end
     else
       @form_templates = FormTemplate.all
@@ -185,7 +185,7 @@ class FormFillsController < ApplicationController
             message: "Form saved but with photo errors: #{photo_results[:errors].join(', ')}"
           }, status: :unprocessable_entity
         else
-          success_message = 'Draft saved successfully.'
+          success_message = "Draft saved successfully."
           success_message += " #{photo_results[:uploaded]} photo(s) uploaded." if photo_results[:uploaded].positive?
           if photo_results[:skipped].positive?
             success_message += " #{photo_results[:skipped]} photo(s) skipped (already saved)."
@@ -197,7 +197,7 @@ class FormFillsController < ApplicationController
         render json: {
           success: false,
           errors: @form_fill.errors.full_messages,
-          message: 'Could not save draft.'
+          message: "Could not save draft."
         }, status: :unprocessable_entity
       end
     rescue StandardError => e
@@ -205,7 +205,7 @@ class FormFillsController < ApplicationController
       render json: {
         success: false,
         error: "Error updating form: #{e.message}",
-        message: 'Could not save draft.'
+        message: "Could not save draft."
       }, status: :internal_server_error
     end
   end
@@ -220,13 +220,13 @@ class FormFillsController < ApplicationController
     rescue StandardError
       {}
     end
-    field_name = request_data['field_name'] || params[:field_name]
-    photo_id = request_data['photo_id'] || params[:photo_id]
+    field_name = request_data["field_name"] || params[:field_name]
+    photo_id = request_data["photo_id"] || params[:photo_id]
 
     if field_name.blank?
       render json: {
         success: false,
-        error: 'Field name is required'
+        error: "Field name is required"
       }, status: :bad_request
       return
     end
@@ -268,31 +268,31 @@ class FormFillsController < ApplicationController
         data = @form_fill.data || {} # Obtenemos los datos guardados, asegurando que no sea nulo
 
         form_fields.each do |field|
-          next unless field['name'].present?
+          next unless field["name"].present?
 
-          field_name = field['name']
+          field_name = field["name"]
 
           # Usamos un `case` para manejar cada tipo de campo de forma clara y correcta
-          case field['type']
-          when 'Photo'
+          case field["type"]
+          when "Photo"
             # --- LÓGICA AGREGADA PARA FOTOS ---
             # Se lee la clave estandarizada `_photo_attachment_id` desde la columna `data`.
             # Si la foto fue borrada, el valor será `nil`, y eso es lo que se enviará al frontend.
-            field['photo_attachment_id'] = data["#{field_name}_photo_attachment_id"]
-          when 'Signature', 'Signature_Field', 'Signature_Annex'
+            field["photo_attachment_id"] = data["#{field_name}_photo_attachment_id"]
+          when "Signature", "Signature_Field", "Signature_Annex"
             # --- LÓGICA AGREGADA PARA FIRMAS ---
             # Se lee la clave estandarizada `_signature_attachment_id` desde la columna `data`.
-            field['signature_attachment_id'] = data["#{field_name}_signature_attachment_id"]
+            field["signature_attachment_id"] = data["#{field_name}_signature_attachment_id"]
 
-          when 'Deficiency'
+          when "Deficiency"
             # La lógica para los campos de deficiencia se mantiene, ya que es correcta.
-            field['value'] = data["#{field_name}_select"].presence || field['value'] || ''
-            field['select'] = data["#{field_name}_select"].presence || field['select'] || ''
-            field['comment_value'] = data["#{field_name}_comment"].presence || field['comment_value'] || ''
-            field['Item'] = data["#{field_name}_item"].presence || field['Item'] || ''
-            field['Riser'] = data["#{field_name}_riser"].presence || field['Riser'] || ''
-            field['C'] = data["#{field_name}_c"].presence || field['C'] || ''
-            field['D'] = data["#{field_name}_d"].presence || field['D'] || ''
+            field["value"] = data["#{field_name}_select"].presence || field["value"] || ""
+            field["select"] = data["#{field_name}_select"].presence || field["select"] || ""
+            field["comment_value"] = data["#{field_name}_comment"].presence || field["comment_value"] || ""
+            field["Item"] = data["#{field_name}_item"].presence || field["Item"] || ""
+            field["Riser"] = data["#{field_name}_riser"].presence || field["Riser"] || ""
+            field["C"] = data["#{field_name}_c"].presence || field["C"] || ""
+            field["D"] = data["#{field_name}_d"].presence || field["D"] || ""
 
             # Agregar la colección de deficiencias
             collection_json = data["#{field_name}_collection"]
@@ -308,7 +308,7 @@ class FormFillsController < ApplicationController
 
           else
             # Lógica por defecto para todos los demás tipos de campo.
-            field['value'] = data[field_name] || ''
+            field["value"] = data[field_name] || ""
           end
         end
 
@@ -322,13 +322,13 @@ class FormFillsController < ApplicationController
       rescue JSON::ParserError => e
         Rails.logger.error "Failed to parse form_structure for FormFill ##{@form_fill.id}: #{e.message}"
         render json: {
-          error: 'Invalid form structure',
+          error: "Invalid form structure",
           success: false
         }, status: :unprocessable_entity
       end
     else
       render json: {
-        form_structure: '[]',
+        form_structure: "[]",
         form_fields: [],
         success: true
       }
@@ -345,12 +345,12 @@ class FormFillsController < ApplicationController
     rescue StandardError
       {}
     end
-    field_name = request_data['field_name'] || params[:field_name]
+    field_name = request_data["field_name"] || params[:field_name]
 
     if field_name.blank?
       render json: {
         success: false,
-        error: 'Field name is required'
+        error: "Field name is required"
       }, status: :bad_request
       return
     end
@@ -384,10 +384,10 @@ class FormFillsController < ApplicationController
     rescue StandardError
       {}
     end
-    field_name = request_data['field_name'] || params[:field_name]
+    field_name = request_data["field_name"] || params[:field_name]
 
     if field_name.blank?
-      render json: { success: false, error: 'Field name is required' }, status: :bad_request
+      render json: { success: false, error: "Field name is required" }, status: :bad_request
       return
     end
 
@@ -422,7 +422,7 @@ class FormFillsController < ApplicationController
     if field_name.blank?
       render json: {
         success: false,
-        error: 'Field name is required'
+        error: "Field name is required"
       }, status: :bad_request
       return
     end
@@ -434,14 +434,14 @@ class FormFillsController < ApplicationController
       if success
         render json: {
           success: true,
-          message: 'Field updated successfully',
+          message: "Field updated successfully",
           field_name: field_name,
           field_value: field_value
         }
       else
         render json: {
           success: false,
-          error: 'Failed to update field',
+          error: "Failed to update field",
           field_name: field_name
         }, status: :unprocessable_entity
       end
@@ -465,7 +465,7 @@ class FormFillsController < ApplicationController
     if field_data.blank?
       render json: {
         success: false,
-        error: 'Field data is required'
+        error: "Field data is required"
       }, status: :bad_request
       return
     end
@@ -477,14 +477,14 @@ class FormFillsController < ApplicationController
       if success
         render json: {
           success: true,
-          message: 'Fields updated successfully',
+          message: "Fields updated successfully",
           updated_fields: field_data.keys,
           field_count: field_data.size
         }
       else
         render json: {
           success: false,
-          error: 'Failed to update fields'
+          error: "Failed to update fields"
         }, status: :unprocessable_entity
       end
     rescue StandardError => e
@@ -527,7 +527,7 @@ class FormFillsController < ApplicationController
     if field_name.blank? || photo_file.blank?
       render json: {
         success: false,
-        error: 'Field name and photo file are required'
+        error: "Field name and photo file are required"
       }, status: :bad_request
       return
     end
@@ -539,7 +539,7 @@ class FormFillsController < ApplicationController
       if result[:success]
         render json: {
           success: true,
-          message: 'Photo uploaded successfully',
+          message: "Photo uploaded successfully",
           attachment_id: result[:attachment_id],
           photo_url: @form_fill.get_photo_url_for_field(field_name),
           field_name: field_name
@@ -564,7 +564,7 @@ class FormFillsController < ApplicationController
   def destroy
     @form_fill = FormFill.find(params[:id])
     @form_fill.destroy
-    redirect_to form_fills_url, notice: 'Form fill was successfully destroyed.'
+    redirect_to form_fills_url, notice: "Form fill was successfully destroyed."
   end
 
   def submit_form
@@ -572,7 +572,7 @@ class FormFillsController < ApplicationController
 
     # Verificar si ya se está generando un PDF
     if @form_fill.generating?
-      redirect_to @form_fill, alert: 'PDF is already being generated. Please wait.'
+      redirect_to @form_fill, alert: "PDF is already being generated. Please wait."
       return
     end
 
@@ -584,7 +584,7 @@ class FormFillsController < ApplicationController
       # Si hay un duplicado detectado, no proceder con la generación del PDF
       if session[:duplicate_next_inspection]
         redirect_to @form_fill,
-                    notice: 'Se detectó una Next Inspection duplicada. Por favor, resuelve el duplicado antes de generar el PDF.'
+                    notice: "Se detect\u00F3 una Next Inspection duplicada. Por favor, resuelve el duplicado antes de generar el PDF."
         return
       end
 
@@ -600,34 +600,34 @@ class FormFillsController < ApplicationController
   def generate_individual_pdf
     # Verificar si ya se está generando un PDF
     if @form_fill.generating?
-      redirect_to @form_fill, alert: 'PDF is already being generated. Please wait.'
+      redirect_to @form_fill, alert: "PDF is already being generated. Please wait."
       return
     end
 
     # Marcar como generando antes de encolar el trabajo
-    @form_fill.update!(pdf_generation_status: 'generating')
+    @form_fill.update!(pdf_generation_status: "generating")
 
     # Encolar el trabajo de generación de PDF individual
     GenerateIndividualPdfJob.perform_later(@form_fill.id)
 
-    redirect_to @form_fill, notice: 'Your individual PDF is being generated and will be available shortly.'
+    redirect_to @form_fill, notice: "Your individual PDF is being generated and will be available shortly."
   end
 
   # Método para generar PDF principal con merge (existing logic but renamed)
   def generate_main_pdf_with_merge
     # Verificar si ya se está generando un PDF
     if @form_fill.generating?
-      redirect_to @form_fill, alert: 'PDF is already being generated. Please wait.'
+      redirect_to @form_fill, alert: "PDF is already being generated. Please wait."
       return
     end
 
     # Marcar como generando antes de encolar el trabajo
-    @form_fill.update!(pdf_generation_status: 'generating')
+    @form_fill.update!(pdf_generation_status: "generating")
 
     # Encolar el trabajo de generación de PDF completo
     GeneratePdfJob.perform_later(@form_fill.id)
 
-    redirect_to @form_fill, notice: 'Your complete inspection PDF is being generated and will be available shortly.'
+    redirect_to @form_fill, notice: "Your complete inspection PDF is being generated and will be available shortly."
   end
 
   # Keep existing generate_pdf_now method for backward compatibility
@@ -643,13 +643,13 @@ class FormFillsController < ApplicationController
       send_data @form_fill.filled_pdf.download,
                 filename: @form_fill.filled_pdf.filename.to_s,
                 type: @form_fill.filled_pdf.content_type,
-                disposition: params[:disposition] || 'inline'
+                disposition: params[:disposition] || "inline"
     else
-      redirect_to @form_fill, alert: 'PDF not found or not yet generated.'
+      redirect_to @form_fill, alert: "PDF not found or not yet generated."
     end
   rescue StandardError => e
     Rails.logger.error "Error downloading PDF for FormFill ##{@form_fill.id}: #{e.message}"
-    redirect_to @form_fill, alert: 'Error accessing PDF file.'
+    redirect_to @form_fill, alert: "Error accessing PDF file."
   end
 
   def send_email
@@ -670,21 +670,21 @@ class FormFillsController < ApplicationController
       else
         # Handle different error types with appropriate user feedback
         error_message = case result.error_code
-                        when EmailService::ERROR_CODES[:pdf_not_available]
-                          'PDF is not available. Please generate the PDF first before sending email.'
-                        when EmailService::ERROR_CODES[:customer_email_missing]
-                          'Customer email address is not available. Please update customer information.'
-                        when EmailService::ERROR_CODES[:invalid_email_format]
-                          'Customer email address format is invalid. Please update customer information.'
-                        when EmailService::ERROR_CODES[:attachment_too_large]
+        when EmailService::ERROR_CODES[:pdf_not_available]
+                          "PDF is not available. Please generate the PDF first before sending email."
+        when EmailService::ERROR_CODES[:customer_email_missing]
+                          "Customer email address is not available. Please update customer information."
+        when EmailService::ERROR_CODES[:invalid_email_format]
+                          "Customer email address format is invalid. Please update customer information."
+        when EmailService::ERROR_CODES[:attachment_too_large]
                           result.message
-                        when EmailService::ERROR_CODES[:smtp_connection_failed]
-                          'Email service is currently unavailable. Please try again later.'
-                        when EmailService::ERROR_CODES[:smtp_authentication_failed]
-                          'Email service configuration error. Please contact administrator.'
-                        else
-                          result.message || 'Failed to send email. Please try again.'
-                        end
+        when EmailService::ERROR_CODES[:smtp_connection_failed]
+                          "Email service is currently unavailable. Please try again later."
+        when EmailService::ERROR_CODES[:smtp_authentication_failed]
+                          "Email service configuration error. Please contact administrator."
+        else
+                          result.message || "Failed to send email. Please try again."
+        end
 
         format.html { redirect_to @form_fill, alert: error_message }
         format.json { render json: { success: false, message: error_message }, status: :unprocessable_entity }
@@ -692,7 +692,7 @@ class FormFillsController < ApplicationController
     end
   rescue StandardError => e
     Rails.logger.error "Unexpected error in send_email action for FormFill ##{@form_fill.id}: #{e.message}"
-    error_message = 'An unexpected error occurred while sending email. Please try again.'
+    error_message = "An unexpected error occurred while sending email. Please try again."
 
     respond_to do |format|
       format.html { redirect_to @form_fill, alert: error_message }
@@ -726,7 +726,7 @@ class FormFillsController < ApplicationController
     # Buscar campos que terminen con extensiones de archivo de imagen
     params[:form_fill].keys.select do |key|
       params[:form_fill][key].respond_to?(:content_type) &&
-        params[:form_fill][key].content_type&.start_with?('image/')
+        params[:form_fill][key].content_type&.start_with?("image/")
     end
   end
 
@@ -736,7 +736,7 @@ class FormFillsController < ApplicationController
 
     begin
       structure = JSON.parse(@form_fill.form_structure)
-      photo_fields = structure.select { |field| field['type'] == 'Photo' }.map { |field| field['name'] }
+      photo_fields = structure.select { |field| field["type"] == "Photo" }.map { |field| field["name"] }
 
       # Permitir estos campos en los parámetros
       begin
@@ -765,10 +765,10 @@ class FormFillsController < ApplicationController
 
     begin
       structure = JSON.parse(structure_source)
-      deficiency_fields = structure.select { |field| field['type'] == 'Deficiency' }
+      deficiency_fields = structure.select { |field| field["type"] == "Deficiency" }
 
       deficiency_fields.each do |field|
-        field_name = field['name']
+        field_name = field["name"]
 
         # Permitir todos los subcampos de deficiency
         deficiency_params["#{field_name}_collection"] = params.dig(:form_fill, "#{field_name}_collection")
@@ -804,10 +804,10 @@ class FormFillsController < ApplicationController
 
     begin
       structure = JSON.parse(structure_source)
-      category_fields = structure.select { |field| ['System Category', 'Interval Category'].include?(field['type']) }
+      category_fields = structure.select { |field| [ "System Category", "Interval Category" ].include?(field["type"]) }
 
       category_fields.each do |field|
-        field_name = field['name']
+        field_name = field["name"]
         # Permitir el campo de categoría
         category_params[field_name] = params.dig(:form_fill, field_name)
       end
@@ -857,10 +857,10 @@ class FormFillsController < ApplicationController
 
     begin
       structure = JSON.parse(@form_fill.form_structure)
-      category_fields = structure.select { |field| ['System Category', 'Interval Category'].include?(field['type']) }
+      category_fields = structure.select { |field| [ "System Category", "Interval Category" ].include?(field["type"]) }
 
       category_fields.each do |field|
-        field_name = field['name']
+        field_name = field["name"]
 
         # Check if this field has a value in the data params
         next unless data_params.key?(field_name) && data_params[field_name].present?
@@ -868,12 +868,12 @@ class FormFillsController < ApplicationController
         category_data[field_name] = data_params[field_name]
 
         # For Interval Category, also store selected_categories
-        if field['type'] == 'Interval Category'
-          selected_categories = data_params[field_name].split(', ').map(&:strip)
+        if field["type"] == "Interval Category"
+          selected_categories = data_params[field_name].split(", ").map(&:strip)
           category_data["#{field_name}_selected_categories"] = selected_categories
         else
           # For System Category, store as single-item array
-          category_data["#{field_name}_selected_categories"] = [data_params[field_name]]
+          category_data["#{field_name}_selected_categories"] = [ data_params[field_name] ]
         end
       end
     rescue JSON::ParserError => e
@@ -893,23 +893,23 @@ class FormFillsController < ApplicationController
 
       # Actualizar campos de categoría con los valores de los parámetros
       form_structure.each do |field|
-        next unless ['System Category', 'Interval Category'].include?(field['type'])
+        next unless [ "System Category", "Interval Category" ].include?(field["type"])
 
-        field_name = field['name']
+        field_name = field["name"]
 
         # Actualizar el valor del campo de categoría
         next unless update_params[field_name].present?
 
-        field['value'] = update_params[field_name]
+        field["value"] = update_params[field_name]
 
         # Para campos de categoría múltiple, también actualizar selected_categories
-        field['selected_categories'] = if field['type'] == 'Interval Category'
+        field["selected_categories"] = if field["type"] == "Interval Category"
                                          # Si el valor contiene múltiples categorías separadas por coma
-                                         update_params[field_name].split(', ').map(&:strip)
-                                       else
+                                         update_params[field_name].split(", ").map(&:strip)
+        else
                                          # Para System Category, es una sola categoría
-                                         [update_params[field_name]]
-                                       end
+                                         [ update_params[field_name] ]
+        end
       end
 
       # Actualizar la estructura en los parámetros
@@ -918,7 +918,7 @@ class FormFillsController < ApplicationController
       # Remover los parámetros de categoría individuales ya que están en form_structure
       category_keys = update_params.keys.select do |key|
         form_structure.any? do |field|
-          field['name'] == key.to_s && ['System Category', 'Interval Category'].include?(field['type'])
+          field["name"] == key.to_s && [ "System Category", "Interval Category" ].include?(field["type"])
         end
       end
       category_keys.each { |key| update_params.delete(key) }
@@ -932,10 +932,10 @@ class FormFillsController < ApplicationController
 
     begin
       structure = JSON.parse(@form_fill.form_structure)
-      field_data = structure.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
+      field_data = structure.find { |field| field["name"] == field_name && field["type"] == "Photo" }
 
       # Si el campo no tiene photo_attachment_id, no hay foto existente
-      return false unless field_data&.dig('photo_attachment_id').present?
+      return false unless field_data&.dig("photo_attachment_id").present?
 
       # Obtener la foto existente
       existing_photo = @form_fill.get_photo_for_field(field_name)
@@ -969,40 +969,40 @@ class FormFillsController < ApplicationController
       key_str = key.to_s
 
       # Handle deficiency select values
-      if key_str.end_with?('_select')
-        field_name = key_str.gsub('_select', '')
+      if key_str.end_with?("_select")
+        field_name = key_str.gsub("_select", "")
         deficiency_data["#{field_name}_select"] = value if value.present?
         deficiency_data[field_name] = value if value.present?
 
       # Handle deficiency comments
-      elsif key_str.end_with?('_comment')
-        field_name = key_str.gsub('_comment', '')
-        deficiency_data["#{field_name}_comment"] = value || ''
+      elsif key_str.end_with?("_comment")
+        field_name = key_str.gsub("_comment", "")
+        deficiency_data["#{field_name}_comment"] = value || ""
 
       # Handle deficiency items
-      elsif key_str.end_with?('_item')
-        field_name = key_str.gsub('_item', '')
-        deficiency_data["#{field_name}_item"] = value || ''
+      elsif key_str.end_with?("_item")
+        field_name = key_str.gsub("_item", "")
+        deficiency_data["#{field_name}_item"] = value || ""
 
       # Handle deficiency risers
-      elsif key_str.end_with?('_riser')
-        field_name = key_str.gsub('_riser', '')
-        deficiency_data["#{field_name}_riser"] = value || ''
+      elsif key_str.end_with?("_riser")
+        field_name = key_str.gsub("_riser", "")
+        deficiency_data["#{field_name}_riser"] = value || ""
 
       # Handle deficiency C values
-      elsif key_str.end_with?('_c')
-        field_name = key_str.gsub('_c', '')
-        deficiency_data["#{field_name}_c"] = value == '1' ? 'Yes' : ''
+      elsif key_str.end_with?("_c")
+        field_name = key_str.gsub("_c", "")
+        deficiency_data["#{field_name}_c"] = value == "1" ? "Yes" : ""
 
       # Handle deficiency collection
-      elsif key_str.end_with?('_collection')
-        field_name = key_str.gsub('_collection', '')
+      elsif key_str.end_with?("_collection")
+        field_name = key_str.gsub("_collection", "")
         deficiency_data["#{field_name}_collection"] = value if value.present?
 
       # Handle deficiency D values
-      elsif key_str.end_with?('_d')
-        field_name = key_str.gsub('_d', '')
-        deficiency_data["#{field_name}_d"] = value == '1' ? 'Yes' : ''
+      elsif key_str.end_with?("_d")
+        field_name = key_str.gsub("_d", "")
+        deficiency_data["#{field_name}_d"] = value == "1" ? "Yes" : ""
       end
     end
 
@@ -1019,27 +1019,27 @@ class FormFillsController < ApplicationController
 
       # Actualizar campos de deficiency con los valores de los parámetros
       form_structure.each do |field|
-        next unless field['type'] == 'Deficiency'
+        next unless field["type"] == "Deficiency"
 
-        field_name = field['name']
+        field_name = field["name"]
 
         # Actualizar los subcampos desde los parámetros
-        field['value'] = update_params["#{field_name}_select"] if update_params["#{field_name}_select"].present?
+        field["value"] = update_params["#{field_name}_select"] if update_params["#{field_name}_select"].present?
 
         if update_params.key?("#{field_name}_comment")
-          field['comment_value'] = update_params["#{field_name}_comment"] || ''
+          field["comment_value"] = update_params["#{field_name}_comment"] || ""
         end
 
-        field['Item'] = update_params["#{field_name}_item"] || '' if update_params.key?("#{field_name}_item")
+        field["Item"] = update_params["#{field_name}_item"] || "" if update_params.key?("#{field_name}_item")
 
-        field['Riser'] = update_params["#{field_name}_riser"] || '' if update_params.key?("#{field_name}_riser")
+        field["Riser"] = update_params["#{field_name}_riser"] || "" if update_params.key?("#{field_name}_riser")
 
         if update_params.key?("#{field_name}_c")
-          field['C'] = update_params["#{field_name}_c"] == '1' ? 'Yes' : ''
+          field["C"] = update_params["#{field_name}_c"] == "1" ? "Yes" : ""
         end
 
         if update_params.key?("#{field_name}_d")
-          field['D'] = update_params["#{field_name}_d"] == '1' ? 'Yes' : ''
+          field["D"] = update_params["#{field_name}_d"] == "1" ? "Yes" : ""
         end
       end
 
@@ -1048,7 +1048,7 @@ class FormFillsController < ApplicationController
 
       # Remover los parámetros de deficiency individuales ya que están en form_structure
       deficiency_keys = update_params.keys.select do |key|
-        key.to_s.include?('_select') || key.to_s.include?('_comment') || key.to_s.include?('_item') || key.to_s.include?('_riser') || key.to_s.include?('_c') || key.to_s.include?('_d')
+        key.to_s.include?("_select") || key.to_s.include?("_comment") || key.to_s.include?("_item") || key.to_s.include?("_riser") || key.to_s.include?("_c") || key.to_s.include?("_d")
       end
       deficiency_keys.each { |key| update_params.delete(key) }
     rescue JSON::ParserError => e
@@ -1057,13 +1057,41 @@ class FormFillsController < ApplicationController
   end
 
   def create_next_inspection_from_structure(form_data)
-    inspection = @form_fill.inspection # ← Cambio aquí
-    return unless inspection && form_data.present?
+    inspection = @form_fill.inspection
+
+    unless inspection && form_data.present?
+      Rails.logger.warn "Skipping NextInspection creation: Inspection or form_data missing (FormFill ##{@form_fill.id})"
+      return
+    end
 
     begin
+      # Intentar obtener los nombres de los campos dinámicamente desde la estructura
+      system_category_name = "System category" # Default
+      interval_category_name = "Interval Category" # Default
+
+      if @form_fill.form_structure.present?
+        begin
+          structure = JSON.parse(@form_fill.form_structure)
+
+          sys_field = structure.find { |f| f["type"] == "System Category" }
+          system_category_name = sys_field["name"] if sys_field && sys_field["name"].present?
+
+          int_field = structure.find { |f| f["type"] == "Interval Category" }
+          interval_category_name = int_field["name"] if int_field && int_field["name"].present?
+        rescue JSON::ParserError
+          Rails.logger.warn "Could not parse form_structure to find category field names"
+        end
+      end
+
       # Encontrar los valores seleccionados en el formulario
-      system_category_data = form_data['System category']
-      interval_category_data = form_data['Interval Category']
+      system_category_data = form_data[system_category_name]
+      interval_category_data = form_data[interval_category_name]
+
+      # Fallback: Try common variations if nil (case insensitive check essentially)
+      system_category_data ||= form_data["System Category"] || form_data["System category"]
+      interval_category_data ||= form_data["Interval Category"] || form_data["Interval category"]
+
+      Rails.logger.info "NextInspection check: System='#{system_category_data}', Interval='#{interval_category_data}' (fields: #{system_category_name}, #{interval_category_name})"
 
       # Proceder si tenemos toda la información
       if system_category_data.present? && interval_category_data.present?
@@ -1083,7 +1111,7 @@ class FormFillsController < ApplicationController
             session[:duplicate_next_inspection] = {
               existing: existing_next_inspection.duplicate_info,
               new_date: inspection.date + interval_category.duration_in_months.months,
-              form_fill_id: @form_fill.id # ← Y cambio aquí también
+              form_fill_id: @form_fill.id
             }
             Rails.logger.info "Duplicate next inspection found for property #{inspection.property.id}"
           else
@@ -1095,13 +1123,15 @@ class FormFillsController < ApplicationController
               system_category: system_category,
               interval_category: interval_category,
               next_inspection_date: next_date,
-              status: 'scheduled'
+              status: "scheduled"
             )
             Rails.logger.info "Next inspection scheduled for property #{inspection.property.id} on #{next_date}"
           end
         else
-          Rails.logger.warn('Could not find System/Interval category or duration_in_months is not set.')
+          Rails.logger.warn("Could not find System/Interval category or duration_in_months is not set. System found: #{system_category.present?}, Interval found: #{interval_category.present?}")
         end
+      else
+        Rails.logger.warn "Skipping NextInspection: Missing category data in form. System data: '#{system_category_data}', Interval data: '#{interval_category_data}'"
       end
     rescue JSON::ParserError => e
       Rails.logger.error "Failed to parse form_structure for next inspection: #{e.message}"
