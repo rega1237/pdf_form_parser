@@ -1098,7 +1098,10 @@ class FormFillsController < ApplicationController
         system_category = SystemCategory.find_by(name: system_category_data)
         interval_category = IntervalCategory.find_by(name: interval_category_data)
 
-        if system_category && interval_category&.duration_in_months.present?
+        # Usar effective_duration para manejar casos donde duration_in_months es nil en BD
+        duration = interval_category&.effective_duration
+
+        if system_category && duration.present? && duration > 0
           # Verificar si ya existe una next inspection con los mismos parámetros
           existing_next_inspection = NextInspection.find_duplicate(
             inspection.property.id,
@@ -1110,13 +1113,13 @@ class FormFillsController < ApplicationController
             # Almacenar información del duplicado en la sesión para mostrar al usuario
             session[:duplicate_next_inspection] = {
               existing: existing_next_inspection.duplicate_info,
-              new_date: inspection.date + interval_category.duration_in_months.months,
+              new_date: inspection.date + duration.months,
               form_fill_id: @form_fill.id
             }
             Rails.logger.info "Duplicate next inspection found for property #{inspection.property.id}"
           else
             # Crear la nueva next inspection si no hay duplicados
-            next_date = inspection.date + interval_category.duration_in_months.months
+            next_date = inspection.date + duration.months
 
             NextInspection.create!(
               property: inspection.property,
@@ -1128,7 +1131,7 @@ class FormFillsController < ApplicationController
             Rails.logger.info "Next inspection scheduled for property #{inspection.property.id} on #{next_date}"
           end
         else
-          Rails.logger.warn("Could not find System/Interval category or duration_in_months is not set. System found: #{system_category.present?}, Interval found: #{interval_category.present?}")
+          Rails.logger.warn("Could not find System/Interval category or duration is invalid. System found: #{system_category.present?}, Interval found: #{interval_category.present?}, Duration: #{duration.inspect}")
         end
       else
         Rails.logger.warn "Skipping NextInspection: Missing category data in form. System data: '#{system_category_data}', Interval data: '#{interval_category_data}'"
