@@ -336,6 +336,28 @@ class PwaController < ApplicationController
             }
           })());
         }
+
+        // Permite eliminar URLs específicas del caché (limpieza de inspecciones offline)
+        if (data.type === 'CLEANUP_URLS' && Array.isArray(data.urls)) {
+          event.waitUntil((async () => {
+            try {
+              const cache = await caches.open(CACHE_NAME);
+              for (const url of data.urls) {
+                try {
+                  // Intentar borrar la URL tal cual y también con la query string predeterminada si existe
+                  // (Service Worker match a veces es estricto con query params)
+                  const deleted = await cache.delete(url, { ignoreSearch: true });
+                  if (deleted) console.log('🗑️ SW: Deleted from cache', url);
+                  else console.log('ℹ️ SW: URL not found in cache to delete', url);
+                } catch (e) {
+                  console.warn('⚠️ SW: Error deleting', url, e);
+                }
+              }
+            } catch (e) {
+              console.warn('⚠️ SW: CLEANUP_URLS failed:', e);
+            }
+          })());
+        }
       });
 
       console.log('🚀 Service Worker cargado correctamente - v#{cache_version}');
