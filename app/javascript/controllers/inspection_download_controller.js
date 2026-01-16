@@ -306,14 +306,31 @@ export default class extends Controller {
           "serviceWorker" in navigator &&
           navigator.serviceWorker.controller
         ) {
-          navigator.serviceWorker.controller.postMessage({
-            type: "CLEANUP_URLS",
-            urls: urlsToRemove,
+          await new Promise((resolve) => {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = () => {
+              console.log("[InspectionDownload] Cache cleanup confirmed by SW");
+              resolve();
+            };
+
+            navigator.serviceWorker.controller.postMessage(
+              { type: "CLEANUP_URLS", urls: urlsToRemove },
+              [channel.port2],
+            );
+
+            console.log(
+              "[InspectionDownload] Sent CLEANUP_URLS to SW, waiting for confirmation:",
+              urlsToRemove,
+            );
+
+            // Timeout de seguridad: si el SW no responde en 500ms, continuar de todos modos
+            setTimeout(() => {
+              console.warn(
+                "[InspectionDownload] Cache cleanup timed out, proceeding anyway",
+              );
+              resolve();
+            }, 500);
           });
-          console.log(
-            "[InspectionDownload] Sent CLEANUP_URLS to SW:",
-            urlsToRemove,
-          );
         }
       } catch (cacheError) {
         console.warn(
@@ -354,6 +371,63 @@ export default class extends Controller {
       console.error("Error removing inspection:", error);
       this.showErrorState();
       this.showMessage(`Error al remover: ${error.message}`, "error");
+    }
+  }
+
+  async delete(event) {
+    event.preventDefault();
+
+    if (!confirm("Are you sure you want to delete this inspection?")) {
+      return;
+    }
+
+    const button = event.currentTarget;
+    button.style.opacity = "0.5";
+    button.style.pointerEvents = "none";
+
+    try {
+      console.log(
+        "[InspectionDownload] Cleaning up offline data before delete...",
+      );
+      await this.removeInspection();
+
+      const url = button.href;
+      const csrfToken = document.querySelector('[name="csrf-token"]').content;
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+          Accept:
+            "text/vnd.turbo-stream.html, text/html, application/xhtml+xml",
+        },
+        redirect: "manual",
+      });
+
+      if (
+        response.ok ||
+        response.type === "opaqueredirect" ||
+        (response.status >= 300 && response.status < 400)
+      ) {
+        window.location.reload();
+      } else {
+        console.error(
+          "Server delete failed:",
+          response.status,
+          response.statusText,
+        );
+        alert("Failed to delete inspection on server.");
+        button.style.opacity = "1";
+        button.style.pointerEvents = "auto";
+      }
+    } catch (error) {
+      console.error(
+        "[InspectionDownload] Error during deletion process:",
+        error,
+      );
+      alert("An error occurred while deleting.");
+      button.style.opacity = "1";
+      button.style.pointerEvents = "auto";
     }
   }
 

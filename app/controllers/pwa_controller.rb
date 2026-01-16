@@ -7,55 +7,55 @@ class PwaController < ApplicationController
 
   def manifest
     # Configuramos el content-type correctamente
-    response.headers['Content-Type'] = 'application/manifest+json'
+    response.headers["Content-Type"] = "application/manifest+json"
 
     # Renderizamos JSON directamente
     render json: {
-      name: 'AES Pro Inspections',
-      short_name: 'AES Pro',
-      description: 'Aplicación de inspecciones para trabajar online y offline.',
-      start_url: '/',
-      display: 'standalone',
-      scope: '/',
-      background_color: '#0f172a',
-      theme_color: '#1e293b',
-      orientation: 'portrait',
+      name: "AES Pro Inspections",
+      short_name: "AES Pro",
+      description: "Aplicaci\u00F3n de inspecciones para trabajar online y offline.",
+      start_url: "/",
+      display: "standalone",
+      scope: "/",
+      background_color: "#0f172a",
+      theme_color: "#1e293b",
+      orientation: "portrait",
       categories: %w[business productivity],
       icons: [
         {
-          src: '/icon.png',
-          type: 'image/png',
-          sizes: '100x100'
+          src: "/icon.png",
+          type: "image/png",
+          sizes: "100x100"
         },
         {
-          src: '/icon_192.png',
-          type: 'image/png',
-          sizes: '192x192'
+          src: "/icon_192.png",
+          type: "image/png",
+          sizes: "192x192"
         },
         {
-          src: '/icon_512.png',
-          type: 'image/png',
-          sizes: '512x512'
+          src: "/icon_512.png",
+          type: "image/png",
+          sizes: "512x512"
         },
         {
-          src: '/icon_512.png',
-          type: 'image/png',
-          sizes: '512x512',
-          purpose: 'any maskable'
+          src: "/icon_512.png",
+          type: "image/png",
+          sizes: "512x512",
+          purpose: "any maskable"
         }
       ],
       screenshots: [
         {
-          src: '/icon_512.png',
-          type: 'image/png',
-          sizes: '512x512',
-          form_factor: 'narrow'
+          src: "/icon_512.png",
+          type: "image/png",
+          sizes: "512x512",
+          form_factor: "narrow"
         },
         {
-          src: '/icon_512.png',
-          type: 'image/png',
-          sizes: '512x512',
-          form_factor: 'wide'
+          src: "/icon_512.png",
+          type: "image/png",
+          sizes: "512x512",
+          form_factor: "wide"
         }
       ]
     }
@@ -63,29 +63,29 @@ class PwaController < ApplicationController
 
   def service_worker
     # Configuramos el content-type correctamente
-    response.headers['Content-Type'] = 'application/javascript'
+    response.headers["Content-Type"] = "application/javascript"
 
     # Lista de recursos críticos para cachear
     app_shell_urls = [
-      '/',
+      "/",
       # IMPORTANTE: no incluir rutas protegidas que requieran sesión (evita cachear login)
       # '/inspections',
       # '/form_fills',
-      view_context.asset_path('application.js'),
-      view_context.asset_path('application.css'),
-      '/icon.png',
-      '/icon_192.png',
-      '/icon_512.png'
+      view_context.asset_path("application.js"),
+      view_context.asset_path("application.css"),
+      "/icon.png",
+      "/icon_192.png",
+      "/icon_512.png"
     ]
 
     # Cache estática en producción, dinámica en desarrollo
     cache_version = if Rails.env.development?
                       # En desarrollo, usar versión fija para evitar updates constantes
-                      'dev-1.0.0'
-                    else
+                      "dev-1.0.0"
+    else
                       # En producción, usar hash de assets para detectar cambios reales
                       Digest::MD5.hexdigest(app_shell_urls.join)[0..7]
-                    end
+    end
 
     # Generamos el JavaScript del Service Worker
     js_content = <<~JAVASCRIPT
@@ -347,17 +347,24 @@ class PwaController < ApplicationController
                   // Intentar borrar la URL tal cual y también con la query string predeterminada si existe
                   // (Service Worker match a veces es estricto con query params)
                   const deleted = await cache.delete(url, { ignoreSearch: true });
-                  if (deleted) console.log('🗑️ SW: Deleted from cache', url);
-                  else console.log('ℹ️ SW: URL not found in cache to delete', url);
-                } catch (e) {
-                  console.warn('⚠️ SW: Error deleting', url, e);
-                }
-              }
-            } catch (e) {
-              console.warn('⚠️ SW: CLEANUP_URLS failed:', e);
-            }
-          })());
-        }
+                   if (deleted) console.log('🗑️ SW: Deleted from cache', url);
+                   else console.log('ℹ️ SW: URL not found in cache to delete', url);
+                 } catch (e) {
+                   console.warn('⚠️ SW: Error deleting', url, e);
+                 }
+               }
+               // Confirmar finalización si se proporcionó un puerto de mensaje
+               if (event.ports && event.ports[0]) {
+                 event.ports[0].postMessage({ done: true });
+               }
+             } catch (e) {
+               console.warn('⚠️ SW: CLEANUP_URLS failed:', e);
+               if (event.ports && event.ports[0]) {
+                 event.ports[0].postMessage({ done: true, error: e.message });
+               }
+             }
+           })());
+         }
       });
 
       console.log('🚀 Service Worker cargado correctamente - v#{cache_version}');
