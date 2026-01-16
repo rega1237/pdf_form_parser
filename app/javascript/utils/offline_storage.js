@@ -1646,6 +1646,43 @@ class OfflineStorage {
   }
 
   /**
+   * Borra TODOS los datos almacenados offline (Vaciando todos los object stores)
+   * Nota: Usamos clear() en lugar de deleteDatabase() para evitar bloqueos si hay
+   * otras conexiones abiertas (ej. otros tabs o controladores).
+   */
+  async clearAllData() {
+    try {
+      const db = await this.openDB();
+      const storeNames = Array.from(db.objectStoreNames);
+
+      if (storeNames.length === 0) {
+        console.log("[OfflineStorage] No object stores to clear");
+        return;
+      }
+
+      const tx = db.transaction(storeNames, "readwrite");
+      const promises = storeNames.map((name) => {
+        console.log(`[OfflineStorage] Clearing store: ${name}`);
+        return this.promisifyRequest(tx.objectStore(name).clear());
+      });
+
+      await Promise.all(promises);
+
+      // Esperar a que la transacción complete
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(new Error("Transaction aborted"));
+      });
+
+      console.log("[OfflineStorage] All data cleared successfully");
+    } catch (error) {
+      console.error("[OfflineStorage] Error clearing data:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Cierra la conexión a la base de datos
    */
   close() {

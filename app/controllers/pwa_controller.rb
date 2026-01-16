@@ -365,7 +365,55 @@ class PwaController < ApplicationController
              }
            })());
          }
-      });
+
+         // Limpieza total de cachés (Clean All)
+         if (data.type === 'CLEAR_ALL_CACHE') {
+           event.waitUntil((async () => {
+             try {
+               const keys = await caches.keys();
+               await Promise.all(keys.map(async key => {
+                 if (key === CACHE_NAME) {
+                   // Limpiar datos de usuario del caché principal, preservando App Shell
+                   console.log('🧹 SW: Cleaning user data from App Shell cache...');
+                   const cache = await caches.open(key);
+                   const requests = await cache.keys();
+                   await Promise.all(requests.map(req => {
+                     const url = new URL(req.url);
+                     const pathname = url.pathname;
+      #{'               '}
+                     // Verificar si es parte del App Shell
+                     const isAppShell = APP_SHELL_URLS.some(shellUrl => pathname === shellUrl);
+
+                     if (!isAppShell) {
+                       // Borrar todo lo que no sea App Shell (inspecciones visitadas, fotos cacheadas, etc)
+                       return cache.delete(req);
+                     }
+                     return Promise.resolve();
+                   }));
+                   console.log('🛡️ SW: App Shell preserved in', key);
+                 } else if (key === OFFLINE_CACHE_NAME) {
+                   console.log('🛡️ SW: Preserving Offline Page cache', key);
+                   return Promise.resolve();
+                 } else {
+                   // Borrar otros cachés (API, versiones viejas)
+                   console.log('🗑️ SW: Deleting cache', key);
+                   return caches.delete(key);
+                 }
+               }));
+      #{'         '}
+               console.log('🗑️ SW: User data caches cleared');
+               if (event.ports && event.ports[0]) {
+                 event.ports[0].postMessage({ done: true });
+               }
+             } catch (e) {
+               console.warn('⚠️ SW: CLEAR_ALL_CACHE failed:', e);
+               if (event.ports && event.ports[0]) {
+                 event.ports[0].postMessage({ done: true, error: e.message });
+               }
+             }
+           })());
+         }
+       });
 
       console.log('🚀 Service Worker cargado correctamente - v#{cache_version}');
     JAVASCRIPT
