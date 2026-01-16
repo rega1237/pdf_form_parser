@@ -252,6 +252,17 @@ export default class extends Controller {
           inspectionTitle: this.inspectionTitleValue 
         } 
       })
+
+      // Forzar actualización de UI de Sync y StorageStats
+      document.dispatchEvent(new CustomEvent('sync:pending-changes'))
+      
+      // Intentar actualizar StorageStats si el controlador está presente en la página
+      const storageStatsElement = document.querySelector('[data-controller="storage-stats"]')
+      if (storageStatsElement) {
+        // Acceder a la instancia del controlador si es posible, o simular click en refresh
+        const refreshBtn = storageStatsElement.querySelector('[data-action="storage-stats#refresh"]')
+        if (refreshBtn) refreshBtn.click()
+      }
       
     } catch (error) {
       console.error('Error removing inspection:', error)
