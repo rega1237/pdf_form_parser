@@ -51,7 +51,7 @@ export default class extends Controller {
 
       if (this.hasDetailsTextTarget) {
         this.detailsTextTarget.innerHTML = `
-          <span class="mr-4">Inspecciones offline: <span class="font-semibold text-white">${stats.inspectionsCount}</span></span>
+          <span class="mr-4">Inspections offline: <span class="font-semibold text-white">${stats.inspectionsCount}</span></span>
           <span class="mr-4">Pending changes: <span class="font-semibold text-white">${stats.pendingChangesCount}</span></span>
           <span>Sync queue: <span class="font-semibold text-white">${stats.syncQueue}</span></span>
         `;
@@ -60,7 +60,7 @@ export default class extends Controller {
       console.error("[StorageStats] Error obteniendo estadísticas:", error);
       if (this.hasDetailsTextTarget) {
         this.detailsTextTarget.textContent =
-          "No se pudieron obtener las estadísticas de almacenamiento";
+          "Storage statistics could not be obtained";
       }
     }
   }
