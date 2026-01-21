@@ -274,20 +274,20 @@ class Api::V1::SyncController < ApplicationController
       {
         success: true,
         server_id: inspection.id,
-        message: 'Inspección actualizada exitosamente'
+        message: 'Inspection updated successfully'
       }
     else
       {
         success: false,
-        error: 'Inspección no encontrada',
-        message: "No se encontró la inspección con ID #{inspection_data[:id]}"
+        error: 'Inspection not found',
+        message: "No inspection found with ID #{inspection_data[:id]}"
       }
     end
   rescue StandardError => e
-    Rails.logger.error "Error sincronizando inspección: #{e.message}"
+    Rails.logger.error "Error synchronizing inspection: #{e.message}"
     {
       success: false,
-      error: 'Error sincronizando inspección',
+      error: 'Error synchronizing inspection',
       message: e.message
     }
   end
@@ -295,12 +295,12 @@ class Api::V1::SyncController < ApplicationController
   def process_photo_upload(form_fill, field_name, photo_file)
     # Validar que sea una imagen
     unless photo_file.content_type&.start_with?('image/')
-      return { success: false, error: 'El archivo debe ser una imagen' }
+      return { success: false, error: 'The file must be an image' }
     end
 
     # Validar tamaño (máximo 10MB)
     max_size = 10.megabytes
-    return { success: false, error: 'El archivo es demasiado grande (máximo 10MB)' } if photo_file.size > max_size
+    return { success: false, error: 'The file is too large (max 10MB)' } if photo_file.size > max_size
 
     # Usar la API del modelo para adjuntar de forma consistente y limpiar duplicados
     attach_result = form_fill.attach_photo_for_field(field_name, photo_file)
@@ -313,14 +313,14 @@ class Api::V1::SyncController < ApplicationController
     else
       {
         success: false,
-        error: attach_result[:error] || 'Error al adjuntar la foto'
+        error: attach_result[:error] || 'Error attaching photo'
       }
     end
   rescue StandardError => e
-    Rails.logger.error "Error procesando subida de foto: #{e.message}"
+    Rails.logger.error "Error processing photo upload: #{e.message}"
     {
       success: false,
-      error: "Error procesando la foto: #{e.message}"
+      error: "Error processing photo: #{e.message}"
     }
   end
 

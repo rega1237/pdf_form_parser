@@ -162,7 +162,7 @@ class InspectionsController < ApplicationController
   # PATCH/PUT /inspections/1
   def update
     if @inspection.update(inspection_params)
-      redirect_to @inspection, notice: 'Inspección actualizada exitosamente.'
+      redirect_to @inspection, notice: 'Inspection updated successfully.'
     else
       @selected_customer = @inspection.property.customer
       render :edit, status: :unprocessable_entity
