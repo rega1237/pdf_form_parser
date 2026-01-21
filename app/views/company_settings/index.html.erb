@@ -424,7 +424,11 @@
                 <p class="text-slate-300 text-sm"><%= pluralize(@contractor_infos.count, 'contractor') %> registered</p>
               </div>
             </div>
-            <%= link_to "Add Contractor", new_contractor_info_path, class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] text-sm" %>
+            <% if @contractor_infos.any? %>
+              <%= link_to "Edit Contractor", edit_contractor_info_path(@contractor_infos.first), class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] text-sm" %>
+            <% else %>
+              <%= link_to "Add Contractor", new_contractor_info_path, class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] text-sm" %>
+            <% end %>
           </div>
           <% if @contractor_infos.any? %>
             <div class="max-h-96 overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -492,7 +496,11 @@
                 <p class="text-slate-300 text-sm"><%= pluralize(@license_infos.count, 'license') %> registered</p>
               </div>
             </div>
-            <%= link_to "Add License", new_license_info_path, class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] text-sm" %>
+            <% if @license_infos.any? %>
+              <%= link_to "Edit License", edit_license_info_path(@license_infos.first), class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] text-sm" %>
+            <% else %>
+              <%= link_to "Add License", new_license_info_path, class: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] text-sm" %>
+            <% end %>
           </div>
           <% if @license_infos.any? %>
             <div class="max-h-96 overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
