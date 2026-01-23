@@ -536,9 +536,9 @@ class FormFill < ApplicationRecord
 
         if success
           Rails.logger.info "Photo removed completely for field: #{field_name}"
-          { success: true, message: 'Foto eliminada exitosamente' }
+          { success: true, message: 'Photo removed successfully' }
         else
-          { success: false, error: 'Error al actualizar estructura del formulario' }
+          { success: false, error: 'Error updating form structure' }
         end
       end
     rescue StandardError => e
@@ -573,7 +573,7 @@ class FormFill < ApplicationRecord
       Rails.logger.info "Removed photo ID #{photo_id} from field #{field_name}"
     end
 
-    { success: true, message: 'Foto eliminada exitosamente' }
+    { success: true, message: 'Photo removed successfully' }
   end
 
   # Método para limpiar photo_attachment_id en data column (updated for new structure)

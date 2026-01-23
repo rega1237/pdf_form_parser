@@ -192,7 +192,7 @@ class InspectionsController < ApplicationController
   def destroy
     authorize @inspection
     @inspection.destroy
-    redirect_to inspections_url, notice: 'Inspección eliminada exitosamente.'
+    redirect_to inspections_url, notice: 'Inspection deleted successfully.'
   end
 
   # GET /inspections/calendar
