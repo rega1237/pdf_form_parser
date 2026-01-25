@@ -34,10 +34,16 @@ export default class extends Controller {
     // Si el campo está vacío, establecer la fecha de inspección
     if (!this.element.value || this.element.value === "") {
       // Antes de establecer por defecto, revisar si existe un valor guardado en data-form-fill-data-value
-      const formElement = this.element.closest('[data-controller*="form-fill"]');
+      const formElement = this.element.closest(
+        '[data-controller*="form-fill"]',
+      );
       let savedValue = null;
       let fieldName = null;
-      if (formElement && this.element.name && this.element.name.startsWith("form_fill[")) {
+      if (
+        formElement &&
+        this.element.name &&
+        this.element.name.startsWith("form_fill[")
+      ) {
         const match = this.element.name.match(/form_fill\[(.+)\]/);
         fieldName = match ? match[1] : null;
       }
@@ -56,9 +62,12 @@ export default class extends Controller {
       // Si hay un valor guardado para este campo, usarlo silenciosamente y no marcar cambio
       if (savedValue) {
         let valueToSet = savedValue;
-        if (typeof valueToSet === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)) {
+        if (
+          typeof valueToSet === "string" &&
+          /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)
+        ) {
           const [y, m, d] = valueToSet.split("-");
-          valueToSet = `${m}/${d}/${y}`;
+          valueToSet = `${m}/${d}/${y.slice(-2)}`;
         }
         this.element.value = valueToSet;
         this.element.setAttribute("value", valueToSet);
@@ -95,10 +104,10 @@ export default class extends Controller {
     // Método de fallback para usar fecha actual
     const today = new Date();
 
-    // Formato estadounidense: MM/DD/YYYY
+    // Formato estadounidense: MM/DD/YY
     const month = String(today.getMonth() + 1).padStart(2, "0");
     const day = String(today.getDate()).padStart(2, "0");
-    const year = today.getFullYear();
+    const year = String(today.getFullYear()).slice(-2);
 
     const usDateFormat = `${month}/${day}/${year}`;
 

@@ -139,23 +139,26 @@ export default class extends Controller {
                   const y = isoMatch[1];
                   const m = isoMatch[2];
                   const day = isoMatch[3];
-                  return `${m}/${day}/${y}`;
+                  return `${m}/${day}/${y.slice(-2)}`;
                 }
                 // Already US format?
-                if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
+                if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+                  return d.substring(0, 6) + d.substring(8);
+                }
+                if (/^\d{2}\/\d{2}\/\d{2}$/.test(d)) return d;
                 // Try Date.parse fallback
                 const parsed = new Date(d);
                 if (!isNaN(parsed.getTime())) {
                   const mm = String(parsed.getMonth() + 1).padStart(2, "0");
                   const dd = String(parsed.getDate()).padStart(2, "0");
-                  const yyyy = String(parsed.getFullYear());
+                  const yyyy = String(parsed.getFullYear()).slice(-2);
                   return `${mm}/${dd}/${yyyy}`;
                 }
                 return null;
               } else if (d instanceof Date) {
                 const mm = String(d.getMonth() + 1).padStart(2, "0");
                 const dd = String(d.getDate()).padStart(2, "0");
-                const yyyy = String(d.getFullYear());
+                const yyyy = String(d.getFullYear()).slice(-2);
                 return `${mm}/${dd}/${yyyy}`;
               }
               return null;
@@ -691,7 +694,7 @@ export default class extends Controller {
           /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)
         ) {
           const [y, m, d] = valueToSet.split("-");
-          valueToSet = `${m}/${d}/${y}`;
+          valueToSet = `${m}/${d}/${y.slice(-2)}`;
         }
         dateField.value = valueToSet;
         dateField.setAttribute("value", valueToSet);
@@ -1098,7 +1101,7 @@ export default class extends Controller {
         /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)
       ) {
         const [y, m, d] = valueToSet.split("-");
-        valueToSet = `${m}/${d}/${y}`;
+        valueToSet = `${m}/${d}/${y.slice(-2)}`;
       }
       // Use saved value if it exists (no change tracking)
       inputElement.value = valueToSet;
