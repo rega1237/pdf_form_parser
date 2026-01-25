@@ -37,11 +37,6 @@ export default class extends Controller {
     this.isExpanded = false;
   }
 
-  /**
-   * Esta es la acción que se ejecuta cuando se hace clic en el botón.
-   * Ahora siempre funcionará porque las variables (this.toggleButton, etc.)
-   * fueron actualizadas por handlePageChange() justo al cambiar de página.
-   */
   toggleFields() {
     // Verificamos que los elementos existan en la página actual.
     if (!this.toggleButton || !this.additionalFields) {

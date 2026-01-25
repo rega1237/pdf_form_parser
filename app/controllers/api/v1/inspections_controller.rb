@@ -98,8 +98,8 @@ class Api::V1::InspectionsController < ApplicationController
   rescue ActiveRecord::RecordNotFound
     render json: {
       success: false,
-      error: 'Inspección no encontrada',
-      message: 'La inspección solicitada no existe o no tienes permisos para acceder a ella'
+      error: 'InspectionNotFound',
+      message: 'The requested inspection does not exist or you do not have permission to access it'
     }, status: :not_found
   end
 
