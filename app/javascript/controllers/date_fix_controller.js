@@ -62,12 +62,14 @@ export default class extends Controller {
       // Si hay un valor guardado para este campo, usarlo silenciosamente y no marcar cambio
       if (savedValue) {
         let valueToSet = savedValue;
-        if (
-          typeof valueToSet === "string" &&
-          /^\d{4}-\d{2}-\d{2}$/.test(valueToSet)
-        ) {
-          const [y, m, d] = valueToSet.split("-");
-          valueToSet = `${m}/${d}/${y.slice(-2)}`;
+        if (typeof valueToSet === "string") {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(valueToSet)) {
+            const [y, m, d] = valueToSet.split("-");
+            valueToSet = `${m}/${d}/${y.slice(-2)}`;
+          } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(valueToSet)) {
+            // Convertir MM/DD/YYYY a MM/DD/YY
+            valueToSet = valueToSet.substring(0, 6) + valueToSet.substring(8);
+          }
         }
         this.element.value = valueToSet;
         this.element.setAttribute("value", valueToSet);
@@ -77,8 +79,17 @@ export default class extends Controller {
       const inspectionDate = this.getInspectionDate();
 
       if (inspectionDate) {
-        this.element.value = inspectionDate;
-        this.element.setAttribute("value", inspectionDate);
+        let valueToSet = inspectionDate;
+        // Asegurar año de 2 dígitos si viene como 4 dígitos
+        if (
+          typeof valueToSet === "string" &&
+          /^\d{2}\/\d{2}\/\d{4}$/.test(valueToSet)
+        ) {
+          valueToSet = valueToSet.substring(0, 6) + valueToSet.substring(8);
+        }
+
+        this.element.value = valueToSet;
+        this.element.setAttribute("value", valueToSet);
 
         // Disparar evento change para notificar otros controladores
         this.element.dispatchEvent(new Event("change", { bubbles: true }));

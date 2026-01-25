@@ -745,8 +745,15 @@ export default class extends Controller {
   // Return inspection date in MM/DD/YYYY format (already provided by the server or normalized when offline)
   getFormattedInspectionDate() {
     if (!this.inspectionDateValue) return null;
+    
+    let d = this.inspectionDateValue;
+    // Force 2-digit year if it comes as 4-digit US format (MM/DD/YYYY -> MM/DD/YY)
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+      return d.substring(0, 6) + d.substring(8);
+    }
+    
     // Expect MM/DD/YYYY; if not, return as-is. Conversion handled earlier when setting dataset.
-    return this.inspectionDateValue;
+    return d;
   }
 
   // Get data from the data column
