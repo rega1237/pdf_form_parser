@@ -153,14 +153,14 @@ export default class extends Controller {
       value = value.substring(0, 2) + "/" + value.substring(2);
     }
     if (value.length >= 5) {
-      value = value.substring(0, 5) + "/" + value.substring(5, 9);
+      value = value.substring(0, 5) + "/" + value.substring(5, 7);
     }
 
     this.element.value = value;
   }
 
   validateDate() {
-    const datePattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/[0-9]{4}$/;
+    const datePattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/[0-9]{2}$/;
     const value = this.element.value;
 
     if (value && !datePattern.test(value)) {
@@ -176,7 +176,7 @@ export default class extends Controller {
   convertISOToUS(isoDate) {
     if (isoDate && isoDate.includes("-")) {
       const [year, month, day] = isoDate.split("-");
-      return `${month}/${day}/${year}`;
+      return `${month}/${day}/${year.slice(-2)}`;
     }
     return isoDate;
   }
