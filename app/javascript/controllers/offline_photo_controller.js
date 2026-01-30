@@ -122,61 +122,118 @@ export default class extends Controller {
    * Maneja la selección de archivos
    */
   async handleFileSelect(event) {
-    const files = Array.from(event.target.files);
-    if (!files || files.length === 0) return;
+    try {
+      const files = Array.from(event.target.files);
+      if (!files || files.length === 0) return;
 
-    // Asegurar OfflineStorage inicializado
-    if (!this.offlineStorage) {
-      await this.initializeOfflineStorage();
+      // Asegurar OfflineStorage inicializado
       if (!this.offlineStorage) {
-        console.error(
-          "[OfflinePhoto] OfflineStorage no disponible al seleccionar archivo",
-        );
-        this.updateStatus("Could not prepare offline storage", "error");
+        await this.initializeOfflineStorage();
+      }
+
+      const storageAvailable = !!this.offlineStorage;
+
+      // Si el almacenamiento falla y estamos offline, no podemos hacer nada
+      if (!storageAvailable && !navigator.onLine) {
+        alert("Error: The offline storage is not available and there is no internet connection. No photos can be saved.");
+        this.updateStatus("Storage Error & Offline", "error");
         return;
       }
-    }
 
-    let successCount = 0;
-    let errorCount = 0;
-
-    // Iterar sobre todos los archivos seleccionados
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-
-      // Validación individual
-      const isValid = this.validateFile(file);
-      if (!isValid) {
-        errorCount++;
-        continue;
+      // Si el almacenamiento falló pero estamos online, notificar bypass
+      if (!storageAvailable && navigator.onLine) {
+        console.warn("[OfflinePhoto] Storage failed, bypassing to direct upload.");
+        this.updateStatus("Storage warning: Uploading directly...", "info");
       }
 
-      // Almacenar offline cada archivo
-      try {
-        await this.storePhotoOffline(file);
-        successCount++;
-      } catch (e) {
-        console.error(`[OfflinePhoto] Error storing file ${file.name}:`, e);
-        errorCount++;
-      }
-    }
+      let successCount = 0;
+      let errorCount = 0;
 
-    // Reportar resultado
-    if (successCount > 0) {
-      if (navigator.onLine) {
-        // Si estamos online, intentar sincronización (que procesará todas las pendientes)
-        this.updateStatus(`Uploading ${successCount} photos...`, "info");
-        await this.syncPhoto();
-      } else {
-        this.updateStatus(`Saved ${successCount} photos offline`, "success");
-      }
-    }
+      // Iterar sobre todos los archivos seleccionados
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
 
-    if (errorCount > 0) {
-      // Si hubo errores, mantener el mensaje de error visible
-      if (successCount === 0) {
-        this.updateStatus(`Failed to save ${errorCount} photos`, "error");
+        // Validación individual
+        const isValid = this.validateFile(file);
+        if (!isValid) {
+          errorCount++;
+          continue;
+        }
+
+        if (storageAvailable) {
+          // CAMINO NORMAL: Almacenar offline primero
+          try {
+            await this.storePhotoOffline(file);
+            successCount++;
+          } catch (e) {
+            console.error(`[OfflinePhoto] Error storing file ${file.name}:`, e);
+            errorCount++;
+          }
+        } else {
+          // FALLBACK: Subida directa (Storage roto pero Online)
+          try {
+            const result = await this.uploadPhotoToServer(file);
+            if (result && result.success) {
+              successCount++;
+              
+              // Actualizar UI manualmente ya que syncPhoto no correrá
+              await this.updateDataColumnQuietly(result.attachment_id || result.photo_attachment_id, this.fieldNameValue);
+              
+              if (this.kindValue !== "signature") {
+                const captureController = this.application.getControllerForElementAndIdentifier(
+                  this.element,
+                  "photo-capture"
+                );
+                if (captureController) {
+                  captureController.addToGallery(file, result.attachment_id || result.photo_attachment_id, true);
+                }
+              } else {
+                 // Si es firma/single photo, actualizar preview
+                 this.photoIdValue = result.attachment_id || result.photo_attachment_id; // Use server ID temporarily
+                 const imgEl = this.getPreviewImageElement();
+                 if (imgEl) {
+                   imgEl.src = URL.createObjectURL(file);
+                   const container = imgEl.closest('.hidden');
+                   if (container) container.classList.remove('hidden');
+                 }
+              }
+            } else {
+              errorCount++;
+            }
+          } catch (e) {
+            console.error(`[OfflinePhoto] Direct upload failed for ${file.name}:`, e);
+            errorCount++;
+          }
+        }
       }
+
+      // Reportar resultado
+      if (successCount > 0) {
+        if (storageAvailable && navigator.onLine) {
+          // Si estamos online y storage funciona, intentar sincronización normal
+          this.updateStatus(`Uploading ${successCount} photos...`, "info");
+          await this.syncPhoto();
+        } else if (!storageAvailable) {
+           // Si fue subida directa
+           this.updateStatus(`Uploaded ${successCount} photos`, "success");
+        } else {
+           // Offline normal
+          this.updateStatus(`Saved ${successCount} photos offline`, "success");
+        }
+      }
+
+      if (errorCount > 0) {
+        // Si hubo errores, mantener el mensaje de error visible
+        if (successCount === 0) {
+          this.updateStatus(`Failed to save ${errorCount} photos`, "error");
+        } else {
+           this.updateStatus(`Saved ${successCount}, Failed ${errorCount}`, "warning");
+        }
+      }
+    } catch (criticalError) {
+      console.error("[OfflinePhoto] CRITICAL ERROR in handleFileSelect:", criticalError);
+      alert("Critical Error: An unexpected error occurred while selecting the photo. Please try again.");
+      this.updateStatus("Critical Error", "error");
     }
   }
 
@@ -200,7 +257,7 @@ export default class extends Controller {
     const isImage = file.type && file.type.startsWith("image/");
     if (!isImage || (!accepted.includes(file.type) && accepted.length > 0)) {
       this.updateStatus(
-        `Tipo de archivo no válido. Use: ${accepted.join(", ")}`,
+        `Invalid file type. Use: ${accepted.join(", ")}`,
         "error",
       );
       return false;
@@ -209,7 +266,7 @@ export default class extends Controller {
     // Verificar tamaño
     if (file.size > maxSize) {
       const maxSizeMB = (maxSize / 1024 / 1024).toFixed(1);
-      this.updateStatus(`Archivo muy grande. Máximo: ${maxSizeMB}MB`, "error");
+      this.updateStatus(`File is too large. Maximum: ${maxSizeMB}MB`, "error");
       return false;
     }
 
@@ -253,7 +310,7 @@ export default class extends Controller {
         );
       } catch (e) {
         console.warn(
-          "[OfflinePhoto] No se pudo actualizar photos en form_fill:",
+          "[OfflinePhoto] Failed to update photos in form_fill:",
           e,
         );
       }

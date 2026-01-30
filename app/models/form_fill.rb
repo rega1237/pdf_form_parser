@@ -24,6 +24,7 @@ class FormFill < ApplicationRecord
 
     # 3. Genera el nombre final
     random_suffix = SecureRandom.hex(4)
+    puts "[DEBUG] Generated suffix: #{random_suffix}"
     "inspection_#{inspection.id}_#{parameterized_name}_#{random_suffix}"
   end
 
@@ -367,6 +368,7 @@ class FormFill < ApplicationRecord
       # Añadir si no existe
       unless ids.include?(attachment_id)
         ids << attachment_id
+        puts "[DEBUG] Saving ids: #{ids.inspect}"
         set_field_value(photo_data_key, ids)
       end
 
