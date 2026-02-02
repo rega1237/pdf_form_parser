@@ -20,6 +20,9 @@ export default class extends Controller {
     maxSize: Number,
   };
 
+  /**
+   * Inicializa el controlador, configura los listeners de eventos e inicia el almacenamiento offline.
+   */
   connect() {
     this.isOnline = navigator.onLine;
 
@@ -43,6 +46,9 @@ export default class extends Controller {
     this.updateOnlineStatus();
   }
 
+  /**
+   * Inicializa OfflineStorage y carga fotos o firmas existentes.
+   */
   async initializeOfflineStorage() {
     try {
       this.offlineStorage = new OfflineStorage();
@@ -66,6 +72,9 @@ export default class extends Controller {
     await this.ensureLocalThumbnailFromServerIfNeeded();
   }
 
+  /**
+   * Carga todas las fotos offline para el campo actual y las agrega a la galería.
+   */
   async loadAllOfflinePhotosForField() {
     try {
       const photos = await this.offlineStorage.getPhotosForField(
@@ -92,6 +101,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Limpia los listeners de eventos cuando el controlador se desconecta.
+   */
   disconnect() {
     window.removeEventListener("online", this.handleOnlineBound);
     window.removeEventListener("offline", this.handleOfflineBound);
@@ -104,6 +116,10 @@ export default class extends Controller {
   }
 
   // Handlers de conectividad
+
+  /**
+   * Maneja el evento 'online'. Actualiza el estado e intenta sincronizar fotos pendientes.
+   */
   async handleOnline() {
     this.isOnline = true;
     this.updateOnlineStatus();
@@ -112,6 +128,9 @@ export default class extends Controller {
     await this.tryAutoSync();
   }
 
+  /**
+   * Maneja el evento 'offline'. Actualiza el estado para indicar modo sin conexión.
+   */
   handleOffline() {
     this.isOnline = false;
     this.updateOnlineStatus();
@@ -119,7 +138,9 @@ export default class extends Controller {
   }
 
   /**
-   * Maneja la selección de archivos
+   * Maneja la selección de archivos desde el input.
+   * Valida archivos, los almacena offline (o subida directa si es necesario) y actualiza la UI.
+   * @param {Event} event - El evento de cambio del input.
    */
   async handleFileSelect(event) {
     try {
@@ -135,14 +156,18 @@ export default class extends Controller {
 
       // Si el almacenamiento falla y estamos offline, no podemos hacer nada
       if (!storageAvailable && !navigator.onLine) {
-        alert("Error: The offline storage is not available and there is no internet connection. No photos can be saved.");
+        alert(
+          "Error: The offline storage is not available and there is no internet connection. No photos can be saved.",
+        );
         this.updateStatus("Storage Error & Offline", "error");
         return;
       }
 
       // Si el almacenamiento falló pero estamos online, notificar bypass
       if (!storageAvailable && navigator.onLine) {
-        console.warn("[OfflinePhoto] Storage failed, bypassing to direct upload.");
+        console.warn(
+          "[OfflinePhoto] Storage failed, bypassing to direct upload.",
+        );
         this.updateStatus("Storage warning: Uploading directly...", "info");
       }
 
@@ -175,33 +200,45 @@ export default class extends Controller {
             const result = await this.uploadPhotoToServer(file);
             if (result && result.success) {
               successCount++;
-              
+
               // Actualizar UI manualmente ya que syncPhoto no correrá
-              await this.updateDataColumnQuietly(result.attachment_id || result.photo_attachment_id, this.fieldNameValue);
-              
+              await this.updateDataColumnQuietly(
+                result.attachment_id || result.photo_attachment_id,
+                this.fieldNameValue,
+              );
+
               if (this.kindValue !== "signature") {
-                const captureController = this.application.getControllerForElementAndIdentifier(
-                  this.element,
-                  "photo-capture"
-                );
+                const captureController =
+                  this.application.getControllerForElementAndIdentifier(
+                    this.element,
+                    "photo-capture",
+                  );
                 if (captureController) {
-                  captureController.addToGallery(file, result.attachment_id || result.photo_attachment_id, true);
+                  captureController.addToGallery(
+                    file,
+                    result.attachment_id || result.photo_attachment_id,
+                    true,
+                  );
                 }
               } else {
-                 // Si es firma/single photo, actualizar preview
-                 this.photoIdValue = result.attachment_id || result.photo_attachment_id; // Use server ID temporarily
-                 const imgEl = this.getPreviewImageElement();
-                 if (imgEl) {
-                   imgEl.src = URL.createObjectURL(file);
-                   const container = imgEl.closest('.hidden');
-                   if (container) container.classList.remove('hidden');
-                 }
+                // Si es firma/single photo, actualizar preview
+                this.photoIdValue =
+                  result.attachment_id || result.photo_attachment_id; // Use server ID temporarily
+                const imgEl = this.getPreviewImageElement();
+                if (imgEl) {
+                  imgEl.src = URL.createObjectURL(file);
+                  const container = imgEl.closest(".hidden");
+                  if (container) container.classList.remove("hidden");
+                }
               }
             } else {
               errorCount++;
             }
           } catch (e) {
-            console.error(`[OfflinePhoto] Direct upload failed for ${file.name}:`, e);
+            console.error(
+              `[OfflinePhoto] Direct upload failed for ${file.name}:`,
+              e,
+            );
             errorCount++;
           }
         }
@@ -214,10 +251,10 @@ export default class extends Controller {
           this.updateStatus(`Uploading ${successCount} photos...`, "info");
           await this.syncPhoto();
         } else if (!storageAvailable) {
-           // Si fue subida directa
-           this.updateStatus(`Uploaded ${successCount} photos`, "success");
+          // Si fue subida directa
+          this.updateStatus(`Uploaded ${successCount} photos`, "success");
         } else {
-           // Offline normal
+          // Offline normal
           this.updateStatus(`Saved ${successCount} photos offline`, "success");
         }
       }
@@ -227,18 +264,28 @@ export default class extends Controller {
         if (successCount === 0) {
           this.updateStatus(`Failed to save ${errorCount} photos`, "error");
         } else {
-           this.updateStatus(`Saved ${successCount}, Failed ${errorCount}`, "warning");
+          this.updateStatus(
+            `Saved ${successCount}, Failed ${errorCount}`,
+            "warning",
+          );
         }
       }
     } catch (criticalError) {
-      console.error("[OfflinePhoto] CRITICAL ERROR in handleFileSelect:", criticalError);
-      alert("Critical Error: An unexpected error occurred while selecting the photo. Please try again.");
+      console.error(
+        "[OfflinePhoto] CRITICAL ERROR in handleFileSelect:",
+        criticalError,
+      );
+      alert(
+        "Critical Error: An unexpected error occurred while selecting the photo. Please try again.",
+      );
       this.updateStatus("Critical Error", "error");
     }
   }
 
   /**
-   * Valida el archivo seleccionado
+   * Valida el archivo seleccionado contra tipos aceptados y tamaño máximo.
+   * @param {File} file - El archivo a validar.
+   * @returns {boolean} True si es válido, false en caso contrario.
    */
   validateFile(file) {
     const accepted =
@@ -274,7 +321,8 @@ export default class extends Controller {
   }
 
   /**
-   * Almacena la foto en IndexedDB
+   * Almacena la foto en IndexedDB.
+   * @param {File} file - El archivo a almacenar.
    */
   async storePhotoOffline(file) {
     try {
@@ -309,10 +357,7 @@ export default class extends Controller {
           },
         );
       } catch (e) {
-        console.warn(
-          "[OfflinePhoto] Failed to update photos in form_fill:",
-          e,
-        );
+        console.warn("[OfflinePhoto] Failed to update photos in form_fill:", e);
       }
 
       if (this.kindValue === "signature") {
@@ -338,7 +383,8 @@ export default class extends Controller {
   }
 
   /**
-   * Actualiza el preview de la foto
+   * Updates the photo preview element with the image from IndexedDB.
+   * @param {string} photoId - The ID of the photo to display.
    */
   async updatePreview(photoId) {
     // Encontrar elementos de imagen y contenedor
@@ -414,7 +460,10 @@ export default class extends Controller {
     }
   }
 
-  // Helpers para obtener elementos correctos de preview
+  /**
+   * Helper para encontrar el elemento de imagen de previsualización.
+   * @returns {HTMLImageElement|null} El elemento de imagen.
+   */
   getPreviewImageElement() {
     // Buscar un IMG entre los targets de preview o por data-target
     const imgTarget = (this.previewTargets || []).find(
@@ -428,6 +477,10 @@ export default class extends Controller {
     );
   }
 
+  /**
+   * Helper para encontrar el elemento contenedor de previsualización.
+   * @returns {HTMLElement} El elemento contenedor.
+   */
   getPreviewContainerElement() {
     // Buscar el contenedor principal de preview
     const containerTarget = (this.previewTargets || []).find(
@@ -442,7 +495,7 @@ export default class extends Controller {
   }
 
   /**
-   * Carga foto existente si existe
+   * Carga una foto existente del almacenamiento offline si photoIdValue está presente.
    */
   async loadExistingPhoto() {
     if (!this.photoIdValue) return;
@@ -462,7 +515,7 @@ export default class extends Controller {
   }
 
   /**
-   * Busca la última foto guardada offline para este form_fill y field
+   * Loads the latest offline photo stored for this field (used for signatures/legacy).
    */
   async loadLatestOfflinePhotoForField() {
     try {
@@ -481,7 +534,8 @@ export default class extends Controller {
   }
 
   /**
-   * Elimina la foto
+   * Removes a photo from offline storage and optionally from the server if online.
+   * @param {string} photoId - The ID of the photo to remove.
    */
   async removePhoto(photoId) {
     const targetId = photoId || this.photoIdValue;
@@ -592,7 +646,10 @@ export default class extends Controller {
   }
 
   /**
-   * Elimina la foto del servidor
+   * Envía una solicitud de eliminación al servidor para una foto.
+   * @param {string} photoId - El ID local de la foto.
+   * @param {string} fieldName - El nombre del campo.
+   * @param {string} attachmentId - El ID del adjunto en el servidor.
    */
   async deletePhotoFromServer(photoId, fieldName, attachmentId) {
     try {
@@ -635,7 +692,8 @@ export default class extends Controller {
   }
 
   /**
-   * Sincroniza la foto con el servidor
+   * Sincroniza fotos con el servidor.
+   * Sincroniza la firma específica o todas las fotos no sincronizadas para el campo.
    */
   async syncPhoto() {
     if (this.kindValue === "signature") {
@@ -658,6 +716,11 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Sincroniza una foto específica por ID.
+   * Sube al servidor, actualiza metadatos locales (thumbnail) y actualiza la UI.
+   * @param {string} photoId - El ID de la foto a sincronizar.
+   */
   async syncSpecificPhoto(photoId) {
     try {
       if (!photoId) return;
@@ -771,6 +834,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Intenta sincronizar automáticamente las fotos pendientes.
+   */
   async tryAutoSync() {
     try {
       await this.syncPhoto();
@@ -780,7 +846,8 @@ export default class extends Controller {
   }
 
   /**
-   * Actualiza los datos del formulario
+   * Dispara un evento personalizado para notificar a otros controladores sobre cambios en las fotos.
+   * @param {string} photoId - El ID de la foto.
    */
   updateFormData(photoId) {
     // Disparar evento personalizado para notificar cambios
@@ -796,7 +863,11 @@ export default class extends Controller {
   }
 
   /**
-   * Actualiza silenciosamente la columna de datos con el attachment id
+   * Actualiza silenciosamente la columna de datos del controlador form-fill con el nuevo ID del adjunto.
+   * Esto asegura que los guardados/envíos posteriores incluyan la referencia a la foto.
+   * @param {string} attachmentId - El ID del adjunto en el servidor.
+   * @param {string} fieldName - El nombre del campo.
+   * @param {boolean} isRemoval - Indica si es una operación de eliminación.
    */
   async updateDataColumnQuietly(attachmentId, fieldName, isRemoval = false) {
     try {
@@ -891,7 +962,7 @@ export default class extends Controller {
   }
 
   /**
-   * Actualiza el estado de conectividad
+   * Actualiza el estado de la UI de los botones basado en el estado online/offline.
    */
   updateOnlineStatus() {
     const isOnline = navigator.onLine;
@@ -903,7 +974,9 @@ export default class extends Controller {
   }
 
   /**
-   * Actualiza el mensaje de estado
+   * Actualiza el mensaje de estado en la UI.
+   * @param {string} message - El mensaje a mostrar.
+   * @param {string} type - El tipo de mensaje ('info', 'success', 'error', 'warning').
    */
   updateStatus(message, type = "info") {
     if (!this.hasStatusTarget) return;
@@ -923,15 +996,18 @@ export default class extends Controller {
   }
 
   /**
-   * Genera un ID único para la foto
+   * Genera un ID único para una nueva foto.
+   * @returns {string} El ID único.
    */
   generatePhotoId() {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substr(2, 9);
     return `photo_${this.formFillIdValue}_${this.fieldNameValue}_${timestamp}_${random}`;
   }
+
   /**
-   * Si no hay foto local pero existe attachment de servidor y estamos online, descargar thumbnail y guardarlo
+   * Checks if there's a server thumbnail available that is not yet local, and downloads it.
+   * This is important for consistency when switching devices or clearing cache.
    */
   async ensureLocalThumbnailFromServerIfNeeded() {
     try {
@@ -1030,6 +1106,13 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Obtiene la URL de una foto desde el servidor.
+   * @param {string} formFillId - El ID del llenado de formulario.
+   * @param {string} fieldName - El nombre del campo.
+   * @param {string} attachmentId - El ID del adjunto.
+   * @returns {string|null} La URL de la foto o null.
+   */
   async fetchServerPhotoUrl(formFillId, fieldName, attachmentId) {
     try {
       const form = this.element.closest("form");
@@ -1064,7 +1147,11 @@ export default class extends Controller {
     }
   }
 
-  // Sube la foto (Blob/File) al servidor y retorna el JSON de respuesta
+  /**
+   * Uploads a photo blob to the server.
+   * @param {Blob} blob - The photo blob to upload.
+   * @returns {Object|null} The response JSON or null on failure.
+   */
   async uploadPhotoToServer(blob) {
     const fieldName = this.fieldNameValue;
     if (!fieldName) {
@@ -1131,8 +1218,12 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Maneja el evento de confirmación de eliminación de foto.
+   * @param {CustomEvent} event - El evento de confirmación.
+   */
   handleRemoveConfirmed(event) {
-    if (!confirm("¿Are you sure you want to delete?")) {
+    if (!confirm("¿Está seguro de que desea eliminar?")) {
       event.stopImmediatePropagation();
       event.preventDefault();
       return;

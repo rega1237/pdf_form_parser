@@ -1,16 +1,16 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
+  // Sets up event listeners for date handling and auto-fills inspection date if applicable
   connect() {
-    // Agregar listeners para validación en tiempo real
     this.element.addEventListener("change", this.handleDateChange.bind(this));
     this.element.addEventListener("input", this.handleDateInput.bind(this));
     this.element.addEventListener("blur", this.validateDate.bind(this));
 
-    // Solo establecer fecha cuando el usuario haga focus
+    // Only set date when user focuses
     this.element.addEventListener("focus", this.handleFirstFocus.bind(this));
 
-    // También establecer fecha si el campo está en la página actual visible
+    // Also set date if field is currently visible
     if (this.isFieldVisible()) {
       requestAnimationFrame(() => {
         setTimeout(() => {
@@ -20,6 +20,7 @@ export default class extends Controller {
     }
   }
 
+  // Removes event listeners when the controller is disconnected
   disconnect() {
     this.element.removeEventListener(
       "change",
@@ -30,10 +31,11 @@ export default class extends Controller {
     this.element.removeEventListener("focus", this.handleFirstFocus.bind(this));
   }
 
+  // Sets the inspection date if the field is empty, handling saved values and formats
   setInspectionDate() {
-    // Si el campo está vacío, establecer la fecha de inspección
+    // If field is empty, set inspection date
     if (!this.element.value || this.element.value === "") {
-      // Antes de establecer por defecto, revisar si existe un valor guardado en data-form-fill-data-value
+      // Before setting default, check if there is a saved value in data-form-fill-data-value
       const formElement = this.element.closest(
         '[data-controller*="form-fill"]',
       );
@@ -56,10 +58,10 @@ export default class extends Controller {
           }
         }
       } catch (e) {
-        // Si falla parseo, continuar con lógica normal
+        // If parsing fails, continue with normal logic
       }
 
-      // Si hay un valor guardado para este campo, usarlo silenciosamente y no marcar cambio
+      // If there is a saved value for this field, use it silently and do not mark change
       if (savedValue) {
         let valueToSet = savedValue;
         if (typeof valueToSet === "string") {
@@ -67,20 +69,20 @@ export default class extends Controller {
             const [y, m, d] = valueToSet.split("-");
             valueToSet = `${m}/${d}/${y.slice(-2)}`;
           } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(valueToSet)) {
-            // Convertir MM/DD/YYYY a MM/DD/YY
+            // Convert MM/DD/YYYY to MM/DD/YY
             valueToSet = valueToSet.substring(0, 6) + valueToSet.substring(8);
           }
         }
         this.element.value = valueToSet;
         this.element.setAttribute("value", valueToSet);
-        return; // No disparamos eventos para evitar guardados redundantes
+        return; // Do not trigger events to avoid redundant saves
       }
 
       const inspectionDate = this.getInspectionDate();
 
       if (inspectionDate) {
         let valueToSet = inspectionDate;
-        // Asegurar año de 2 dígitos si viene como 4 dígitos
+        // Ensure 2-digit year if it comes as 4 digits
         if (
           typeof valueToSet === "string" &&
           /^\d{2}\/\d{2}\/\d{4}$/.test(valueToSet)
@@ -91,15 +93,15 @@ export default class extends Controller {
         this.element.value = valueToSet;
         this.element.setAttribute("value", valueToSet);
 
-        // Disparar evento change para notificar otros controladores
+        // Trigger change event to notify other controllers
         this.element.dispatchEvent(new Event("change", { bubbles: true }));
         this.element.dispatchEvent(new Event("input", { bubbles: true }));
       } else {
-        // Si no hay fecha de inspección, usar fecha actual como fallback
+        // If no inspection date, use current date as fallback
         this.setCurrentDate();
       }
     } else {
-      // Si ya tiene valor, verificar si está en formato ISO y convertir
+      // If it already has value, check if it is in ISO format and convert
       const currentValue = this.element.value;
       if (
         currentValue.includes("-") &&
@@ -111,11 +113,12 @@ export default class extends Controller {
     }
   }
 
+  // Sets the current date in US format (MM/DD/YY)
   setCurrentDate() {
-    // Método de fallback para usar fecha actual
+    // Fallback method to use current date
     const today = new Date();
 
-    // Formato estadounidense: MM/DD/YY
+    // US Format: MM/DD/YY
     const month = String(today.getMonth() + 1).padStart(2, "0");
     const day = String(today.getDate()).padStart(2, "0");
     const year = String(today.getFullYear()).slice(-2);
@@ -125,12 +128,12 @@ export default class extends Controller {
     this.element.value = usDateFormat;
     this.element.setAttribute("value", usDateFormat);
 
-    // Disparar evento change para notificar otros controladores
+    // Trigger change event to notify other controllers
     this.element.dispatchEvent(new Event("change", { bubbles: true }));
     this.element.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
-  // Get inspection date from form-fill controller
+  // Retrieves the inspection date from the parent form-fill controller
   getInspectionDate() {
     // Find the form-fill controller in the DOM hierarchy
     const formElement = this.element.closest('[data-controller*="form-fill"]');
@@ -141,13 +144,15 @@ export default class extends Controller {
     return null;
   }
 
+  // Validates the date format on change
   handleDateChange(event) {
     this.validateDate();
   }
 
+  // Formats the date input in real-time as the user types
   handleDateInput(event) {
-    // Auto-formatear mientras el usuario escribe
-    let value = this.element.value.replace(/\D/g, ""); // Solo números
+    // Auto-format while user types
+    let value = this.element.value.replace(/\D/g, ""); // Only numbers
 
     if (value.length >= 2) {
       value = value.substring(0, 2) + "/" + value.substring(2);
@@ -159,6 +164,7 @@ export default class extends Controller {
     this.element.value = value;
   }
 
+  // Validates the date string against the MM/DD/YY pattern and updates visual feedback
   validateDate() {
     const datePattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/[0-9]{2}$/;
     const value = this.element.value;
@@ -172,7 +178,7 @@ export default class extends Controller {
     }
   }
 
-  // Método para convertir una fecha ISO a formato estadounidense
+  // Converts an ISO date string (YYYY-MM-DD) to US format (MM/DD/YY)
   convertISOToUS(isoDate) {
     if (isoDate && isoDate.includes("-")) {
       const [year, month, day] = isoDate.split("-");
@@ -181,7 +187,7 @@ export default class extends Controller {
     return isoDate;
   }
 
-  // Método público para establecer una fecha específica
+  // Public method to set a specific date string programmatically
   setDate(dateString) {
     if (dateString) {
       this.element.value = dateString;
@@ -191,32 +197,32 @@ export default class extends Controller {
     }
   }
 
-  // Método público para establecer la fecha de inspección
+  // Public method to set inspection date if the field is currently empty
   setInspectionDateIfEmpty() {
     if (!this.element.value || this.element.value === "") {
       this.setInspectionDate();
     }
   }
 
-  // Método para manejar el primer focus del usuario
+  // Handles the first focus event to populate the inspection date
   handleFirstFocus(event) {
     if (!this.element.value || this.element.value === "") {
       this.setInspectionDate();
     }
-    // Remover el listener después del primer uso
+    // Remove listener after first use
     this.element.removeEventListener("focus", this.handleFirstFocus.bind(this));
   }
 
-  // Método para verificar si el campo está visible
+  // Checks if the field is currently visible in the viewport or active page
   isFieldVisible() {
-    // Verificar si el campo está en una página visible
+    // Check if field is in a visible page
     const pageContent = this.element.closest(".page-content");
     if (pageContent) {
-      // Si está en un contenedor de página, verificar si no está oculto
+      // If in a page container, check if not hidden
       return !pageContent.classList.contains("hidden");
     }
 
-    // Verificar si el elemento está visible en general
+    // Check if element is visible in general
     const rect = this.element.getBoundingClientRect();
     return (
       rect.width > 0 &&

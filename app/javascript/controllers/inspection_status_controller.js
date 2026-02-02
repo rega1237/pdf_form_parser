@@ -3,6 +3,11 @@ import { Controller } from "@hotwired/stimulus";
 export default class extends Controller {
   static values = { inspectionId: Number };
 
+  /**
+   * Actualiza el estado de una inspección mediante una solicitud PATCH.
+   * Maneja la confirmación, interacción con la API, activación de sincronización y redirección.
+   * @param {Event} event - El evento que activó la actualización de estado (p.ej., clic).
+   */
   updateStatus(event) {
     // Prevent any default behavior or other handlers from triggering
     if (event) {
@@ -22,7 +27,9 @@ export default class extends Controller {
       return;
     }
 
-    if (confirm("Are you sure you want to change the status of this inspection?")) {
+    if (
+      confirm("Are you sure you want to change the status of this inspection?")
+    ) {
       // Force JSON format to avoid HTML redirects
       const url = `/inspections/${inspectionId}/update_status.json`;
 
@@ -30,7 +37,7 @@ export default class extends Controller {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          Accept: "application/json",
           "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
           "X-Requested-With": "XMLHttpRequest",
         },
@@ -41,11 +48,9 @@ export default class extends Controller {
         .then((response) => {
           if (!response.ok) {
             // Try to parse JSON error if available
-            return response
-              .json()
-              .catch(() => {
-                throw new Error(`Request failed with status ${response.status}`);
-              });
+            return response.json().catch(() => {
+              throw new Error(`Request failed with status ${response.status}`);
+            });
           }
           return response.json();
         })

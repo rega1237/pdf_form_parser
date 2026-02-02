@@ -20,6 +20,10 @@ export default class extends Controller {
     selectionMode: { type: String, default: "single" },
   };
 
+  /**
+   * Inicializa el controlador, construye botones de categoría, actualiza valores de visualización,
+   * y configura el manejador de la tecla escape.
+   */
   connect() {
     this.buildCategoryButtons();
     this.updateDisplayValues();
@@ -27,11 +31,16 @@ export default class extends Controller {
     document.addEventListener("keydown", this.escapeHandler);
   }
 
+  /**
+   * Limpia los event listeners cuando el controlador se desconecta.
+   */
   disconnect() {
     document.removeEventListener("keydown", this.escapeHandler);
   }
 
-  // --- Lógica de Construcción de la UI ---
+  /**
+   * Construye dinámicamente los botones de categoría de sistema e intervalo basados en valores.
+   */
   buildCategoryButtons() {
     this.systemCategoryButtonsTarget.innerHTML = "";
     this.intervalCategoryButtonsTarget.innerHTML = "";
@@ -51,6 +60,11 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Crea un elemento botón para una categoría de sistema.
+   * @param {Object} category - El objeto de categoría de sistema.
+   * @returns {HTMLButtonElement} El elemento botón creado.
+   */
   createSystemCategoryButton(category) {
     const button = document.createElement("button");
     button.type = "button";
@@ -81,6 +95,11 @@ export default class extends Controller {
     return button;
   }
 
+  /**
+   * Crea un elemento botón para una categoría de intervalo.
+   * @param {Object} category - El objeto de categoría de intervalo.
+   * @returns {HTMLButtonElement} El elemento botón creado.
+   */
   createIntervalCategoryButton(category) {
     const button = document.createElement("button");
     button.type = "button";
@@ -113,6 +132,9 @@ export default class extends Controller {
     return button;
   }
 
+  /**
+   * Agrega un botón 'Done' a la vista de selección de intervalos para el modo de selección múltiple.
+   */
   addDoneButtonToIntervals() {
     const doneButton = document.createElement("button");
     doneButton.type = "button";
@@ -123,12 +145,18 @@ export default class extends Controller {
     this.intervalSelectionTarget.appendChild(doneButton);
   }
 
-  // --- Lógica de Selección ---
-
+  /**
+   * Verifica si el modo de selección está configurado como 'multiple'.
+   * @returns {boolean} Verdadero si el modo de selección múltiple está habilitado.
+   */
   get isMultipleMode() {
     return this.selectionModeValue === "multiple";
   }
 
+  /**
+   * Maneja la selección de una categoría de sistema.
+   * @param {Event} event - El evento de clic.
+   */
   selectSystemCategory(event) {
     const value = event.currentTarget.dataset.value;
     this.systemCategoryInputTarget.value = value;
@@ -137,6 +165,10 @@ export default class extends Controller {
     setTimeout(() => this.showIntervalSelection(), 150);
   }
 
+  /**
+   * Maneja la selección de una categoría de intervalo, enrutando a lógica única o múltiple.
+   * @param {Event} event - El evento de clic.
+   */
   handleIntervalSelection(event) {
     if (this.isMultipleMode) {
       this.toggleIntervalSelection(event.currentTarget);
@@ -145,6 +177,10 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Selecciona una categoría de intervalo única y regresa al formulario.
+   * @param {HTMLElement} button - El elemento botón que fue clickeado.
+   */
   selectSingleInterval(button) {
     const name = button.dataset.name;
     this.intervalCategoryInputTarget.value = name;
@@ -152,6 +188,10 @@ export default class extends Controller {
     this.backToForm();
   }
 
+  /**
+   * Alterna el estado de selección de una categoría de intervalo en modo múltiple.
+   * @param {HTMLElement} button - El elemento botón que fue clickeado.
+   */
   toggleIntervalSelection(button) {
     const isSelected = button.classList.contains("selected");
     this.toggleIntervalButtonStyle(button, !isSelected);
@@ -166,6 +206,11 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Actualiza el estilo visual de un botón de categoría de intervalo basado en el estado de selección.
+   * @param {HTMLElement} button - El elemento botón.
+   * @param {boolean} forceSelected - Si forzar el estado seleccionado.
+   */
   toggleIntervalButtonStyle(button, forceSelected) {
     const checkIconContainer = button.querySelector(".border-2");
     const checkIcon = checkIconContainer.querySelector("svg");
@@ -178,11 +223,17 @@ export default class extends Controller {
     checkIcon.classList.toggle("opacity-0", !forceSelected);
   }
 
+  /**
+   * Confirma la selección en modo múltiple y regresa al formulario.
+   */
   confirmMultiSelect() {
     this.updateDisplayValues();
     this.backToForm();
   }
 
+  /**
+   * Actualiza el texto de visualización para categorías de sistema e intervalo basado en las entradas actuales.
+   */
   updateDisplayValues() {
     // Actualizar System Category Display
     const systemValue = this.systemCategoryInputTarget.value;
@@ -228,25 +279,41 @@ export default class extends Controller {
     }
   }
 
-  // --- Navegación del Modal (sin cambios) ---
-
+  /**
+   * Abre la vista modal de selección de sistema.
+   */
   openSystemModal() {
     this.hideAllViews();
     this.showSystemSelection();
   }
+
+  /**
+   * Abre la vista modal de selección de intervalo.
+   */
   openIntervalModal() {
     this.hideAllViews();
     this.showIntervalSelection();
   }
+
+  /**
+   * Regresa a la vista de contenido principal del formulario.
+   */
   backToForm() {
     this.hideAllViews();
     setTimeout(() => this.showFormContent(), 150);
   }
+
+  /**
+   * Regresa a la vista de selección de sistema.
+   */
   backToSystemSelection() {
     this.hideAllViews();
     setTimeout(() => this.showSystemSelection(), 150);
   }
 
+  /**
+   * Oculta todas las vistas modales (formulario, selección de sistema, selección de intervalo).
+   */
   hideAllViews() {
     this.formContentTarget.classList.add("hidden");
     this.systemSelectionTarget.classList.add("hidden");
@@ -256,21 +323,34 @@ export default class extends Controller {
     this.intervalSelectionTarget.style.opacity = "0";
   }
 
+  /**
+   * Muestra la vista de contenido del formulario con animación.
+   */
   showFormContent() {
     this.formContentTarget.classList.remove("hidden");
     this.animateIn(this.formContentTarget);
   }
 
+  /**
+   * Muestra la vista de selección de sistema con animación.
+   */
   showSystemSelection() {
     this.systemSelectionTarget.classList.remove("hidden");
     this.animateIn(this.systemSelectionTarget);
   }
 
+  /**
+   * Muestra la vista de selección de intervalo con animación.
+   */
   showIntervalSelection() {
     this.intervalSelectionTarget.classList.remove("hidden");
     this.animateIn(this.intervalSelectionTarget);
   }
 
+  /**
+   * Anima un elemento hacia la vista.
+   * @param {HTMLElement} element - El elemento a animar.
+   */
   animateIn(element) {
     element.style.opacity = "0";
     element.style.transform = "translateY(20px)";
@@ -281,6 +361,10 @@ export default class extends Controller {
     });
   }
 
+  /**
+   * Maneja la pulsación de la tecla Escape para cerrar el modal o volver al formulario.
+   * @param {KeyboardEvent} event - El evento de teclado.
+   */
   handleEscape(event) {
     if (event.key === "Escape") {
       if (this.formContentTarget.classList.contains("hidden")) {

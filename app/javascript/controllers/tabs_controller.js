@@ -5,13 +5,13 @@ export default class extends Controller {
   static classes = ["active", "inactive"];
 
   connect() {
-    console.log("Tabs controller connected");
+    //console.log("Tabs controller connected");
     this.showTab(0);
   }
 
   switch(event) {
     event.preventDefault();
-    console.log("Switching tab");
+    //console.log("Switching tab");
     const index = this.tabTargets.indexOf(event.currentTarget);
     this.showTab(index);
   }

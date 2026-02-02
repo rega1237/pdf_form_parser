@@ -80,7 +80,7 @@ class OfflineStorage {
         tx.objectStore("form_fills").put(formFillToStore),
       );
 
-      console.log(`[OfflineStorage] Stored form fill ${formFill.id}`);
+      //console.log(`[OfflineStorage] Stored form fill ${formFill.id}`);
       return true;
     } catch (error) {
       console.error("[OfflineStorage] Error storing form fill:", error);
@@ -107,13 +107,13 @@ class OfflineStorage {
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log("[OfflineStorage] Database opened successfully");
+        //console.log("[OfflineStorage] Database opened successfully");
         resolve(this.db);
       };
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
-        console.log("[OfflineStorage] Upgrading database schema");
+        //console.log("[OfflineStorage] Upgrading database schema");
 
         // Object Store: inspections
         if (!db.objectStoreNames.contains("inspections")) {
@@ -128,7 +128,7 @@ class OfflineStorage {
             "has_pending_changes",
             { unique: false },
           );
-          console.log("[OfflineStorage] Created inspections object store");
+          //console.log("[OfflineStorage] Created inspections object store");
         }
 
         // Object Store: form_fills
@@ -147,7 +147,7 @@ class OfflineStorage {
           formFillsStore.createIndex("updated_at", "updated_at", {
             unique: false,
           });
-          console.log("[OfflineStorage] Created form_fills object store");
+          //console.log("[OfflineStorage] Created form_fills object store");
         }
 
         // Object Store: photos
@@ -188,7 +188,7 @@ class OfflineStorage {
             "metadata.photo_attachment_id",
             { unique: false },
           );
-          console.log("[OfflineStorage] Created photos object store");
+          // console.log("[OfflineStorage] Created photos object store");
         } else {
           // Ensure new indexes exist when upgrading from older versions
           try {
@@ -198,9 +198,9 @@ class OfflineStorage {
             const ensureIndex = (name, keyPath) => {
               if (!indexNames.includes(name)) {
                 photosStore.createIndex(name, keyPath, { unique: false });
-                console.log(
-                  `[OfflineStorage] Added index ${name} on photos store`,
-                );
+                // console.log(
+                //   `[OfflineStorage] Added index ${name} on photos store`,
+                // );
               }
             };
             ensureIndex("metadata.inspection_id", "metadata.inspection_id");
@@ -229,7 +229,7 @@ class OfflineStorage {
           formTemplatesStore.createIndex("stored_at", "stored_at", {
             unique: false,
           });
-          console.log("[OfflineStorage] Created form_templates object store");
+          // console.log("[OfflineStorage] Created form_templates object store");
         }
 
         // Object Store: sync_queue
@@ -244,7 +244,7 @@ class OfflineStorage {
           syncQueueStore.createIndex("retry_count", "retry_count", {
             unique: false,
           });
-          console.log("[OfflineStorage] Created sync_queue object store");
+          //console.log("[OfflineStorage] Created sync_queue object store");
         }
       };
     });
@@ -254,18 +254,18 @@ class OfflineStorage {
    * Almacena una inspección completa con sus form_fills
    */
   async storeInspection(inspectionData) {
-    console.log(
-      "[OfflineStorage] Starting storeInspection with data:",
-      inspectionData,
-    );
+    //console.log(
+    //  "[OfflineStorage] Starting storeInspection with data:",
+    //  inspectionData,
+    //);
 
     const db = await this.openDB();
-    console.log("[OfflineStorage] Database opened successfully");
+    //console.log("[OfflineStorage] Database opened successfully");
 
     // Offline-First: sólo necesitamos almacenar inspección y form_fills con la
     // estructura embebida; dejamos de guardar form_templates por separado
     const tx = db.transaction(["inspections", "form_fills"], "readwrite");
-    console.log("[OfflineStorage] Transaction created");
+    // console.log("[OfflineStorage] Transaction created");
 
     try {
       // Almacenar inspección
@@ -276,20 +276,20 @@ class OfflineStorage {
         has_pending_changes: false,
       };
 
-      console.log("[OfflineStorage] Storing inspection:", inspectionToStore);
+      //console.log("[OfflineStorage] Storing inspection:", inspectionToStore);
       const inspectionResult = await this.promisifyRequest(
         tx.objectStore("inspections").put(inspectionToStore),
       );
-      console.log(
-        "[OfflineStorage] Inspection stored with result:",
-        inspectionResult,
-      );
+      //console.log(
+      //  "[OfflineStorage] Inspection stored with result:",
+      //  inspectionResult,
+      //);
 
       // Almacenar form_fills (incluyendo la estructura embebida)
       if (inspectionData.form_fills && inspectionData.form_fills.length > 0) {
-        console.log(
-          `[OfflineStorage] Storing ${inspectionData.form_fills.length} form fills`,
-        );
+        //console.log(
+        //  `[OfflineStorage] Storing ${inspectionData.form_fills.length} form fills`,
+        //);
         const formFillsStore = tx.objectStore("form_fills");
 
         for (let i = 0; i < inspectionData.form_fills.length; i++) {
@@ -306,28 +306,28 @@ class OfflineStorage {
             has_pending_changes: false,
           };
 
-          console.log(
-            `[OfflineStorage] Storing form fill ${i + 1}/${inspectionData.form_fills.length}:`,
-            formFillToStore,
-          );
+          //console.log(
+          //  `[OfflineStorage] Storing form fill ${i + 1}/${inspectionData.form_fills.length}:`,
+          //  formFillToStore,
+          //);
           const formFillResult = await this.promisifyRequest(
             formFillsStore.put(formFillToStore),
           );
-          console.log(
-            `[OfflineStorage] Form fill ${i + 1} stored with result:`,
-            formFillResult,
-          );
+          //console.log(
+          //  `[OfflineStorage] Form fill ${i + 1} stored with result:`,
+          //  formFillResult,
+          //);
         }
       }
 
       // Nota: dejamos de almacenar form_templates por separado; la estructura
       // viene embebida en cada form_fill.
 
-      console.log("[OfflineStorage] Waiting for transaction to complete...");
+      //console.log("[OfflineStorage] Waiting for transaction to complete...");
       // Esperar a que la transacción se complete usando el evento
       await new Promise((resolve, reject) => {
         tx.oncomplete = () => {
-          console.log("[OfflineStorage] Transaction completed successfully");
+          //console.log("[OfflineStorage] Transaction completed successfully");
           resolve();
         };
         tx.onerror = () => {
@@ -340,9 +340,9 @@ class OfflineStorage {
         };
       });
 
-      console.log(
-        `[OfflineStorage] Stored inspection ${inspectionData.inspection.id} with ${inspectionData.form_fills?.length || 0} form fills`,
-      );
+      //console.log(
+      //  `[OfflineStorage] Stored inspection ${inspectionData.inspection.id} with ${inspectionData.form_fills?.length || 0} form fills`,
+      //);
 
       return true;
     } catch (error) {
@@ -363,9 +363,9 @@ class OfflineStorage {
         tx.objectStore("inspections").getAll(),
       );
 
-      console.log(
-        `[OfflineStorage] Retrieved ${inspections.length} offline inspections`,
-      );
+      //console.log(
+      //  `[OfflineStorage] Retrieved ${inspections.length} offline inspections`,
+      //);
       return inspections;
     } catch (error) {
       console.error(
@@ -409,9 +409,9 @@ class OfflineStorage {
       const index = tx.objectStore("form_fills").index("inspection_id");
       const formFills = await this.promisifyRequest(index.getAll(inspectionId));
 
-      console.log(
-        `[OfflineStorage] Retrieved ${formFills.length} form fills for inspection ${inspectionId}`,
-      );
+      //console.log(
+      //  `[OfflineStorage] Retrieved ${formFills.length} form fills for inspection ${inspectionId}`,
+      //);
       return formFills;
     } catch (error) {
       console.error(
@@ -467,7 +467,7 @@ class OfflineStorage {
 
       formFill.updated_at = Date.now();
       await this.promisifyRequest(store.put(formFill));
-      console.log(`[OfflineStorage] Updated form fill ${formFillId}`);
+      //console.log(`[OfflineStorage] Updated form fill ${formFillId}`);
 
       return formFill;
     } catch (error) {
@@ -506,9 +506,9 @@ class OfflineStorage {
       formFill.has_pending_changes = true;
 
       await this.promisifyRequest(store.put(formFill));
-      console.log(
-        `[OfflineStorage] Updated form_structure for form fill ${formFillId}`,
-      );
+      //console.log(
+      //  `[OfflineStorage] Updated form_structure for form fill ${formFillId}`,
+      //);
 
       return formFill;
     } catch (error) {
@@ -538,9 +538,9 @@ class OfflineStorage {
           formFill.has_pending_changes === "true",
       );
 
-      console.log(
-        `[OfflineStorage] Found ${pendingFormFills.length} form fills with pending changes`,
-      );
+      //console.log(
+      //  `[OfflineStorage] Found ${pendingFormFills.length} form fills with pending changes`,
+      //);
       return pendingFormFills;
     } catch (error) {
       console.error(
@@ -592,17 +592,17 @@ class OfflineStorage {
           formFill.updated_at &&
           formFill.updated_at > syncedTimestamp
         ) {
-          console.log(
-            `[OfflineStorage] Form fill ${formFillId} updated during sync (local: ${formFill.updated_at}, synced: ${syncedTimestamp}). Keeping has_pending_changes=true.`,
-          );
+          // console.log(
+          //   `[OfflineStorage] Form fill ${formFillId} updated during sync (local: ${formFill.updated_at}, synced: ${syncedTimestamp}). Keeping has_pending_changes=true.`,
+          // );
           formFill.synced_at = Date.now();
           // NO ponemos has_pending_changes = false
         } else {
           formFill.synced_at = Date.now();
           formFill.has_pending_changes = false;
-          console.log(
-            `[OfflineStorage] Marked form fill ${formFillId} as synced`,
-          );
+          //console.log(
+          //  `[OfflineStorage] Marked form fill ${formFillId} as synced`,
+          //);
         }
 
         await this.promisifyRequest(store.put(formFill));
@@ -653,9 +653,9 @@ class OfflineStorage {
 
       await this.promisifyRequest(tx.objectStore("sync_queue").add(syncItem));
 
-      console.log(
-        `[OfflineStorage] Added ${type} to sync queue for form fill ${formFillId}`,
-      );
+      //console.log(
+      //  `[OfflineStorage] Added ${type} to sync queue for form fill ${formFillId}`,
+      //);
       return syncItem.id;
     } catch (error) {
       console.error("[OfflineStorage] Error adding to sync queue:", error);
@@ -675,9 +675,9 @@ class OfflineStorage {
         tx.objectStore("sync_queue").getAll(),
       );
 
-      console.log(
-        `[OfflineStorage] Retrieved ${queueItems.length} items from sync queue`,
-      );
+      //console.log(
+      //  `[OfflineStorage] Retrieved ${queueItems.length} items from sync queue`,
+      //);
       return queueItems;
     } catch (error) {
       console.error("[OfflineStorage] Error getting sync queue:", error);
@@ -706,9 +706,9 @@ class OfflineStorage {
         tx.objectStore("sync_queue").delete(syncItemId),
       );
 
-      console.log(
-        `[OfflineStorage] Removed item ${syncItemId} from sync queue`,
-      );
+      //console.log(
+      //  `[OfflineStorage] Removed item ${syncItemId} from sync queue`,
+      //);
     } catch (error) {
       console.error(
         `[OfflineStorage] Error removing item ${syncItemId} from sync queue:`,
@@ -732,7 +732,7 @@ class OfflineStorage {
       if (item) {
         Object.assign(item, updates);
         await this.promisifyRequest(store.put(item));
-        console.log(`[OfflineStorage] Updated sync item ${syncItemId}`);
+        //console.log(`[OfflineStorage] Updated sync item ${syncItemId}`);
       }
     } catch (error) {
       console.error(
@@ -748,9 +748,9 @@ class OfflineStorage {
    */
   async saveFormFillData(formFillId, changedData) {
     if (!formFillId || Object.keys(changedData).length === 0) {
-      console.log(
-        "[OfflineStorage] No formFillId or changedData provided. Skipping save.",
-      );
+      //console.log(
+      //  "[OfflineStorage] No formFillId or changedData provided. Skipping save.",
+      //);
       return;
     }
 
@@ -772,10 +772,10 @@ class OfflineStorage {
         formFill.updated_at = Date.now();
 
         await this.promisifyRequest(formFillsStore.put(formFill));
-        console.log(
-          `[OfflineStorage] FormFill ID ${formFillId} updated in IndexedDB with:`,
-          changedData,
-        );
+        //console.log(
+        //  `[OfflineStorage] FormFill ID ${formFillId} updated in IndexedDB with:`,
+        //  changedData,
+        //);
 
         // Agregar a la cola de sincronización SOLO si estamos online.
         // Cuando estamos offline, el flag has_pending_changes será consumido
@@ -795,13 +795,13 @@ class OfflineStorage {
           };
 
           await this.promisifyRequest(syncQueueStore.add(syncItem));
-          console.log(
-            `[OfflineStorage] Added form_fill_update to sync queue for form fill ${formFillId}`,
-          );
+          //console.log(
+          //  `[OfflineStorage] Added form_fill_update to sync queue for form fill ${formFillId}`,
+          //);
         } else {
-          console.log(
-            "[OfflineStorage] Offline detected. Skipping enqueue; will sync from has_pending_changes later.",
-          );
+          //console.log(
+          //  "[OfflineStorage] Offline detected. Skipping enqueue; will sync from has_pending_changes later.",
+          //);
         }
 
         // Notificar inmediatamente a la UI que existen cambios pendientes (sin necesidad de refrescar)
@@ -849,12 +849,6 @@ class OfflineStorage {
       const store = tx.objectStore("form_fills");
       const result = await this.promisifyRequest(store.get(formFillId));
 
-      if (result) {
-        console.log(
-          `[OfflineStorage] Retrieved form fill data for ${formFillId}`,
-        );
-      }
-
       return result;
     } catch (error) {
       console.error(`[OfflineStorage] Error retrieving form fill data:`, error);
@@ -872,9 +866,9 @@ class OfflineStorage {
     try {
       const store = tx.objectStore("form_fills");
       await this.promisifyRequest(store.delete(formFillId));
-      console.log(`[OfflineStorage] Removed form fill data for ${formFillId}`);
+      //console.log(`[OfflineStorage] Removed form fill data for ${formFillId}`);
     } catch (error) {
-      console.error(`[OfflineStorage] Error removing form fill data:`, error);
+      //console.error(`[OfflineStorage] Error removing form fill data:`, error);
       throw error;
     }
   }
@@ -906,7 +900,7 @@ class OfflineStorage {
     try {
       const store = tx.objectStore("form_fills");
       const result = await this.promisifyRequest(store.getAll());
-      console.log(`[OfflineStorage] Retrieved ${result.length} form fills`);
+      // console.log(`[OfflineStorage] Retrieved ${result.length} form fills`);
       return result;
     } catch (error) {
       console.error(`[OfflineStorage] Error retrieving all form fills:`, error);
@@ -936,10 +930,10 @@ class OfflineStorage {
       };
 
       await this.promisifyRequest(store.put(photoData));
-      console.log(`[OfflineStorage] Stored photo blob ${photoId}`, {
-        size: blob.size,
-        type: blob.type,
-      });
+      // console.log(`[OfflineStorage] Stored photo blob ${photoId}`, {
+      //   size: blob.size,
+      //   type: blob.type,
+      // });
     } catch (error) {
       console.error(`[OfflineStorage] Error storing photo blob:`, error);
       throw error;
@@ -958,7 +952,7 @@ class OfflineStorage {
       const result = await this.promisifyRequest(store.get(photoId));
 
       if (result) {
-        console.log(`[OfflineStorage] Retrieved photo blob ${photoId}`);
+        // console.log(`[OfflineStorage] Retrieved photo blob ${photoId}`);
         return result;
       }
 
@@ -979,7 +973,7 @@ class OfflineStorage {
     try {
       const store = tx.objectStore("photos");
       await this.promisifyRequest(store.delete(photoId));
-      console.log(`[OfflineStorage] Removed photo blob ${photoId}`);
+      // console.log(`[OfflineStorage] Removed photo blob ${photoId}`);
     } catch (error) {
       console.error(`[OfflineStorage] Error removing photo blob:`, error);
       throw error;
@@ -1013,7 +1007,7 @@ class OfflineStorage {
     try {
       const store = tx.objectStore("photos");
       const result = await this.promisifyRequest(store.getAll());
-      console.log(`[OfflineStorage] Retrieved ${result.length} photo blobs`);
+      // console.log(`[OfflineStorage] Retrieved ${result.length} photo blobs`);
       return result;
     } catch (error) {
       console.error(
@@ -1120,7 +1114,11 @@ class OfflineStorage {
     }
   }
 
-  // New: Remove all photos by inspection_id
+  /**
+   * Elimina todas las fotos asociadas a una inspección.
+   * @param {string|number} inspectionId - ID de la inspección.
+   * @returns {Promise<number>} Cantidad de fotos eliminadas.
+   */
   async removePhotosByInspection(inspectionId) {
     const db = await this.openDB();
     const tx = db.transaction(["photos"], "readwrite");
@@ -1139,9 +1137,9 @@ class OfflineStorage {
       for (const p of toDelete) {
         await this.promisifyRequest(store.delete(p.id));
       }
-      console.log(
-        `[OfflineStorage] Removed ${toDelete.length} photos for inspection ${inspectionId}`,
-      );
+      // console.log(
+      //   `[OfflineStorage] Removed ${toDelete.length} photos for inspection ${inspectionId}`,
+      // );
       return toDelete.length;
     } catch (error) {
       console.error(
@@ -1325,7 +1323,11 @@ class OfflineStorage {
     }
   }
 
-  // Método para verificar si una inspección está descargada
+  /**
+   * Verifica si una inspección está descargada.
+   * @param {string|number} inspectionId - ID de la inspección.
+   * @returns {Promise<boolean>} True si existe, false si no.
+   */
   async hasInspection(inspectionId) {
     try {
       const db = await this.openDB();
@@ -1333,11 +1335,11 @@ class OfflineStorage {
       const store = transaction.objectStore("inspections");
       const inspection = await this.promisifyRequest(store.get(inspectionId));
 
-      console.log(
-        `[OfflineStorage] Checking inspection ${inspectionId}:`,
-        inspection,
-      );
-      console.log(`[OfflineStorage] Has inspection result:`, !!inspection);
+      // console.log(
+      //   `[OfflineStorage] Checking inspection ${inspectionId}:`,
+      //   inspection,
+      // );
+      // console.log(`[OfflineStorage] Has inspection result:`, !!inspection);
 
       return !!inspection;
     } catch (error) {
@@ -1349,7 +1351,10 @@ class OfflineStorage {
     }
   }
 
-  // Método para almacenar form templates
+  /**
+   * Almacena un template de formulario.
+   * @param {Object} template - Objeto del template.
+   */
   async storeFormTemplate(template) {
     const db = await this.openDB();
     const transaction = db.transaction(["form_templates"], "readwrite");
@@ -1361,23 +1366,26 @@ class OfflineStorage {
     };
 
     await store.put(templateData);
-    console.log("Form template stored:", template.id);
+    // console.log("Form template stored:", template.id);
   }
 
-  // Método para remover una inspección y sus datos relacionados
+  /**
+   * Elimina una inspección y sus datos relacionados (form_fills, fotos, sync items).
+   * @param {string|number} inspectionId - ID de la inspección a eliminar.
+   */
   async removeInspection(inspectionId) {
     const db = await this.openDB();
 
-    console.log(
-      "[OfflineStorage] Removing inspection (v2 - with sync cleanup):",
-      inspectionId,
-    );
+    // console.log(
+    //   "[OfflineStorage] Removing inspection (v2 - with sync cleanup):",
+    //   inspectionId,
+    // );
 
     // Remover inspección
     const inspectionTransaction = db.transaction(["inspections"], "readwrite");
     const inspectionStore = inspectionTransaction.objectStore("inspections");
     await this.promisifyRequest(inspectionStore.delete(inspectionId));
-    console.log("[OfflineStorage] Inspection removed from inspections store");
+    // console.log("[OfflineStorage] Inspection removed from inspections store");
 
     // Remover form_fills relacionados
     const formFillTransaction = db.transaction(["form_fills"], "readwrite");
@@ -1388,29 +1396,29 @@ class OfflineStorage {
     const formFills = await this.promisifyRequest(
       formFillIndex.getAll(inspectionId),
     );
-    console.log(
-      "[OfflineStorage] Found form_fills to remove:",
-      formFills.length,
-    );
+    // console.log(
+    //   "[OfflineStorage] Found form_fills to remove:",
+    //   formFills.length,
+    // );
 
     // Eliminar cada form_fill
     for (const formFill of formFills) {
-      console.log("[OfflineStorage] Removing form_fill:", formFill.id);
+      // console.log("[OfflineStorage] Removing form_fill:", formFill.id);
       await this.promisifyRequest(formFillStore.delete(formFill.id));
     }
 
     // New: Remover elementos de la cola de sincronización relacionados (INLINE DEBUGGING)
     try {
-      console.log("--- STARTING SYNC QUEUE CLEANUP ---");
+      // console.log("--- STARTING SYNC QUEUE CLEANUP ---");
       const formFillIds = formFills.map((ff) => String(ff.id));
       const targetInspectionId = String(inspectionId);
-      console.log("Targets:", { targetInspectionId, formFillIds });
+      // console.log("Targets:", { targetInspectionId, formFillIds });
 
       const txSync = db.transaction(["sync_queue"], "readwrite");
       const syncStore = txSync.objectStore("sync_queue");
       const allSyncItems = await this.promisifyRequest(syncStore.getAll());
 
-      console.log(`Found ${allSyncItems.length} total items in sync queue`);
+      // console.log(`Found ${allSyncItems.length} total items in sync queue`);
 
       const itemsToRemove = allSyncItems.filter((item) => {
         let match = false;
@@ -1455,15 +1463,15 @@ class OfflineStorage {
         return match;
       });
 
-      console.log(
-        `Identified ${itemsToRemove.length} items to remove from sync queue`,
-      );
+      // console.log(
+      //   `Identified ${itemsToRemove.length} items to remove from sync queue`,
+      // );
 
       for (const item of itemsToRemove) {
-        console.log(`Deleting sync item ${item.id}`);
+        // console.log(`Deleting sync item ${item.id}`);
         await this.promisifyRequest(syncStore.delete(item.id));
       }
-      console.log("--- END SYNC QUEUE CLEANUP ---");
+      // console.log("--- END SYNC QUEUE CLEANUP ---");
     } catch (err) {
       console.error("CRITICAL ERROR cleaning sync queue:", err);
     }
@@ -1471,9 +1479,9 @@ class OfflineStorage {
     // New: Remover fotos relacionadas a la inspección
     try {
       const removedCount = await this.removePhotosByInspection(inspectionId);
-      console.log(
-        `[OfflineStorage] Also removed ${removedCount} related photos`,
-      );
+      // console.log(
+      //   `[OfflineStorage] Also removed ${removedCount} related photos`,
+      // );
     } catch (e) {
       console.warn(
         "[OfflineStorage] Failed to remove photos for inspection during cleanup:",
@@ -1481,27 +1489,31 @@ class OfflineStorage {
       );
     }
 
-    console.log(
-      "[OfflineStorage] Inspection and related data removed:",
-      inspectionId,
-    );
+    // console.log(
+    //   "[OfflineStorage] Inspection and related data removed:",
+    //   inspectionId,
+    // );
   }
 
-  // New: Remove sync items related to an inspection or its form fills
+  /**
+   * Elimina elementos de sincronización relacionados con una inspección o sus form_fills.
+   * @param {string|number} inspectionId - ID de la inspección.
+   * @param {Array<string|number>} formFillIds - Array de IDs de form_fills.
+   */
   async removeSyncItemsForInspection(inspectionId, formFillIds = []) {
-    console.log(
-      `[OfflineStorage] removeSyncItemsForInspection called for inspection ${inspectionId} and formFills:`,
-      formFillIds,
-    );
+    // console.log(
+    //   `[OfflineStorage] removeSyncItemsForInspection called for inspection ${inspectionId} and formFills:`,
+    //   formFillIds,
+    // );
     const db = await this.openDB();
     const tx = db.transaction(["sync_queue"], "readwrite");
     const store = tx.objectStore("sync_queue");
 
     try {
       const allItems = await this.promisifyRequest(store.getAll());
-      console.log(
-        `[OfflineStorage] Checking ${allItems.length} items in sync queue for removal`,
-      );
+      // console.log(
+      //   `[OfflineStorage] Checking ${allItems.length} items in sync queue for removal`,
+      // );
 
       // Normalize IDs for comparison
       const targetInspectionId = String(inspectionId);
@@ -1554,24 +1566,24 @@ class OfflineStorage {
         }
 
         if (match) {
-          console.log(
-            `[OfflineStorage] Match found for removal: item ${item.id}`,
-            item,
-          );
+          // console.log(
+          //   `[OfflineStorage] Match found for removal: item ${item.id}`,
+          //   item,
+          // );
         }
 
         return match;
       });
 
       if (itemsToRemove.length > 0) {
-        console.log(
-          `[OfflineStorage] Removing ${itemsToRemove.length} sync items for inspection ${inspectionId}`,
-        );
+        // console.log(
+        //   `[OfflineStorage] Removing ${itemsToRemove.length} sync items for inspection ${inspectionId}`,
+        // );
         for (const item of itemsToRemove) {
           await this.promisifyRequest(store.delete(item.id));
         }
       } else {
-        console.log("[OfflineStorage] No sync items matched for removal");
+        // console.log("[OfflineStorage] No sync items matched for removal");
       }
     } catch (error) {
       console.error("[OfflineStorage] Error removing sync items:", error);
@@ -1609,9 +1621,9 @@ class OfflineStorage {
         cursor = await this.promisifyRequest(cursor.continue());
       }
 
-      console.log(
-        `[OfflineStorage] Cleaned up ${cleanedCount} old synced form fills`,
-      );
+      // console.log(
+      //   `[OfflineStorage] Cleaned up ${cleanedCount} old synced form fills`,
+      // );
       return cleanedCount;
     } catch (error) {
       console.error("[OfflineStorage] Error during cleanup:", error);
@@ -1656,13 +1668,13 @@ class OfflineStorage {
       const storeNames = Array.from(db.objectStoreNames);
 
       if (storeNames.length === 0) {
-        console.log("[OfflineStorage] No object stores to clear");
+        // console.log("[OfflineStorage] No object stores to clear");
         return;
       }
 
       const tx = db.transaction(storeNames, "readwrite");
       const promises = storeNames.map((name) => {
-        console.log(`[OfflineStorage] Clearing store: ${name}`);
+        // console.log(`[OfflineStorage] Clearing store: ${name}`);
         return this.promisifyRequest(tx.objectStore(name).clear());
       });
 
@@ -1675,7 +1687,7 @@ class OfflineStorage {
         tx.onabort = () => reject(new Error("Transaction aborted"));
       });
 
-      console.log("[OfflineStorage] All data cleared successfully");
+      // console.log("[OfflineStorage] All data cleared successfully");
     } catch (error) {
       console.error("[OfflineStorage] Error clearing data:", error);
       throw error;
@@ -1689,7 +1701,7 @@ class OfflineStorage {
     if (this.db) {
       this.db.close();
       this.db = null;
-      console.log("[OfflineStorage] Database connection closed");
+      // console.log("[OfflineStorage] Database connection closed");
     }
   }
 }

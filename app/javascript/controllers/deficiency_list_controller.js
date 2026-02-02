@@ -20,21 +20,20 @@ export default class extends Controller {
     defaultItem: String,
   };
 
+  // Initializes the controller, loads initial data, and renders the deficiency list
   connect() {
-    console.log("DeficiencyListController connected");
     this.deficiencies = [];
     this.editingId = null;
 
-    // Cargar datos iniciales
     this.loadFromInput();
     this.renderList();
-    this.showList(); // Ensure list is shown by default
+    this.showList();
   }
 
+  // Parses deficiency data from the hidden input field
   loadFromInput() {
     try {
       const rawValue = this.inputTarget.value;
-      console.log("Loading from input:", rawValue);
       if (rawValue) {
         this.deficiencies = JSON.parse(rawValue);
         if (!Array.isArray(this.deficiencies)) {
@@ -47,15 +46,15 @@ export default class extends Controller {
     }
   }
 
+  // Serializes deficiency data and updates the hidden input field
   updateInput() {
-    console.log("Updating input with:", this.deficiencies);
     this.inputTarget.value = JSON.stringify(this.deficiencies);
-    // Disparar evento de cambio para que form_fill_controller detecte y guarde
+    // Trigger change event so form_fill_controller detects and saves
     this.inputTarget.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  // Renders the list of deficiencies into the DOM
   renderList() {
-    console.log("Rendering list with", this.deficiencies.length, "items");
     if (this.deficiencies.length === 0) {
       this.listTarget.innerHTML = `
         <div class="text-center p-4 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
@@ -108,8 +107,8 @@ export default class extends Controller {
       .join("");
   }
 
+  // Switches the view to the deficiency form for adding or editing
   showForm() {
-    console.log("Showing form");
     this.editingId = null;
     if (this.hasFormTitleTarget) {
       this.formTitleTarget.textContent = "Add Deficiency";
@@ -119,13 +118,14 @@ export default class extends Controller {
     this.formContainerTarget.classList.remove("hidden");
   }
 
+  // Switches the view back to the list of deficiencies
   showList() {
-    console.log("Showing list");
     this.formContainerTarget.classList.add("hidden");
     this.listContainerTarget.classList.remove("hidden");
     this.resetForm();
   }
 
+  // Saves a new or modified deficiency to the list
   saveDeficiency() {
     const deficiency = {
       id: this.editingId || this.generateId(),
@@ -133,15 +133,14 @@ export default class extends Controller {
       Riser: this.modalRiserTarget.value,
       C: this.modalCTarget.checked ? "Yes" : "No",
       D: this.modalDTarget.checked ? "Yes" : "No",
-      value: this.modalSelectTarget.value, // El value del select hidden
+      value: this.modalSelectTarget.value, // The hidden select value
       comment_value: this.modalCommentTarget.value,
     };
 
     // Validar requeridos básicos si es necesario
     if (!deficiency.value && !deficiency.comment_value) {
-      // Opcional: mostrar error o prevenir guardado si está vacío
-      // alert("Please select a deficiency or add a comment");
-      // return;
+      alert("Please select a deficiency or add a comment");
+      return;
     }
 
     if (this.editingId) {
@@ -158,6 +157,7 @@ export default class extends Controller {
     this.showList();
   }
 
+  // Prepares the form for editing an existing deficiency
   edit(event) {
     const id = event.currentTarget.dataset.id;
     const deficiency = this.deficiencies.find((d) => d.id === id);
@@ -169,14 +169,12 @@ export default class extends Controller {
       this.formTitleTarget.textContent = "Edit Deficiency";
     }
 
-    // Popular formulario
     this.modalItemTarget.value = deficiency.Item || "";
     this.modalRiserTarget.value = deficiency.Riser || "";
     this.modalCTarget.checked = deficiency.C === "Yes";
     this.modalDTarget.checked = deficiency.D === "Yes";
     this.modalCommentTarget.value = deficiency.comment_value || "";
 
-    // Actualizar searchable select
     this.modalSelectTarget.value = deficiency.value || "";
 
     if (this.hasSearchableSelectButtonTextTarget) {
@@ -188,6 +186,7 @@ export default class extends Controller {
     this.formContainerTarget.classList.remove("hidden");
   }
 
+  // Removes a deficiency from the list
   remove(event) {
     if (!confirm("Are you sure you want to remove this deficiency?")) return;
 
@@ -197,6 +196,7 @@ export default class extends Controller {
     this.renderList();
   }
 
+  // Resets the form fields to their default values
   resetForm() {
     this.modalItemTarget.value = this.hasDefaultItemValue
       ? this.defaultItemValue
@@ -211,6 +211,7 @@ export default class extends Controller {
     this.modalCommentTarget.value = "";
   }
 
+  // Generates a unique ID for a deficiency
   generateId() {
     if (typeof crypto !== "undefined" && crypto.randomUUID) {
       return crypto.randomUUID();

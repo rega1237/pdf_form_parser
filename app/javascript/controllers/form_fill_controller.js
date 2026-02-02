@@ -11,17 +11,17 @@ export default class extends Controller {
     id: Number,
   };
 
+  // Inicializa el controlador, configura el almacenamiento offline, el seguimiento de cambios y los listeners de eventos
   connect() {
-    // Initialize change tracking for incremental updates
+    // Inicializar seguimiento de cambios para actualizaciones incrementales
     this.changedFields = new Map();
     this.debouncedSave = this.debounce(
       this.saveDraftIncremental.bind(this),
       3000,
     );
     this.offlineStorage = new OfflineStorage();
-    console.log(this.offlineStorage);
 
-    // Prevent double-submit when both touchstart and click fire
+    // Prevenir doble envío cuando se disparan touchstart y click
     this._pdfSubmitting = false;
 
     // Offline-First: Inicializar estructura+datos desde IndexedDB
@@ -34,26 +34,27 @@ export default class extends Controller {
       requestAnimationFrame(() => this.initializeDateFields());
     }
 
-    // Agregar event listener para recargar valores del formulario
+    // Añadir listener para recargar valores del formulario
     this.element.addEventListener(
       "reload-form-values",
       this.handleReloadFormValues.bind(this),
     );
 
-    // Set up field change tracking for incremental saves
+    // Configurar seguimiento de cambios de campo para guardado incremental
     this.setupFieldChangeTracking();
 
-    // Set up Pass/Fail field tracking
+    // Configurar seguimiento de campos Pasa/Falla
     this.setupPassFailTracking();
   }
 
+  // Maneja actualizaciones cuando cambia la página visible
   handlePageChanged() {
     if (this.inspectionDateValue) {
       this.initializeDateFields();
     }
   }
 
-  // Cargar estructura y datos desde IndexedDB; fallback al servidor solo si es necesario
+  // Carga estructura y datos desde IndexedDB; recurre al servidor solo si es necesario
   async initializeFromIndexedDB() {
     try {
       const formId = this.element.action.split("/").pop().split("?")[0];
@@ -62,13 +63,13 @@ export default class extends Controller {
 
       const ff = await this.offlineStorage.getFormFillData(numericFormId);
       if (ff) {
-        // Set structure and data on dataset for downstream consumers,
-        // evitando doble codificación si vienen como strings JSON.
+        // Establecer estructura y datos en dataset para consumidores posteriores,
+        // evitando doble codificación si vienen como cadenas JSON.
         try {
           const fs = ff.form_structure;
           let structureJSONString = "[]";
           if (typeof fs === "string") {
-            // Ya es JSON string
+            // Ya es una cadena JSON
             structureJSONString = fs;
           } else if (Array.isArray(fs)) {
             structureJSONString = JSON.stringify(fs);
@@ -95,7 +96,7 @@ export default class extends Controller {
           const dataObj = ff.data;
           let dataJSONString = "{}";
           if (typeof dataObj === "string") {
-            // Ya es JSON string
+            // Ya es una cadena JSON
             dataJSONString = dataObj;
           } else {
             dataJSONString = JSON.stringify(dataObj || {});
@@ -106,13 +107,13 @@ export default class extends Controller {
           this.element.dataset.formFillDataValue = "{}";
         }
 
-        // Ensure inspection date is available to date-fix controller when offline
+        // Asegurar que la fecha de inspección esté disponible para el controlador date-fix cuando esté offline
         try {
-          // Only set from IndexedDB if not already provided by server-side data attribute
+          // Solo establecer desde IndexedDB si no fue proporcionado ya por el atributo de datos del servidor
           if (!this.element.dataset.formFillInspectionDateValue) {
-            // Try to get inspection date from the stored form_fill or its inspection
+            // Intentar obtener fecha de inspección del form_fill almacenado o su inspección
             let rawDate = null;
-            // Some payloads may include inspection_date directly on the form_fill
+            // Algunas cargas útiles pueden incluir inspection_date directamente en el form_fill
             if (ff.inspection_date) {
               rawDate = ff.inspection_date;
             } else if (ff.inspection_id) {
@@ -130,7 +131,7 @@ export default class extends Controller {
               }
             }
 
-            // Normalize raw date to MM/DD/YYYY for date-fix controller
+            // Normalizar fecha cruda a MM/DD/YYYY para el controlador date-fix
             const toUSDate = (d) => {
               if (!d) return null;
               if (typeof d === "string") {
@@ -141,12 +142,12 @@ export default class extends Controller {
                   const day = isoMatch[3];
                   return `${m}/${day}/${y.slice(-2)}`;
                 }
-                // Already US format?
+                // ¿Ya está en formato US?
                 if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
                   return d.substring(0, 6) + d.substring(8);
                 }
                 if (/^\d{2}\/\d{2}\/\d{2}$/.test(d)) return d;
-                // Try Date.parse fallback
+                // Intentar fallback con Date.parse
                 const parsed = new Date(d);
                 if (!isNaN(parsed.getTime())) {
                   const mm = String(parsed.getMonth() + 1).padStart(2, "0");
@@ -181,10 +182,10 @@ export default class extends Controller {
           hiddenInput.value = this.element.dataset.formFillFormStructureValue;
         }
 
-        // Render with local data immediately (optimistic)
+        // Renderizar con datos locales inmediatamente (optimista)
         this.loadFormValues();
       } else {
-        // No local data found; attempt server fetch only if online
+        // No se encontraron datos locales; intentar fetch al servidor solo si está online
         if (navigator.onLine) {
           await this.syncPhotoStructure();
         } else {
@@ -198,26 +199,27 @@ export default class extends Controller {
         "[form_fill_controller] Error initializing from IndexedDB:",
         error,
       );
-      // As a last resort, try server if online
+      // Como último recurso, intentar servidor si está online
       if (navigator.onLine) {
         await this.syncPhotoStructure();
       }
     }
   }
 
+  // Getter para el token CSRF
   get csrfToken() {
     return document.querySelector('meta[name="csrf-token"]').content;
   }
 
-  // Setup tracking for Pass/Fail fields
+  // Configura seguimiento para campos Pasa/Falla
   setupPassFailTracking() {
-    // Find all Pass/Fail hidden inputs
+    // Buscar todos los inputs ocultos Pasa/Falla
     const passFailInputs = this.element.querySelectorAll(
       'input[type="hidden"][id^="hidden_input_"]',
     );
 
     passFailInputs.forEach((hiddenInput) => {
-      // Create a MutationObserver to watch for value changes
+      // Crear un MutationObserver para observar cambios de valor
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (
@@ -229,13 +231,13 @@ export default class extends Controller {
         });
       });
 
-      // Start observing
+      // Iniciar observación
       observer.observe(hiddenInput, {
         attributes: true,
         attributeFilter: ["value"],
       });
 
-      // Also listen for direct value property changes
+      // También escuchar cambios directos en la propiedad value
       const originalValue = hiddenInput.value;
       Object.defineProperty(hiddenInput, "value", {
         get() {
@@ -244,7 +246,7 @@ export default class extends Controller {
         set(newValue) {
           if (this.getAttribute("value") !== newValue) {
             this.setAttribute("value", newValue);
-            // Trigger our change handler
+            // Disparar nuestro manejador de cambios
             setTimeout(() => {
               const event = new Event("passfail-change", { bubbles: true });
               this.dispatchEvent(event);
@@ -253,13 +255,13 @@ export default class extends Controller {
         },
       });
 
-      // Listen for the custom event
+      // Escuchar el evento personalizado
       hiddenInput.addEventListener("passfail-change", () => {
         this.handlePassFailChange(hiddenInput);
       });
     });
 
-    // Also listen for choice-buttons events (if they dispatch custom events)
+    // También escuchar eventos de choice-buttons (si despachan eventos personalizados)
     this.element.addEventListener("choice-selected", (event) => {
       const hiddenInput = event.target.querySelector('input[type="hidden"]');
       if (hiddenInput) {
@@ -268,7 +270,7 @@ export default class extends Controller {
     });
   }
 
-  // Handle Pass/Fail field changes
+  // Maneja cambios en campos Pasa/Falla
   handlePassFailChange(hiddenInput) {
     const fieldName = this.extractFieldNameFromHidden(hiddenInput);
 
@@ -276,39 +278,35 @@ export default class extends Controller {
       const fieldValue = hiddenInput.value || "";
       const currentValue = this.changedFields.get(fieldName);
 
-      console.log(
-        `Pass/Fail change detected - Field: ${fieldName}, Value: ${fieldValue}`,
-      );
-
-      // Only track if value actually changed
+      // Solo rastrear si el valor realmente cambió
       if (currentValue !== fieldValue) {
         this.changedFields.set(fieldName, fieldValue);
 
-        // Trigger debounced save
+        // Disparar guardado con debounce
         this.debouncedSave();
 
-        // Trigger validation update for pagination
+        // Disparar actualización de validación para paginación
         this.updateFieldValidation(fieldName, fieldValue);
       }
     }
   }
 
-  // Extract field name from hidden input
+  // Extrae nombre del campo desde input oculto
   extractFieldNameFromHidden(hiddenInput) {
-    // Pattern: hidden_input_form_data_fieldname_...
+    // Patrón: hidden_input_form_data_fieldname_...
     const id = hiddenInput.id;
     if (id.startsWith("hidden_input_")) {
-      // Try to find the corresponding form field
+      // Intentar encontrar el campo de formulario correspondiente
       const choiceButtonGroup = hiddenInput.closest(
         '[data-controller*="choice-buttons"]',
       );
       if (choiceButtonGroup) {
         const hiddenInputId = choiceButtonGroup.dataset.hiddenInputId;
         if (hiddenInputId) {
-          // Extract field name from the hidden input ID
+          // Extraer nombre del campo del ID del input oculto
           const match = hiddenInputId.match(/hidden_input_(.+)/);
           if (match) {
-            // Convert back to form field name format
+            // Convertir de nuevo al formato de nombre de campo de formulario
             return match[1].replace(/^form_data_/, "").replace(/_[^_]+$/, "");
           }
         }
@@ -317,9 +315,9 @@ export default class extends Controller {
     return null;
   }
 
-  // Update field validation status
+  // Actualiza estado de validación del campo
   updateFieldValidation(fieldName, fieldValue) {
-    // Find the field container
+    // Buscar el contenedor del campo
     const fieldContainer = this.element.querySelector(
       `[data-field-name="${fieldName}"]`,
     );
@@ -327,13 +325,13 @@ export default class extends Controller {
       const isRequired = fieldContainer.dataset.required === "true";
       const hasValue = fieldValue && fieldValue.trim() !== "";
 
-      // Update validation state
+      // Actualizar estado de validación
       if (isRequired) {
         fieldContainer.classList.toggle("field-valid", hasValue);
         fieldContainer.classList.toggle("field-invalid", !hasValue);
       }
 
-      // Trigger pagination validation update
+      // Disparar actualización de validación de paginación
       const event = new CustomEvent("field-validation-changed", {
         bubbles: true,
         detail: { fieldName, hasValue, isRequired },
@@ -416,12 +414,10 @@ export default class extends Controller {
   }
 
   loadFormValues() {
-    console.log("Loading form values...");
-
-    // First, get data from the data column
+    // Primero, obtener datos de la columna de datos
     const dataFromColumn = this.getDataFromColumn();
-    console.log("Data from column:", dataFromColumn);
-    // Parse form structure robustly, handling potential double-encoded JSON or object containers
+
+    // Parsear estructura del formulario de forma robusta, manejando posibles JSON doblemente codificados o contenedores de objetos
     let formStructureData = [];
     try {
       const raw = this.element.dataset.formFillFormStructureValue || "[]";
@@ -431,7 +427,7 @@ export default class extends Controller {
           parsed = JSON.parse(parsed);
         } catch (e) {
           console.warn(
-            "[form_fill_controller] Double-encoded structure string failed to parse:",
+            "[form_fill_controller] Cadena de estructura doblemente codificada falló al parsear:",
             e,
           );
         }
@@ -450,16 +446,19 @@ export default class extends Controller {
         }
       }
     } catch (e) {
-      console.warn("[form_fill_controller] Could not parse form structure:", e);
+      console.warn(
+        "[form_fill_controller] No se pudo parsear la estructura del formulario:",
+        e,
+      );
       formStructureData = [];
     }
 
     const formElements = this.element.elements;
 
-    // Fallback: if structure is not an array, populate fields directly from data
+    // Fallback: si la estructura no es un array, poblar campos directamente desde los datos
     if (!Array.isArray(formStructureData) || formStructureData.length === 0) {
       console.warn(
-        "[form_fill_controller] Form structure is empty or invalid. Falling back to data-only population.",
+        "[form_fill_controller] Estructura del formulario vacía o inválida. Usando población basada solo en datos.",
       );
       try {
         Object.keys(dataFromColumn || {}).forEach((name) => {
@@ -468,7 +467,7 @@ export default class extends Controller {
           if (!inputElement) return;
 
           if (inputElement.type === "file") {
-            // Without structure, we can't infer attachment IDs; skip.
+            // Sin estructura, no podemos inferir IDs de adjuntos; saltar.
             return;
           } else if (
             inputElement.type === "checkbox" ||
@@ -483,7 +482,7 @@ export default class extends Controller {
           }
         });
 
-        // Attempt to set pass/fail hidden fields if present
+        // Intentar establecer campos ocultos Pasa/Falla si están presentes
         Object.keys(dataFromColumn || {}).forEach((name) => {
           const value = dataFromColumn[name];
           if (value !== undefined && value !== null) {
@@ -493,15 +492,18 @@ export default class extends Controller {
 
         this.initializeDateFields();
       } catch (e) {
-        console.warn("[form_fill_controller] Fallback population failed:", e);
+        console.warn(
+          "[form_fill_controller] Falló la población de fallback:",
+          e,
+        );
       }
       return;
     }
 
-    // Normal path: we have a valid structure array
+    // Ruta normal: tenemos un array de estructura válido
     formStructureData.forEach((field) => {
       if (field.name) {
-        // For Pass/Fail fields, prioritize data from column over structure
+        // Para campos Pasa/Falla, priorizar datos de la columna sobre estructura
         if (field.type === "Pass/Fail") {
           const valueFromData = dataFromColumn[field.name];
           const finalValue = valueFromData || field.value;
@@ -510,7 +512,7 @@ export default class extends Controller {
             this.loadPassFailField(field.name, finalValue);
           }
         } else {
-          // Handle other field types normally
+          // Manejar otros tipos de campos normalmente
           let inputElement = formElements[`form_fill[${field.name}]`];
 
           if (
@@ -545,7 +547,7 @@ export default class extends Controller {
                   field.value === "true";
               }
             } else {
-              // Handle date fields with inspection date
+              // Manejar campos de fecha con fecha de inspección
               if (field.type === "Date") {
                 if (inputElement.dataset?.controller?.includes("datepicker")) {
                   const valueFromData = dataFromColumn[field.name];
@@ -569,7 +571,7 @@ export default class extends Controller {
         }
 
         if (field.type === "Deficiency") {
-          // Prefer values from data column (offline/online), fallback to structure
+          // Preferir valores de la columna de datos (offline/online), fallback a estructura
           const selectElement = formElements[`form_fill[${field.name}_select]`];
           const selectFromData = dataFromColumn?.[`${field.name}_select`];
           const finalSelectValue =
@@ -581,7 +583,7 @@ export default class extends Controller {
             selectElement.setAttribute("value", finalSelectValue);
           }
 
-          // Update the searchable-select display if it exists
+          // Actualizar el display del select buscable si existe
           const searchableSelectContainer = this.element
             .querySelector(
               `[data-controller*="searchable-select"] input[id*="${field.name}_select"]`,
@@ -592,11 +594,12 @@ export default class extends Controller {
               '[data-searchable-select-target="buttonText"]',
             );
             if (buttonText) {
-              buttonText.textContent = finalSelectValue || "Select an option";
+              buttonText.textContent =
+                finalSelectValue || "Seleccione una opción";
             }
           }
 
-          // Comment
+          // Comentario
           const commentElement =
             formElements[`form_fill[${field.name}_comment]`];
           const commentFromData = dataFromColumn?.[`${field.name}_comment`];
@@ -633,7 +636,7 @@ export default class extends Controller {
             riserElement.setAttribute("value", finalRiser);
           }
 
-          // C checkbox (note: deficiency C/D checkboxes are not in form_fill[], use plain names)
+          // Checkbox C (nota: checkboxes C/D de deficiencia no están en form_fill[], usan nombres planos)
           const cElement = formElements[`${field.name}_c`];
           const cFromData = dataFromColumn?.[`${field.name}_c`];
           if (cElement) {
@@ -647,7 +650,7 @@ export default class extends Controller {
             cElement.checked = !!cChecked;
           }
 
-          // D checkbox
+          // Checkbox D
           const dElement = formElements[`${field.name}_d`];
           const dFromData = dataFromColumn?.[`${field.name}_d`];
           if (dElement) {
@@ -664,11 +667,11 @@ export default class extends Controller {
       }
     });
 
-    // Initialize date fields with inspection date after loading all values
+    // Inicializar campos de fecha con fecha de inspección después de cargar todos los valores
     this.initializeDateFields();
   }
 
-  // Initialize all date fields with inspection date if they're empty
+  // Inicializar todos los campos de fecha con la fecha de inspección si están vacíos
   initializeDateFields() {
     // Cargar datos ya existentes para evitar reinsertar fechas que ya están guardadas
     const dataFromColumn = this.getDataFromColumn() || {};
@@ -742,45 +745,41 @@ export default class extends Controller {
     }
   }
 
-  // Return inspection date in MM/DD/YYYY format (already provided by the server or normalized when offline)
+  // Devolver fecha de inspección en formato MM/DD/YYYY (ya provista por el servidor o normalizada en offline)
   getFormattedInspectionDate() {
     if (!this.inspectionDateValue) return null;
-    
+
     let d = this.inspectionDateValue;
-    // Force 2-digit year if it comes as 4-digit US format (MM/DD/YYYY -> MM/DD/YY)
+    // Forzar año de 2 dígitos si viene en formato US de 4 dígitos (MM/DD/YYYY -> MM/DD/YY)
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
       return d.substring(0, 6) + d.substring(8);
     }
-    
-    // Expect MM/DD/YYYY; if not, return as-is. Conversion handled earlier when setting dataset.
+
+    // Esperar MM/DD/YYYY; si no, devolver tal cual. La conversión se maneja antes al establecer el dataset.
     return d;
   }
 
-  // Get data from the data column
+  // Obtener datos de la columna de datos
   getDataFromColumn() {
     try {
-      console.log("Getting data from column...");
-
-      // Try to get data from Rails via a global variable or data attribute
+      // Intentar obtener datos de Rails vía variable global o atributo de datos
       if (window.formFillData) {
         try {
           const g = window.formFillData;
           const parsedGlobal = typeof g === "string" ? JSON.parse(g) : g;
-          console.log("Using window.formFillData:", parsedGlobal);
           return parsedGlobal;
         } catch (e) {
           console.warn(
-            "[form_fill_controller] Failed to parse window.formFillData:",
+            "[form_fill_controller] Falló al parsear window.formFillData:",
             e,
           );
           return {};
         }
       }
 
-      // Try to get from form element data attribute
+      // Intentar obtener del atributo de datos del elemento del formulario
       const dataValue = this.element.dataset.formFillDataValue;
       if (dataValue) {
-        console.log("Found data value attribute:", dataValue);
         let parsedData = {};
         try {
           parsedData = JSON.parse(dataValue);
@@ -789,28 +788,27 @@ export default class extends Controller {
               parsedData = JSON.parse(parsedData);
             } catch (e) {
               console.warn(
-                "[form_fill_controller] Double-encoded data string failed to parse:",
+                "[form_fill_controller] Cadena de datos doblemente codificada falló al parsear:",
                 e,
               );
             }
           }
         } catch (e) {
-          console.warn("[form_fill_controller] Failed to parse dataValue:", e);
+          console.warn("[form_fill_controller] Falló al parsear dataValue:", e);
           parsedData = {};
         }
-        console.log("Parsed data:", parsedData);
+
         return parsedData;
       }
 
-      console.log("No data found in attributes");
       return {};
     } catch (error) {
-      console.error("Error getting data from column:", error);
+      console.error("Error obteniendo datos de la columna:", error);
       return {};
     }
   }
 
-  // Fetch data from server (async version)
+  // Obtener datos del servidor (versión asíncrona)
   async fetchDataFromServer(formId) {
     try {
       const response = await fetch(`/form_fills/${formId}/get_current_data`, {
@@ -834,12 +832,12 @@ export default class extends Controller {
     }
   }
 
-  // Load Pass/Fail field specifically
+  // Cargar campo Pasa/Falla específicamente
   loadPassFailField(fieldName, value) {
-    // Find the hidden input for this field
+    // Buscar el input oculto para este campo
     let hiddenInput = null;
 
-    // Method 1: Look for hidden input by field name pattern
+    // Método 1: Buscar input oculto por patrón de nombre de campo
     const possibleSelectors = [
       `input[type="hidden"][id*="${fieldName}"]`,
       `input[type="hidden"][name*="${fieldName}"]`,
@@ -855,7 +853,7 @@ export default class extends Controller {
       }
     }
 
-    // Method 2: Find by looking for the field container first
+    // Método 2: Buscar mirando primero el contenedor del campo
     if (!hiddenInput) {
       const fieldContainer = this.element.querySelector(
         `[data-field-name="${fieldName}"]`,
@@ -865,7 +863,7 @@ export default class extends Controller {
       }
     }
 
-    // Method 3: Find by choice-button-group and data attribute
+    // Método 3: Buscar por choice-button-group y atributo data
     if (!hiddenInput) {
       const choiceGroups = this.element.querySelectorAll(
         '[data-controller*="choice-buttons"]',
@@ -879,10 +877,10 @@ export default class extends Controller {
     }
 
     if (hiddenInput) {
-      // Update the hidden input value
+      // Actualizar el valor del input oculto
       hiddenInput.value = value;
 
-      // Find the choice button group
+      // Buscar el grupo de botones de selección
       const choiceButtonGroup =
         hiddenInput.closest('[data-controller*="choice-buttons"]') ||
         hiddenInput.parentElement.closest(
@@ -893,7 +891,7 @@ export default class extends Controller {
         );
 
       if (choiceButtonGroup) {
-        // Find all buttons in this group
+        // Buscar todos los botones en este grupo
         const buttons = choiceButtonGroup.querySelectorAll(
           ".choice-button, .radio-choice-button",
         );
@@ -903,35 +901,35 @@ export default class extends Controller {
           const isSelected = buttonValue === value;
 
           if (isSelected) {
-            // Select this button
+            // Seleccionar este botón
             if (button.classList.contains("radio-choice-button")) {
               this.selectRadioButton(button);
             } else {
-              // Handle regular choice-button
+              // Manejar choice-button regular
               button.classList.add("selected");
             }
           } else {
-            // Deselect this button
+            // Deseleccionar este botón
             if (button.classList.contains("radio-choice-button")) {
               this.deselectRadioButton(button);
             } else {
-              // Handle regular choice-button
+              // Manejar choice-button regular
               button.classList.remove("selected");
             }
           }
         });
 
-        // Force trigger the choice-buttons controller to update
+        // Forzar actualización del controlador choice-buttons
         setTimeout(() => {
           const choiceController =
             this.getChoiceButtonsController(choiceButtonGroup);
           if (choiceController && choiceController.preselectButton) {
             choiceController.preselectButton();
           }
-        }, 200); // Increased timeout to ensure DOM is ready
+        }, 200); // Timeout incrementado para asegurar que el DOM esté listo
       }
 
-      // Trigger validation
+      // Disparar validación
       this.updateFieldValidation(fieldName, value);
     }
   }
@@ -1205,9 +1203,6 @@ export default class extends Controller {
                 if (itemNumber) {
                   const itemFieldName = `${baseFieldName}_item`;
                   this.changedFields.set(itemFieldName, itemNumber);
-                  console.log(
-                    `[Auto-Item] Se añadió automáticamente el ítem: { "${itemFieldName}": "${itemNumber}" }`,
-                  );
                 }
               }
             }
@@ -1303,10 +1298,6 @@ export default class extends Controller {
 
     // Offline-First: siempre guardar en IndexedDB y dejar que el proceso
     // de sincronización suba cambios (si online, se encola automáticamente)
-    console.log(
-      "💾 Saving changes to IndexedDB (offline-first)...",
-      changedData,
-    );
     await this.saveOffline(formId, changedData);
   }
 
@@ -1379,10 +1370,6 @@ export default class extends Controller {
 
   async saveDraft(event) {
     if (event) event.preventDefault();
-
-    console.log(
-      "FULL SAVE TRIGGERED - this should not happen during normal typing",
-    );
 
     // Mostrar overlay de carga
     this.showSaveDraftOverlay();
@@ -1582,8 +1569,6 @@ export default class extends Controller {
 
   // Método alternativo para cargar fotos cuando falla el método principal
   tryAlternativePhotoLoad(fieldData, previewContainer, imageElement) {
-    console.log(`Trying alternative photo load for ${fieldData.name}`);
-
     // Intentar usar el photo_capture_controller si está disponible
     const photoCaptureController = previewContainer.closest(
       '[data-controller*="photo-capture"]',
@@ -1598,7 +1583,6 @@ export default class extends Controller {
         // Construir una URL de foto basada en el attachment_id
         const photoUrl = `/rails/active_storage/blobs/redirect/${fieldData.photo_attachment_id}/${fieldData.name}`;
         controller.loadExistingPhoto(photoUrl, fieldData.name);
-        console.log(`Alternative photo load attempted for ${fieldData.name}`);
       }
     }
 
@@ -1630,7 +1614,6 @@ export default class extends Controller {
           imageElement.src = url;
           previewContainer.classList.remove("hidden");
           this.updatePhotoPreviewToSavedState(previewContainer, fileName);
-          console.log(`Successfully loaded photo from: ${url}`);
           return;
         }
       } catch (error) {

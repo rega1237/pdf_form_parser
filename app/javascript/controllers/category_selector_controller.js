@@ -15,6 +15,7 @@ export default class extends Controller {
     intervalCategories: Array,
   };
 
+  // Initializes the controller state and builds category buttons
   connect() {
     this.currentFieldName = null;
     this.currentFieldType = null;
@@ -23,60 +24,56 @@ export default class extends Controller {
     this.buildCategoryButtons();
   }
 
-  // Open modal for category selection
+  // Opens the modal and sets up the view based on the event's dataset
   openModal(event) {
     this.currentFieldName = event.currentTarget.dataset.fieldName;
     this.currentFieldType = event.currentTarget.dataset.fieldType;
 
-    // Reset selections
     this.selectedSystemCategory = null;
     this.selectedIntervalCategories = [];
 
-    // Update modal title
     this.modalTitleTarget.textContent = `Select ${this.currentFieldType}`;
 
-    // Show appropriate view based on field type
     if (this.currentFieldType === "System Category") {
       this.showSystemView();
     } else if (this.currentFieldType === "Interval Category") {
       this.showIntervalView();
     }
 
-    // Show modal
     this.modalTarget.classList.remove("hidden");
     document.body.style.overflow = "hidden";
   }
 
-  // Close modal
+  // Closes the modal and restores body overflow
   closeModal() {
     this.modalTarget.classList.add("hidden");
     document.body.style.overflow = "auto";
   }
 
-  // Show system categories view
+  // Displays the system categories view and hides the interval view
   showSystemView() {
     this.systemViewTarget.classList.remove("hidden");
     this.intervalViewTarget.classList.add("hidden");
   }
 
-  // Show interval categories view
+  // Displays the interval categories view and hides the system view
   showIntervalView() {
     this.systemViewTarget.classList.add("hidden");
     this.intervalViewTarget.classList.remove("hidden");
   }
 
-  // Go back to system selection (for interval category flow)
+  // Returns to the system view from the interval view
   backToSystem() {
     this.showSystemView();
   }
 
-  // Build category buttons
+  // Triggers the construction of both system and interval category buttons
   buildCategoryButtons() {
     this.buildSystemButtons();
     this.buildIntervalButtons();
   }
 
-  // Build system category buttons
+  // Builds and appends system category buttons to the DOM
   buildSystemButtons() {
     this.systemButtonsTarget.innerHTML = "";
 
@@ -86,7 +83,7 @@ export default class extends Controller {
     });
   }
 
-  // Build interval category buttons
+  // Builds and appends interval category buttons to the DOM
   buildIntervalButtons() {
     this.intervalButtonsTarget.innerHTML = "";
 
@@ -96,7 +93,7 @@ export default class extends Controller {
     });
   }
 
-  // Create system category button
+  // Creates a button element for a system category
   createSystemCategoryButton(category) {
     const button = document.createElement("button");
     button.type = "button";
@@ -106,7 +103,6 @@ export default class extends Controller {
     button.className =
       "group flex flex-col items-center justify-center text-center p-4 md:p-6 bg-slate-800/90 border border-white/10 rounded-2xl shadow-lg hover:bg-indigo-600 hover:shadow-indigo-500/50 transition-all duration-300 transform hover:-translate-y-1";
 
-    // Add thumbnail if available
     if (category.thumbnail_url) {
       const img = document.createElement("img");
       img.src = category.thumbnail_url;
@@ -129,7 +125,7 @@ export default class extends Controller {
     return button;
   }
 
-  // Create interval category button
+  // Creates a button element for an interval category
   createIntervalCategoryButton(category) {
     const button = document.createElement("button");
     button.type = "button";
@@ -153,7 +149,7 @@ export default class extends Controller {
     return button;
   }
 
-  // Select system category
+  // Handles the selection of a system category
   selectSystemCategory(event) {
     const categoryId = event.currentTarget.dataset.categoryId;
     const categoryName = event.currentTarget.dataset.categoryName;
@@ -161,16 +157,14 @@ export default class extends Controller {
     this.selectedSystemCategory = { id: categoryId, name: categoryName };
 
     if (this.currentFieldType === "System Category") {
-      // For system category fields, just select and close
       this.updateFieldWithSelection([categoryName]);
       this.closeModal();
     } else {
-      // For interval category fields, proceed to interval selection
       this.showIntervalView();
     }
   }
 
-  // Toggle interval category selection
+  // Toggles the selection state of an interval category
   toggleIntervalCategory(event) {
     const button = event.currentTarget;
     const categoryId = button.dataset.categoryId;
@@ -179,13 +173,11 @@ export default class extends Controller {
     const isSelected = button.classList.contains("selected");
 
     if (isSelected) {
-      // Remove from selection
       this.selectedIntervalCategories = this.selectedIntervalCategories.filter(
         (cat) => cat.id !== categoryId,
       );
       this.toggleIntervalButtonStyle(button, false);
     } else {
-      // Add to selection
       this.selectedIntervalCategories.push({
         id: categoryId,
         name: categoryName,
@@ -194,7 +186,7 @@ export default class extends Controller {
     }
   }
 
-  // Toggle interval button visual style
+  // Updates the visual style of an interval category button based on selection state
   toggleIntervalButtonStyle(button, selected) {
     const checkIconContainer = button.querySelector(".border-2");
     const checkIcon = checkIconContainer.querySelector("svg");
@@ -207,7 +199,7 @@ export default class extends Controller {
     checkIcon.classList.toggle("opacity-0", !selected);
   }
 
-  // Confirm selection
+  // Confirms the current selection and updates the field
   confirmSelection() {
     let selectedNames = [];
 
@@ -224,15 +216,13 @@ export default class extends Controller {
     this.closeModal();
   }
 
-  // Update field with selected categories
+  // Updates the associated field element with the selected category names
   updateFieldWithSelection(selectedNames) {
-    // Find the field element
     const fieldElement = document.querySelector(
       `[data-id="${this.currentFieldName}"]`,
     );
     if (!fieldElement) return;
 
-    // Update the selected categories display
     const selectedCategoriesElement = fieldElement.querySelector(
       '[data-field-attribute="selected-categories"]',
     );
@@ -247,13 +237,11 @@ export default class extends Controller {
       }
     }
 
-    // Update the field data (this will be used when saving the form structure)
     const fieldData = this.getFieldDataFromElement(fieldElement);
     if (fieldData) {
       fieldData.selected_categories = selectedNames;
     }
 
-    // Trigger the drag controller to update the hidden input
     const dragController =
       this.application.getControllerForElementAndIdentifier(
         document.querySelector('[data-controller*="drag"]'),
@@ -263,14 +251,13 @@ export default class extends Controller {
       dragController.updateHiddenInput();
     }
 
-    // Show success notification
     this.sendNotification(
       `${this.currentFieldType} updated successfully`,
       "success",
     );
   }
 
-  // Get field data from DOM element
+  // Retrieves the data object associated with a field element
   getFieldDataFromElement(fieldElement) {
     const dragController =
       this.application.getControllerForElementAndIdentifier(
@@ -285,7 +272,7 @@ export default class extends Controller {
     return null;
   }
 
-  // Send notification
+  // Dispatches a notification event
   sendNotification(message, type = "info") {
     const event = new CustomEvent("show-notification", {
       detail: { message, type },
@@ -294,20 +281,20 @@ export default class extends Controller {
     document.dispatchEvent(event);
   }
 
-  // Handle escape key
+  // Handles keydown events to close the modal on Escape
   handleEscape(event) {
     if (event.key === "Escape") {
       this.closeModal();
     }
   }
 
-  // Connect escape handler
+  // Adds event listeners when the modal target is connected
   modalTargetConnected() {
     this.escapeHandler = this.handleEscape.bind(this);
     document.addEventListener("keydown", this.escapeHandler);
   }
 
-  // Disconnect escape handler
+  // Removes event listeners when the modal target is disconnected
   modalTargetDisconnected() {
     if (this.escapeHandler) {
       document.removeEventListener("keydown", this.escapeHandler);

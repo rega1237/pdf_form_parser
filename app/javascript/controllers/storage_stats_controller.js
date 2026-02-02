@@ -90,18 +90,18 @@ export default class extends Controller {
     `;
 
     try {
-      console.log("[StorageStats] Starting full cleanup...");
+      //console.log("[StorageStats] Starting full cleanup...");
 
       // 1. Limpiar IndexedDB (destruir base de datos)
       await this.offlineStorage.clearAllData();
-      console.log("[StorageStats] IndexedDB deleted");
+      //console.log("[StorageStats] IndexedDB deleted");
 
       // 2. Limpiar Caché (Service Worker)
       if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
         await new Promise((resolve) => {
           const channel = new MessageChannel();
           channel.port1.onmessage = () => {
-            console.log("[StorageStats] Cache cleared by SW");
+            //console.log("[StorageStats] Cache cleared by SW");
             resolve();
           };
 
@@ -116,7 +116,7 @@ export default class extends Controller {
       }
 
       // 3. Recargar para reiniciar todo
-      console.log("[StorageStats] Cleanup complete. Reloading...");
+      //console.log("[StorageStats] Cleanup complete. Reloading...");
       window.location.reload();
     } catch (error) {
       console.error("[StorageStats] Error during cleanup:", error);

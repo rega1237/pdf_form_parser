@@ -75,9 +75,6 @@ export default class extends Controller {
     // Si estamos offline, delega a offline-photo y no intentes subir
     if (!navigator.onLine) {
       // No mostramos preview aquí para evitar duplicados; offline-photo lo hará
-      console.log(
-        "[PhotoCapture] Offline: se delega preview/almacenamiento al controlador offline-photo",
-      );
       return;
     }
 
@@ -127,17 +124,13 @@ export default class extends Controller {
     reader.onload = (e) => {
       // Actualizar la imagen de vista previa
       this.imageTarget.src = e.target.result;
-      this.imageTarget.alt = `Preview of ${file.name}`;
+      this.imageTarget.alt = `Vista previa de ${file.name}`;
 
       // Mostrar el contenedor de vista previa
       this.previewTarget.classList.remove("hidden");
 
       // Agregar información del archivo
       this.updateFileInfo(file);
-
-      console.log(
-        `Photo preview displayed: ${file.name} (${this.formatFileSize(file.size)})`,
-      );
 
       // subir la foto al servidor
       this.uploadPhotoToServer(file);
@@ -188,7 +181,7 @@ export default class extends Controller {
     const photoId = event.currentTarget.dataset.photoId;
 
     const confirmMessage =
-      "Are you sure you want to delete this photo? This action cannot be undone.";
+      "¿Está seguro de que desea eliminar esta foto? Esta acción no se puede deshacer.";
     if (!confirm(confirmMessage)) return;
 
     const fieldName = this.getFieldNameFromInput();
@@ -198,7 +191,7 @@ export default class extends Controller {
     if (!navigator.onLine) {
       this.dispatchConfirmedRemove(photoId);
       if (photoId) {
-        // Remove from gallery UI immediately
+        // Eliminar de la interfaz de galería inmediatamente
         const photoElement = document.getElementById(`photo-${photoId}`);
         if (photoElement) photoElement.remove();
       } else {
@@ -215,7 +208,7 @@ export default class extends Controller {
       this.removePhotoCompletely(fieldName);
     } else {
       // Solo hay preview local: solicitar al controlador offline que borre la foto en IndexedDB
-      this.dispatchConfirmedRemove(null); // No ID implies current preview
+      this.dispatchConfirmedRemove(null); // Sin ID implica preview actual
       // Limpiar la vista por si no existe controlador offline
       this.clearPreviewOnly();
     }
@@ -234,23 +227,23 @@ export default class extends Controller {
             // Si es foto de galería, eliminar elemento del DOM
             const photoElement = document.getElementById(`photo-${photoId}`);
             if (photoElement) photoElement.remove();
-            this.showSuccessMessage("Photo deleted successfully");
+            this.showSuccessMessage("Foto eliminada correctamente");
           } else {
             // Limpiar la vista previa (modo legacy/single)
             this.clearPreviewAndInput();
-            this.updateButtonText("Take Photo / Add More");
-            this.showSuccessMessage("Photo deleted successfully");
+            this.updateButtonText("Tomar foto / Añadir más");
+            this.showSuccessMessage("Foto eliminada correctamente");
           }
 
           // También eliminar cualquier copia local (thumbnail/offline) una vez confirmada la eliminación
           this.dispatchConfirmedRemove(photoId);
         } else {
-          alert(`Error deleting photo: ${result.error}`);
+          alert(`Error eliminando foto: ${result.error}`);
         }
       })
       .catch((error) => {
         console.error("Error removing photo:", error);
-        alert("Connection error when deleting photo");
+        alert("Error de conexión al eliminar la foto");
       })
       .finally(() => {
         // Restaurar estado del botón
@@ -287,11 +280,9 @@ export default class extends Controller {
       this.imageTarget.src = "";
       this.imageTarget.alt = "";
     }
-
-    console.log("Photo preview cleared (local only)");
   }
 
-  // Método para eliminar foto del servidor (updated for data column)
+  // Método para eliminar foto del servidor (actualizado para data column)
   async removePhotoFromServer(fieldName, photoId = null) {
     try {
       const formElement = document.querySelector(
@@ -306,7 +297,7 @@ export default class extends Controller {
         body.photo_id = photoId;
       }
 
-      // Use the updated endpoint that clears data column entries
+      // Usar el endpoint actualizado que limpia las entradas de data column
       const response = await fetch(`/form_fills/${formId}/remove_photo`, {
         method: "DELETE",
         headers: {
@@ -323,8 +314,8 @@ export default class extends Controller {
       const result = await response.json();
 
       if (result.success) {
-        // Update local data store to reflect photo removal
-        // If photoId is provided, we are removing just one.
+        // Actualizar almacenamiento local para reflejar la eliminación de la foto
+        // Si se proporciona photoId, estamos eliminando solo una.
         await this.updateDataColumnQuietly(photoId, fieldName, true);
       }
 
@@ -459,8 +450,6 @@ export default class extends Controller {
       this.imageTarget.src = "";
       this.imageTarget.alt = "";
     }
-
-    console.log("Photo preview and input cleared");
   }
 
   // Método para limpiar el input file
@@ -542,7 +531,7 @@ export default class extends Controller {
   }
 
   // Método para cargar foto existente (llamado desde form-fill controller)
-  loadExistingPhoto(imageSrc, fileName = "Existing photo") {
+  loadExistingPhoto(imageSrc, fileName = "Foto existente") {
     if (!this.hasPreviewTarget || !this.hasImageTarget) {
       console.error(
         "Preview or image targets not found for loading existing photo",
@@ -570,11 +559,9 @@ export default class extends Controller {
           </svg>
           ${fileName}
         </span>
-        <span class="text-green-400">Saved</span>
+        <span class="text-green-400">Guardada</span>
       </div>
     `;
-
-    console.log(`Existing photo loaded: ${fileName}`);
   }
 
   // Método para subir foto inmediatamente al servidor
@@ -815,10 +802,6 @@ export default class extends Controller {
           );
         }
       }
-
-      console.log(
-        `Data column updated for field: ${fieldName}, attachment: ${attachmentId}, removed: ${isRemoval}`,
-      );
     } catch (error) {
       console.error("Error updating data column:", error);
       // Fallback to server reload

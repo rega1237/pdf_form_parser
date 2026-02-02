@@ -9,37 +9,37 @@ export default class extends Controller {
     "uploadArea",
   ];
 
+  // Initializes the controller and sets up event listeners
   connect() {
-    console.log("FileUpload controller connected");
     this.setupEventListeners();
   }
 
-  disconnect() {
-    console.log("FileUpload controller disconnected");
-  }
+  // Helper to handle disconnection logic if needed
+  disconnect() {}
 
+  // Sets up specific event listeners for the file input
   setupEventListeners() {
-    // Prevenir que el input de archivo interfiera con otros elementos
+    // Prevent file input click from propagating to other elements
     this.fileInputTarget.addEventListener("click", (e) => {
       e.stopPropagation();
     });
   }
 
-  // Acción para cuando cambia el input de archivo
+  // Handles the file input change event
   fileChanged(event) {
     const file = event.target.files[0];
     this.updateFileInfo(file);
   }
 
-  // Acción para cuando se hace clic en el área de carga
+  // Triggers the hidden file input when the upload area is clicked
   triggerFileInput(event) {
-    // Prevenir propagación del evento
+    // Prevent event propagation
     event.preventDefault();
     event.stopPropagation();
     this.fileInputTarget.click();
   }
 
-  // Acción para limpiar el archivo seleccionado
+  // Clears the selected file and resets the UI
   clearFile(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -47,19 +47,21 @@ export default class extends Controller {
     this.fileInfoTarget.classList.add("hidden");
   }
 
-  // Drag and drop actions
+  // Handles drag over event to show drop visual feedback
   dragOver(event) {
     event.preventDefault();
     event.stopPropagation();
     this.uploadAreaTarget.classList.add("drag-over");
   }
 
+  // Handles drag leave event to remove drop visual feedback
   dragLeave(event) {
     event.preventDefault();
     event.stopPropagation();
     this.uploadAreaTarget.classList.remove("drag-over");
   }
 
+  // Handles file drop event
   drop(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -67,17 +69,17 @@ export default class extends Controller {
 
     const files = event.dataTransfer.files;
     if (files.length > 0) {
-      // Crear un nuevo FileList para el input
+      // Create a new FileList for the input
       const dt = new DataTransfer();
       dt.items.add(files[0]);
       this.fileInputTarget.files = dt.files;
 
-      // Actualizar la información del archivo
+      // Update file information display
       this.updateFileInfo(files[0]);
     }
   }
 
-  // Método privado para actualizar la información del archivo
+  // Updates the UI with selected file details
   updateFileInfo(file) {
     if (file) {
       this.fileNameTarget.textContent = file.name;
@@ -86,7 +88,7 @@ export default class extends Controller {
     }
   }
 
-  // Método privado para formatear el tamaño del archivo
+  // Formats file size in bytes to human-readable string
   formatFileSize(bytes) {
     if (bytes === 0) return "0 Bytes";
 

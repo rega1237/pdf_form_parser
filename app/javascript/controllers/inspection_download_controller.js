@@ -1,7 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
 
-console.log("[InspectionDownload] File loaded");
-
 // OfflineStorage is now available globally via importmap
 export default class extends Controller {
   static targets = [
@@ -16,44 +14,40 @@ export default class extends Controller {
     inspectionTitle: String,
   };
 
+  /**
+   * Inicializa el controlador e inicia la configuración de almacenamiento offline.
+   */
   connect() {
-    console.log("[InspectionDownload] Controller connected");
     this.initializeOfflineStorage();
   }
 
+  /**
+   * Verifica la disponibilidad de OfflineStorage y lo inicializa.
+   * Reintenta si no está disponible inmediatamente.
+   */
   async initializeOfflineStorage() {
-    console.log("[InspectionDownload] Checking for OfflineStorage...");
     if (typeof OfflineStorage === "undefined") {
-      console.log(
-        "[InspectionDownload] OfflineStorage not found, retrying in 100ms...",
-      );
       // If not available yet, wait and retry
       setTimeout(() => this.initializeOfflineStorage(), 100);
       return;
     }
 
-    console.log("[InspectionDownload] OfflineStorage found, initializing...");
     this.offlineStorage = new OfflineStorage();
     await this.updateDownloadStatus();
-    console.log("[InspectionDownload] Initialization complete.");
   }
 
+  /**
+   * Actualiza la UI basándose en si la inspección está descargada o no.
+   */
   async updateDownloadStatus() {
     try {
-      console.log(
-        `[InspectionDownload] Checking download status for inspection ${this.inspectionIdValue}`,
-      );
       const isDownloaded = await this.offlineStorage.hasInspection(
         this.inspectionIdValue,
       );
 
-      console.log(`[InspectionDownload] Is downloaded result:`, isDownloaded);
-
       if (isDownloaded) {
-        console.log(`[InspectionDownload] Showing downloaded state`);
         this.showDownloadedState();
       } else {
-        console.log(`[InspectionDownload] Showing not downloaded state`);
         this.showNotDownloadedState();
       }
     } catch (error) {
@@ -62,6 +56,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Descarga los datos de la inspección, incluyendo fotos y formularios, para uso offline.
+   */
   async downloadInspection() {
     if (!navigator.onLine) {
       this.showMessage("No hay conexión a internet", "error");
@@ -120,7 +117,10 @@ export default class extends Controller {
     }
   }
 
-  // ---- Descargar fotos de los form_fills y guardarlas en IndexedDB ----
+  /**
+   * Descarga las fotos asociadas con la inspección y las almacena en IndexedDB.
+   * @param {Object} inspectionData - Datos de la inspección conteniendo form fills y fotos.
+   */
   async downloadAndStorePhotos(inspectionData) {
     try {
       const formFills = Array.isArray(inspectionData?.form_fills)
@@ -242,7 +242,11 @@ export default class extends Controller {
       console.warn("[InspectionDownload] Error downloading photos:", e);
     }
   }
-  // ---- precachear páginas HTML críticas para navegación offline consistente ----
+
+  /**
+   * Solicita al Service Worker precachear páginas críticas para navegación offline.
+   * @param {Object} inspectionData - Datos de la inspección conteniendo ID y form fills.
+   */
   async precacheInspectionPages(inspectionData) {
     try {
       if (!("serviceWorker" in navigator)) {
@@ -264,7 +268,6 @@ export default class extends Controller {
       }
 
       if (urls.length === 0) {
-        console.log("[InspectionDownload] No hay URLs para precachear");
         return;
       }
 
@@ -273,10 +276,6 @@ export default class extends Controller {
       const target = registration?.active || navigator.serviceWorker.controller;
       if (target) {
         target.postMessage({ type: "PRECACHE_URLS", urls });
-        console.log(
-          "[InspectionDownload] Solicitud de precache enviada al SW:",
-          urls,
-        );
       } else {
         console.warn("[InspectionDownload] No hay SW activo para precachear");
       }
@@ -285,6 +284,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Elimina la inspección y sus datos del almacenamiento offline.
+   */
   async removeInspection() {
     try {
       this.showRemovingState();
@@ -309,18 +311,12 @@ export default class extends Controller {
           await new Promise((resolve) => {
             const channel = new MessageChannel();
             channel.port1.onmessage = () => {
-              console.log("[InspectionDownload] Cache cleanup confirmed by SW");
               resolve();
             };
 
             navigator.serviceWorker.controller.postMessage(
               { type: "CLEANUP_URLS", urls: urlsToRemove },
               [channel.port2],
-            );
-
-            console.log(
-              "[InspectionDownload] Sent CLEANUP_URLS to SW, waiting for confirmation:",
-              urlsToRemove,
             );
 
             // Timeout de seguridad: si el SW no responde en 500ms, continuar de todos modos
@@ -374,6 +370,10 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Maneja la acción de eliminar, limpiando datos offline antes de borrar del servidor.
+   * @param {Event} event - El evento de eliminación.
+   */
   async delete(event) {
     event.preventDefault();
 
@@ -386,9 +386,6 @@ export default class extends Controller {
     button.style.pointerEvents = "none";
 
     try {
-      console.log(
-        "[InspectionDownload] Cleaning up offline data before delete...",
-      );
       await this.removeInspection();
 
       const url = button.href;
@@ -431,6 +428,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Actualiza la UI para mostrar el estado de descargando.
+   */
   showDownloadingState() {
     if (this.hasDownloadButtonTarget) {
       this.downloadButtonTarget.disabled = true;
@@ -455,6 +455,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Actualiza la UI para mostrar el estado de eliminando.
+   */
   showRemovingState() {
     if (this.hasDownloadButtonTarget) {
       this.downloadButtonTarget.disabled = true;
@@ -468,6 +471,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Actualiza la UI para mostrar el estado de descargado.
+   */
   showDownloadedState() {
     if (this.hasDownloadButtonTarget) {
       this.downloadButtonTarget.disabled = false;
@@ -493,6 +499,9 @@ export default class extends Controller {
     this.hideProgressBar();
   }
 
+  /**
+   * Actualiza la UI para mostrar el estado de no descargado.
+   */
   showNotDownloadedState() {
     if (this.hasDownloadButtonTarget) {
       this.downloadButtonTarget.disabled = false;
@@ -518,6 +527,9 @@ export default class extends Controller {
     this.hideProgressBar();
   }
 
+  /**
+   * Actualiza la UI para mostrar el estado de error.
+   */
   showErrorState() {
     if (this.hasDownloadButtonTarget) {
       this.downloadButtonTarget.disabled = false;
@@ -543,6 +555,9 @@ export default class extends Controller {
     this.hideProgressBar();
   }
 
+  /**
+   * Oculta la barra de progreso.
+   */
   hideProgressBar() {
     if (this.hasProgressContainerTarget) {
       this.progressContainerTarget.classList.add("hidden");
@@ -553,6 +568,11 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Muestra un mensaje de notificación.
+   * @param {string} message - El mensaje a mostrar.
+   * @param {string} type - El tipo de mensaje (info, success, error).
+   */
   showMessage(message, type = "info") {
     // Create notification element
     const notification = document.createElement("div");
