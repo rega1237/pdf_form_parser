@@ -1,18 +1,9 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Enhances a <select> with a searchable input placed above it.
-// Usage in HTML:
-// <div data-controller="filterable-select">
-//   <input data-filterable-select-target="search"
-//          data-action="input->filterable-select#filter keydown.enter->filterable-select#selectFirst"
-//          placeholder="Search sections..." />
-//   <select data-filterable-select-target="select"></select>
-// </div>
-//
-// If the <input> is not provided, the controller will create one automatically.
 export default class extends Controller {
   static targets = ["select", "search"]
 
+  // Initializes the controller and sets up the search input if missing
   connect() {
     // Auto-insert a search input if one is not present
     if (!this.hasSearchTarget) {
@@ -29,6 +20,7 @@ export default class extends Controller {
     this._showAllOptions()
   }
 
+  // Filters the select options based on the search query
   filter() {
     const query = (this.searchTarget.value || "").toLowerCase()
     const options = Array.from(this.selectTarget.options)
@@ -45,6 +37,7 @@ export default class extends Controller {
     })
   }
 
+  // Selects the first visible option when pressing enter
   selectFirst(event) {
     event.preventDefault()
     // Select the first visible option (excluding placeholder), then dispatch change
@@ -55,6 +48,7 @@ export default class extends Controller {
     }
   }
 
+  // Clears the search input and shows all options
   clear() {
     if (this.hasSearchTarget) {
       this.searchTarget.value = ""
@@ -62,6 +56,7 @@ export default class extends Controller {
     }
   }
 
+  // Helper to make all options visible
   _showAllOptions() {
     Array.from(this.selectTarget.options).forEach((opt) => (opt.hidden = false))
   }

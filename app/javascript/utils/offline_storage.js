@@ -1,6 +1,6 @@
 /**
  * OfflineStorage - Maneja el almacenamiento offline usando IndexedDB
- * 
+ *
  * Esquema de la base de datos:
  * - inspections: Datos de inspecciones descargadas
  * - form_fills: Datos de formularios y sus respuestas
@@ -8,9 +8,9 @@
  */
 class OfflineStorage {
   constructor() {
-    this.dbName = 'aes_pro_offline'
-    this.version = 2
-    this.db = null
+    this.dbName = "aes_pro_offline";
+    this.version = 2;
+    this.db = null;
   }
 
   /**
@@ -23,26 +23,37 @@ class OfflineStorage {
    */
   normalizeFormStructure(fs) {
     try {
-      if (!fs) return null
-      if (typeof fs === 'string') {
+      if (!fs) return null;
+      if (typeof fs === "string") {
         try {
-          const parsed = JSON.parse(fs)
-          return Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.fields) ? parsed.fields : (Array.isArray(parsed?.form_fields) ? parsed.form_fields : (Array.isArray(parsed?.structure) ? parsed.structure : null)))
+          const parsed = JSON.parse(fs);
+          return Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(parsed?.fields)
+              ? parsed.fields
+              : Array.isArray(parsed?.form_fields)
+                ? parsed.form_fields
+                : Array.isArray(parsed?.structure)
+                  ? parsed.structure
+                  : null;
         } catch (e) {
-          console.warn('[OfflineStorage] Failed to parse string form_structure:', e)
-          return null
+          console.warn(
+            "[OfflineStorage] Failed to parse string form_structure:",
+            e,
+          );
+          return null;
         }
       }
-      if (Array.isArray(fs)) return fs
-      if (typeof fs === 'object') {
-        if (Array.isArray(fs.fields)) return fs.fields
-        if (Array.isArray(fs.form_fields)) return fs.form_fields
-        if (Array.isArray(fs.structure)) return fs.structure
+      if (Array.isArray(fs)) return fs;
+      if (typeof fs === "object") {
+        if (Array.isArray(fs.fields)) return fs.fields;
+        if (Array.isArray(fs.form_fields)) return fs.form_fields;
+        if (Array.isArray(fs.structure)) return fs.structure;
       }
-      return null
+      return null;
     } catch (e) {
-      console.warn('[OfflineStorage] normalizeFormStructure error:', e)
-      return null
+      console.warn("[OfflineStorage] normalizeFormStructure error:", e);
+      return null;
     }
   }
 
@@ -50,28 +61,30 @@ class OfflineStorage {
    * Almacena un form_fill individual
    */
   async storeFormFill(formFill) {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readwrite')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readwrite");
+
     try {
-      const normalizedStructure = this.normalizeFormStructure(formFill.form_structure)
+      const normalizedStructure = this.normalizeFormStructure(
+        formFill.form_structure,
+      );
       const formFillToStore = {
         ...formFill,
         form_structure: normalizedStructure,
         photos: formFill.photos || {},
         synced_at: Date.now(),
-        has_pending_changes: false
-      }
+        has_pending_changes: false,
+      };
 
       await this.promisifyRequest(
-        tx.objectStore('form_fills').put(formFillToStore)
-      )
-      
-      console.log(`[OfflineStorage] Stored form fill ${formFill.id}`)
-      return true
+        tx.objectStore("form_fills").put(formFillToStore),
+      );
+
+      //console.log(`[OfflineStorage] Stored form fill ${formFill.id}`);
+      return true;
     } catch (error) {
-      console.error('[OfflineStorage] Error storing form fill:', error)
-      throw error
+      console.error("[OfflineStorage] Error storing form fill:", error);
+      throw error;
     }
   }
 
@@ -79,112 +92,180 @@ class OfflineStorage {
    * Abre la conexión a IndexedDB y crea el esquema si es necesario
    */
   async openDB() {
-    if (this.db) return this.db
+    if (this.db) return this.db;
 
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, this.version)
+      const request = indexedDB.open(this.dbName, this.version);
 
       request.onerror = () => {
-        console.error('[OfflineStorage] Error opening database:', request.error)
-        reject(request.error)
-      }
+        console.error(
+          "[OfflineStorage] Error opening database:",
+          request.error,
+        );
+        reject(request.error);
+      };
 
       request.onsuccess = () => {
-        this.db = request.result
-        console.log('[OfflineStorage] Database opened successfully')
-        resolve(this.db)
-      }
+        this.db = request.result;
+        //console.log("[OfflineStorage] Database opened successfully");
+        resolve(this.db);
+      };
 
       request.onupgradeneeded = (event) => {
-        const db = event.target.result
-        console.log('[OfflineStorage] Upgrading database schema')
+        const db = event.target.result;
+        //console.log("[OfflineStorage] Upgrading database schema");
 
         // Object Store: inspections
-        if (!db.objectStoreNames.contains('inspections')) {
-          const inspectionsStore = db.createObjectStore('inspections', { keyPath: 'id' })
-          inspectionsStore.createIndex('downloaded_at', 'downloaded_at', { unique: false })
-          inspectionsStore.createIndex('has_pending_changes', 'has_pending_changes', { unique: false })
-          console.log('[OfflineStorage] Created inspections object store')
+        if (!db.objectStoreNames.contains("inspections")) {
+          const inspectionsStore = db.createObjectStore("inspections", {
+            keyPath: "id",
+          });
+          inspectionsStore.createIndex("downloaded_at", "downloaded_at", {
+            unique: false,
+          });
+          inspectionsStore.createIndex(
+            "has_pending_changes",
+            "has_pending_changes",
+            { unique: false },
+          );
+          //console.log("[OfflineStorage] Created inspections object store");
         }
 
         // Object Store: form_fills
-        if (!db.objectStoreNames.contains('form_fills')) {
-          const formFillsStore = db.createObjectStore('form_fills', { keyPath: 'id' })
-          formFillsStore.createIndex('inspection_id', 'inspection_id', { unique: false })
-          formFillsStore.createIndex('has_pending_changes', 'has_pending_changes', { unique: false })
-          formFillsStore.createIndex('updated_at', 'updated_at', { unique: false })
-          console.log('[OfflineStorage] Created form_fills object store')
+        if (!db.objectStoreNames.contains("form_fills")) {
+          const formFillsStore = db.createObjectStore("form_fills", {
+            keyPath: "id",
+          });
+          formFillsStore.createIndex("inspection_id", "inspection_id", {
+            unique: false,
+          });
+          formFillsStore.createIndex(
+            "has_pending_changes",
+            "has_pending_changes",
+            { unique: false },
+          );
+          formFillsStore.createIndex("updated_at", "updated_at", {
+            unique: false,
+          });
+          //console.log("[OfflineStorage] Created form_fills object store");
         }
 
         // Object Store: photos
-        if (!db.objectStoreNames.contains('photos')) {
-          const photosStore = db.createObjectStore('photos', { keyPath: 'id' })
-          photosStore.createIndex('metadata.stored_at', 'metadata.stored_at', { unique: false })
-          photosStore.createIndex('metadata.type', 'metadata.type', { unique: false })
+        if (!db.objectStoreNames.contains("photos")) {
+          const photosStore = db.createObjectStore("photos", { keyPath: "id" });
+          photosStore.createIndex("metadata.stored_at", "metadata.stored_at", {
+            unique: false,
+          });
+          photosStore.createIndex("metadata.type", "metadata.type", {
+            unique: false,
+          });
           // New indexes for robust querying
-          photosStore.createIndex('metadata.inspection_id', 'metadata.inspection_id', { unique: false })
-          photosStore.createIndex('metadata.form_fill_id', 'metadata.form_fill_id', { unique: false })
-          photosStore.createIndex('metadata.field_name', 'metadata.field_name', { unique: false })
-          photosStore.createIndex('metadata.synced', 'metadata.synced', { unique: false })
-          photosStore.createIndex('metadata.is_thumbnail', 'metadata.is_thumbnail', { unique: false })
-          photosStore.createIndex('metadata.photo_attachment_id', 'metadata.photo_attachment_id', { unique: false })
-          console.log('[OfflineStorage] Created photos object store')
+          photosStore.createIndex(
+            "metadata.inspection_id",
+            "metadata.inspection_id",
+            { unique: false },
+          );
+          photosStore.createIndex(
+            "metadata.form_fill_id",
+            "metadata.form_fill_id",
+            { unique: false },
+          );
+          photosStore.createIndex(
+            "metadata.field_name",
+            "metadata.field_name",
+            { unique: false },
+          );
+          photosStore.createIndex("metadata.synced", "metadata.synced", {
+            unique: false,
+          });
+          photosStore.createIndex(
+            "metadata.is_thumbnail",
+            "metadata.is_thumbnail",
+            { unique: false },
+          );
+          photosStore.createIndex(
+            "metadata.photo_attachment_id",
+            "metadata.photo_attachment_id",
+            { unique: false },
+          );
+          // console.log("[OfflineStorage] Created photos object store");
         } else {
           // Ensure new indexes exist when upgrading from older versions
           try {
-            const tx = event.target.transaction
-            const photosStore = tx.objectStore('photos')
-            const indexNames = Array.from(photosStore.indexNames || [])
+            const tx = event.target.transaction;
+            const photosStore = tx.objectStore("photos");
+            const indexNames = Array.from(photosStore.indexNames || []);
             const ensureIndex = (name, keyPath) => {
               if (!indexNames.includes(name)) {
-                photosStore.createIndex(name, keyPath, { unique: false })
-                console.log(`[OfflineStorage] Added index ${name} on photos store`)
+                photosStore.createIndex(name, keyPath, { unique: false });
+                // console.log(
+                //   `[OfflineStorage] Added index ${name} on photos store`,
+                // );
               }
-            }
-            ensureIndex('metadata.inspection_id', 'metadata.inspection_id')
-            ensureIndex('metadata.form_fill_id', 'metadata.form_fill_id')
-            ensureIndex('metadata.field_name', 'metadata.field_name')
-            ensureIndex('metadata.synced', 'metadata.synced')
-            ensureIndex('metadata.is_thumbnail', 'metadata.is_thumbnail')
-            ensureIndex('metadata.photo_attachment_id', 'metadata.photo_attachment_id')
+            };
+            ensureIndex("metadata.inspection_id", "metadata.inspection_id");
+            ensureIndex("metadata.form_fill_id", "metadata.form_fill_id");
+            ensureIndex("metadata.field_name", "metadata.field_name");
+            ensureIndex("metadata.synced", "metadata.synced");
+            ensureIndex("metadata.is_thumbnail", "metadata.is_thumbnail");
+            ensureIndex(
+              "metadata.photo_attachment_id",
+              "metadata.photo_attachment_id",
+            );
           } catch (e) {
-            console.warn('[OfflineStorage] Failed to ensure photos indexes on upgrade:', e)
+            console.warn(
+              "[OfflineStorage] Failed to ensure photos indexes on upgrade:",
+              e,
+            );
           }
         }
 
         // Object Store: form_templates
-        if (!db.objectStoreNames.contains('form_templates')) {
-          const formTemplatesStore = db.createObjectStore('form_templates', { keyPath: 'id' })
-          formTemplatesStore.createIndex('name', 'name', { unique: false })
-          formTemplatesStore.createIndex('stored_at', 'stored_at', { unique: false })
-          console.log('[OfflineStorage] Created form_templates object store')
+        if (!db.objectStoreNames.contains("form_templates")) {
+          const formTemplatesStore = db.createObjectStore("form_templates", {
+            keyPath: "id",
+          });
+          formTemplatesStore.createIndex("name", "name", { unique: false });
+          formTemplatesStore.createIndex("stored_at", "stored_at", {
+            unique: false,
+          });
+          // console.log("[OfflineStorage] Created form_templates object store");
         }
 
         // Object Store: sync_queue
-        if (!db.objectStoreNames.contains('sync_queue')) {
-          const syncQueueStore = db.createObjectStore('sync_queue', { keyPath: 'id' })
-          syncQueueStore.createIndex('type', 'type', { unique: false })
-          syncQueueStore.createIndex('created_at', 'created_at', { unique: false })
-          syncQueueStore.createIndex('retry_count', 'retry_count', { unique: false })
-          console.log('[OfflineStorage] Created sync_queue object store')
+        if (!db.objectStoreNames.contains("sync_queue")) {
+          const syncQueueStore = db.createObjectStore("sync_queue", {
+            keyPath: "id",
+          });
+          syncQueueStore.createIndex("type", "type", { unique: false });
+          syncQueueStore.createIndex("created_at", "created_at", {
+            unique: false,
+          });
+          syncQueueStore.createIndex("retry_count", "retry_count", {
+            unique: false,
+          });
+          //console.log("[OfflineStorage] Created sync_queue object store");
         }
-      }
-    })
+      };
+    });
   }
 
   /**
    * Almacena una inspección completa con sus form_fills
    */
   async storeInspection(inspectionData) {
-    console.log('[OfflineStorage] Starting storeInspection with data:', inspectionData)
-    
-    const db = await this.openDB()
-    console.log('[OfflineStorage] Database opened successfully')
-    
+    //console.log(
+    //  "[OfflineStorage] Starting storeInspection with data:",
+    //  inspectionData,
+    //);
+
+    const db = await this.openDB();
+    //console.log("[OfflineStorage] Database opened successfully");
+
     // Offline-First: sólo necesitamos almacenar inspección y form_fills con la
     // estructura embebida; dejamos de guardar form_templates por separado
-    const tx = db.transaction(['inspections', 'form_fills'], 'readwrite')
-    console.log('[OfflineStorage] Transaction created')
+    const tx = db.transaction(["inspections", "form_fills"], "readwrite");
+    // console.log("[OfflineStorage] Transaction created");
 
     try {
       // Almacenar inspección
@@ -192,64 +273,81 @@ class OfflineStorage {
         ...inspectionData.inspection,
         downloaded_at: Date.now(),
         synced_at: Date.now(),
-        has_pending_changes: false
-      }
-      
-      console.log('[OfflineStorage] Storing inspection:', inspectionToStore)
+        has_pending_changes: false,
+      };
+
+      //console.log("[OfflineStorage] Storing inspection:", inspectionToStore);
       const inspectionResult = await this.promisifyRequest(
-        tx.objectStore('inspections').put(inspectionToStore)
-      )
-      console.log('[OfflineStorage] Inspection stored with result:', inspectionResult)
+        tx.objectStore("inspections").put(inspectionToStore),
+      );
+      //console.log(
+      //  "[OfflineStorage] Inspection stored with result:",
+      //  inspectionResult,
+      //);
 
       // Almacenar form_fills (incluyendo la estructura embebida)
       if (inspectionData.form_fills && inspectionData.form_fills.length > 0) {
-        console.log(`[OfflineStorage] Storing ${inspectionData.form_fills.length} form fills`)
-        const formFillsStore = tx.objectStore('form_fills')
-        
+        //console.log(
+        //  `[OfflineStorage] Storing ${inspectionData.form_fills.length} form fills`,
+        //);
+        const formFillsStore = tx.objectStore("form_fills");
+
         for (let i = 0; i < inspectionData.form_fills.length; i++) {
-          const formFill = inspectionData.form_fills[i]
+          const formFill = inspectionData.form_fills[i];
           // Aseguramos que la estructura del formulario esté embebida
-          const normalizedStructure = this.normalizeFormStructure(formFill.form_structure || null)
+          const normalizedStructure = this.normalizeFormStructure(
+            formFill.form_structure || null,
+          );
           const formFillToStore = {
             ...formFill,
             form_structure: normalizedStructure,
             photos: formFill.photos || {},
             synced_at: Date.now(),
-            has_pending_changes: false
-          }
+            has_pending_changes: false,
+          };
 
-          console.log(`[OfflineStorage] Storing form fill ${i + 1}/${inspectionData.form_fills.length}:`, formFillToStore)
-          const formFillResult = await this.promisifyRequest(formFillsStore.put(formFillToStore))
-          console.log(`[OfflineStorage] Form fill ${i + 1} stored with result:`, formFillResult)
+          //console.log(
+          //  `[OfflineStorage] Storing form fill ${i + 1}/${inspectionData.form_fills.length}:`,
+          //  formFillToStore,
+          //);
+          const formFillResult = await this.promisifyRequest(
+            formFillsStore.put(formFillToStore),
+          );
+          //console.log(
+          //  `[OfflineStorage] Form fill ${i + 1} stored with result:`,
+          //  formFillResult,
+          //);
         }
       }
 
       // Nota: dejamos de almacenar form_templates por separado; la estructura
       // viene embebida en cada form_fill.
 
-      console.log('[OfflineStorage] Waiting for transaction to complete...')
+      //console.log("[OfflineStorage] Waiting for transaction to complete...");
       // Esperar a que la transacción se complete usando el evento
       await new Promise((resolve, reject) => {
         tx.oncomplete = () => {
-          console.log('[OfflineStorage] Transaction completed successfully')
-          resolve()
-        }
+          //console.log("[OfflineStorage] Transaction completed successfully");
+          resolve();
+        };
         tx.onerror = () => {
-          console.error('[OfflineStorage] Transaction error:', tx.error)
-          reject(tx.error)
-        }
+          console.error("[OfflineStorage] Transaction error:", tx.error);
+          reject(tx.error);
+        };
         tx.onabort = () => {
-          console.error('[OfflineStorage] Transaction aborted')
-          reject(new Error('Transaction aborted'))
-        }
-      })
-      
-      console.log(`[OfflineStorage] Stored inspection ${inspectionData.inspection.id} with ${inspectionData.form_fills?.length || 0} form fills`)
-      
-      return true
+          console.error("[OfflineStorage] Transaction aborted");
+          reject(new Error("Transaction aborted"));
+        };
+      });
+
+      //console.log(
+      //  `[OfflineStorage] Stored inspection ${inspectionData.inspection.id} with ${inspectionData.form_fills?.length || 0} form fills`,
+      //);
+
+      return true;
     } catch (error) {
-      console.error('[OfflineStorage] Error storing inspection:', error)
-      throw error
+      console.error("[OfflineStorage] Error storing inspection:", error);
+      throw error;
     }
   }
 
@@ -257,19 +355,24 @@ class OfflineStorage {
    * Obtiene todas las inspecciones almacenadas offline
    */
   async getOfflineInspections() {
-    const db = await this.openDB()
-    const tx = db.transaction(['inspections'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["inspections"], "readonly");
+
     try {
       const inspections = await this.promisifyRequest(
-        tx.objectStore('inspections').getAll()
-      )
-      
-      console.log(`[OfflineStorage] Retrieved ${inspections.length} offline inspections`)
-      return inspections
+        tx.objectStore("inspections").getAll(),
+      );
+
+      //console.log(
+      //  `[OfflineStorage] Retrieved ${inspections.length} offline inspections`,
+      //);
+      return inspections;
     } catch (error) {
-      console.error('[OfflineStorage] Error getting offline inspections:', error)
-      throw error
+      console.error(
+        "[OfflineStorage] Error getting offline inspections:",
+        error,
+      );
+      throw error;
     }
   }
 
@@ -277,18 +380,21 @@ class OfflineStorage {
    * Obtiene una inspección específica por ID
    */
   async getInspection(inspectionId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['inspections'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["inspections"], "readonly");
+
     try {
       const inspection = await this.promisifyRequest(
-        tx.objectStore('inspections').get(inspectionId)
-      )
-      
-      return inspection
+        tx.objectStore("inspections").get(inspectionId),
+      );
+
+      return inspection;
     } catch (error) {
-      console.error(`[OfflineStorage] Error getting inspection ${inspectionId}:`, error)
-      throw error
+      console.error(
+        `[OfflineStorage] Error getting inspection ${inspectionId}:`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -296,18 +402,23 @@ class OfflineStorage {
    * Obtiene los form_fills de una inspección
    */
   async getFormFillsByInspection(inspectionId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readonly");
+
     try {
-      const index = tx.objectStore('form_fills').index('inspection_id')
-      const formFills = await this.promisifyRequest(index.getAll(inspectionId))
-      
-      console.log(`[OfflineStorage] Retrieved ${formFills.length} form fills for inspection ${inspectionId}`)
-      return formFills
+      const index = tx.objectStore("form_fills").index("inspection_id");
+      const formFills = await this.promisifyRequest(index.getAll(inspectionId));
+
+      //console.log(
+      //  `[OfflineStorage] Retrieved ${formFills.length} form fills for inspection ${inspectionId}`,
+      //);
+      return formFills;
     } catch (error) {
-      console.error(`[OfflineStorage] Error getting form fills for inspection ${inspectionId}:`, error)
-      throw error
+      console.error(
+        `[OfflineStorage] Error getting form fills for inspection ${inspectionId}:`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -315,46 +426,57 @@ class OfflineStorage {
    * Actualiza los datos de un form_fill
    */
   async updateFormFill(formFillId, data, photos = null) {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readwrite')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readwrite");
+
     try {
-      const store = tx.objectStore('form_fills')
-      const numericFormFillId = parseInt(formFillId, 10)
+      const store = tx.objectStore("form_fills");
+      const numericFormFillId = parseInt(formFillId, 10);
       let formFill = await this.promisifyRequest(
-        store.get(Number.isNaN(numericFormFillId) ? formFillId : numericFormFillId)
-      )
+        store.get(
+          Number.isNaN(numericFormFillId) ? formFillId : numericFormFillId,
+        ),
+      );
 
       // Fallback: si no se encuentra por número y el ID original era string, probar con string
-      if (!formFill && !Number.isNaN(numericFormFillId) && typeof formFillId === 'string') {
-        formFill = await this.promisifyRequest(store.get(formFillId))
+      if (
+        !formFill &&
+        !Number.isNaN(numericFormFillId) &&
+        typeof formFillId === "string"
+      ) {
+        formFill = await this.promisifyRequest(store.get(formFillId));
       }
-      
+
       if (!formFill) {
-        console.warn(`[OfflineStorage] Form fill ${formFillId} not found in IndexedDB. Skipping update.`)
-        return null
+        console.warn(
+          `[OfflineStorage] Form fill ${formFillId} not found in IndexedDB. Skipping update.`,
+        );
+        return null;
       }
 
       // Actualizar datos si se proporcionan
-      if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-        formFill.data = { ...(formFill.data || {}), ...data }
-        formFill.has_pending_changes = true
-      }
-      
-      // Actualizar fotos si se proporcionan
-      if (photos && typeof photos === 'object') {
-        formFill.photos = { ...(formFill.photos || {}), ...photos }
+      if (data && typeof data === "object" && Object.keys(data).length > 0) {
+        formFill.data = { ...(formFill.data || {}), ...data };
+        formFill.has_pending_changes = true;
       }
 
-      formFill.updated_at = Date.now()
-      await this.promisifyRequest(store.put(formFill))
-      console.log(`[OfflineStorage] Updated form fill ${formFillId}`)
-      
-      return formFill
+      // Actualizar fotos si se proporcionan
+      if (photos && typeof photos === "object") {
+        formFill.photos = { ...(formFill.photos || {}), ...photos };
+      }
+
+      formFill.updated_at = Date.now();
+      await this.promisifyRequest(store.put(formFill));
+      //console.log(`[OfflineStorage] Updated form fill ${formFillId}`);
+
+      return formFill;
     } catch (error) {
-      console.error(`[OfflineStorage] Error updating form fill ${formFillId}:`, error)
+      console.error(
+        `[OfflineStorage] Error updating form fill ${formFillId}:`,
+        error,
+      );
       // No relanzar el error para evitar ruido en consola en flujos no críticos
-      return null
+      return null;
     }
   }
 
@@ -366,28 +488,35 @@ class OfflineStorage {
    * (guardar borrador) cuando el usuario esté online.
    */
   async saveFormFillStructure(formFillId, newStructure) {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readwrite')
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readwrite");
     try {
-      const store = tx.objectStore('form_fills')
-      const numericFormFillId = parseInt(formFillId, 10)
-      const formFill = await this.promisifyRequest(store.get(numericFormFillId))
+      const store = tx.objectStore("form_fills");
+      const numericFormFillId = parseInt(formFillId, 10);
+      const formFill = await this.promisifyRequest(
+        store.get(numericFormFillId),
+      );
 
       if (!formFill) {
-        throw new Error(`Form fill ${formFillId} not found`)
+        throw new Error(`Form fill ${formFillId} not found`);
       }
 
-      formFill.form_structure = this.normalizeFormStructure(newStructure)
-      formFill.updated_at = Date.now()
-      formFill.has_pending_changes = true
+      formFill.form_structure = this.normalizeFormStructure(newStructure);
+      formFill.updated_at = Date.now();
+      formFill.has_pending_changes = true;
 
-      await this.promisifyRequest(store.put(formFill))
-      console.log(`[OfflineStorage] Updated form_structure for form fill ${formFillId}`)
+      await this.promisifyRequest(store.put(formFill));
+      //console.log(
+      //  `[OfflineStorage] Updated form_structure for form fill ${formFillId}`,
+      //);
 
-      return formFill
+      return formFill;
     } catch (error) {
-      console.error(`[OfflineStorage] Error updating form_structure for ${formFillId}:`, error)
-      throw error
+      console.error(
+        `[OfflineStorage] Error updating form_structure for ${formFillId}:`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -395,23 +524,30 @@ class OfflineStorage {
    * Obtiene todos los form_fills con cambios pendientes
    */
   async getPendingFormFills() {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readonly");
+
     try {
-      const store = tx.objectStore('form_fills')
-      const allFormFills = await this.promisifyRequest(store.getAll())
-      
+      const store = tx.objectStore("form_fills");
+      const allFormFills = await this.promisifyRequest(store.getAll());
+
       // Filter form fills that have pending changes
-      const pendingFormFills = allFormFills.filter(formFill => 
-        formFill.has_pending_changes === true || formFill.has_pending_changes === 'true'
-      )
-      
-      console.log(`[OfflineStorage] Found ${pendingFormFills.length} form fills with pending changes`)
-      return pendingFormFills
+      const pendingFormFills = allFormFills.filter(
+        (formFill) =>
+          formFill.has_pending_changes === true ||
+          formFill.has_pending_changes === "true",
+      );
+
+      //console.log(
+      //  `[OfflineStorage] Found ${pendingFormFills.length} form fills with pending changes`,
+      //);
+      return pendingFormFills;
     } catch (error) {
-      console.error('[OfflineStorage] Error getting pending form fills:', error)
-      throw error
+      console.error(
+        "[OfflineStorage] Error getting pending form fills:",
+        error,
+      );
+      throw error;
     }
   }
 
@@ -422,19 +558,25 @@ class OfflineStorage {
    *                                        Si se proporciona, solo se marcará como synced si no ha habido cambios posteriores.
    */
   async markFormFillAsSynced(formFillId, syncedTimestamp = null) {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readwrite')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readwrite");
+
     try {
-      const store = tx.objectStore('form_fills')
-      const numericFormFillId = parseInt(formFillId, 10)
+      const store = tx.objectStore("form_fills");
+      const numericFormFillId = parseInt(formFillId, 10);
       let formFill = await this.promisifyRequest(
-        store.get(Number.isNaN(numericFormFillId) ? formFillId : numericFormFillId)
-      )
-      
+        store.get(
+          Number.isNaN(numericFormFillId) ? formFillId : numericFormFillId,
+        ),
+      );
+
       // Fallback: si no se encuentra por número y el ID original era string, probar con string
-      if (!formFill && !Number.isNaN(numericFormFillId) && typeof formFillId === 'string') {
-        formFill = await this.promisifyRequest(store.get(formFillId))
+      if (
+        !formFill &&
+        !Number.isNaN(numericFormFillId) &&
+        typeof formFillId === "string"
+      ) {
+        formFill = await this.promisifyRequest(store.get(formFillId));
       }
 
       if (formFill) {
@@ -444,36 +586,50 @@ class OfflineStorage {
         // Si formFill.updated_at > syncedTimestamp, significa que el usuario hizo cambios
         // mientras se estaba sincronizando. En ese caso, actualizamos synced_at pero
         // MANTENEMOS has_pending_changes = true para que la próxima sincronización lo recoja.
-        
-        if (syncedTimestamp && formFill.updated_at && formFill.updated_at > syncedTimestamp) {
-          console.log(`[OfflineStorage] Form fill ${formFillId} updated during sync (local: ${formFill.updated_at}, synced: ${syncedTimestamp}). Keeping has_pending_changes=true.`)
-          formFill.synced_at = Date.now()
+
+        if (
+          syncedTimestamp &&
+          formFill.updated_at &&
+          formFill.updated_at > syncedTimestamp
+        ) {
+          // console.log(
+          //   `[OfflineStorage] Form fill ${formFillId} updated during sync (local: ${formFill.updated_at}, synced: ${syncedTimestamp}). Keeping has_pending_changes=true.`,
+          // );
+          formFill.synced_at = Date.now();
           // NO ponemos has_pending_changes = false
         } else {
-          formFill.synced_at = Date.now()
-          formFill.has_pending_changes = false
-          console.log(`[OfflineStorage] Marked form fill ${formFillId} as synced`)
+          formFill.synced_at = Date.now();
+          formFill.has_pending_changes = false;
+          //console.log(
+          //  `[OfflineStorage] Marked form fill ${formFillId} as synced`,
+          //);
         }
 
-        await this.promisifyRequest(store.put(formFill))
+        await this.promisifyRequest(store.put(formFill));
 
         // Notificar inmediatamente a la UI que el estado de cambios pendientes ha cambiado
         // Solo si realmente marcamos como synced (false)
         if (formFill.has_pending_changes === false) {
           try {
-            const evt = new CustomEvent('sync:pending-changes', {
+            const evt = new CustomEvent("sync:pending-changes", {
               detail: { formFillId, pending: false },
-              bubbles: true
-            })
-            document.dispatchEvent(evt)
+              bubbles: true,
+            });
+            document.dispatchEvent(evt);
           } catch (e) {
-            console.warn('[OfflineStorage] Failed to dispatch pending-changes event (mark synced):', e)
+            console.warn(
+              "[OfflineStorage] Failed to dispatch pending-changes event (mark synced):",
+              e,
+            );
           }
         }
       }
     } catch (error) {
-      console.error(`[OfflineStorage] Error marking form fill ${formFillId} as synced:`, error)
-      throw error
+      console.error(
+        `[OfflineStorage] Error marking form fill ${formFillId} as synced:`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -481,9 +637,9 @@ class OfflineStorage {
    * Agrega un elemento a la cola de sincronización
    */
   async addToSyncQueue(type, inspectionId, formFillId, payload) {
-    const db = await this.openDB()
-    const tx = db.transaction(['sync_queue'], 'readwrite')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["sync_queue"], "readwrite");
+
     try {
       const syncItem = {
         id: this.generateUUID(),
@@ -492,18 +648,18 @@ class OfflineStorage {
         form_fill_id: formFillId,
         payload: payload,
         created_at: Date.now(),
-        retry_count: 0
-      }
+        retry_count: 0,
+      };
 
-      await this.promisifyRequest(
-        tx.objectStore('sync_queue').add(syncItem)
-      )
-      
-      console.log(`[OfflineStorage] Added ${type} to sync queue for form fill ${formFillId}`)
-      return syncItem.id
+      await this.promisifyRequest(tx.objectStore("sync_queue").add(syncItem));
+
+      //console.log(
+      //  `[OfflineStorage] Added ${type} to sync queue for form fill ${formFillId}`,
+      //);
+      return syncItem.id;
     } catch (error) {
-      console.error('[OfflineStorage] Error adding to sync queue:', error)
-      throw error
+      console.error("[OfflineStorage] Error adding to sync queue:", error);
+      throw error;
     }
   }
 
@@ -511,19 +667,21 @@ class OfflineStorage {
    * Obtiene elementos de la cola de sincronización
    */
   async getSyncQueue() {
-    const db = await this.openDB()
-    const tx = db.transaction(['sync_queue'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["sync_queue"], "readonly");
+
     try {
       const queueItems = await this.promisifyRequest(
-        tx.objectStore('sync_queue').getAll()
-      )
-      
-      console.log(`[OfflineStorage] Retrieved ${queueItems.length} items from sync queue`)
-      return queueItems
+        tx.objectStore("sync_queue").getAll(),
+      );
+
+      //console.log(
+      //  `[OfflineStorage] Retrieved ${queueItems.length} items from sync queue`,
+      //);
+      return queueItems;
     } catch (error) {
-      console.error('[OfflineStorage] Error getting sync queue:', error)
-      throw error
+      console.error("[OfflineStorage] Error getting sync queue:", error);
+      throw error;
     }
   }
 
@@ -534,24 +692,29 @@ class OfflineStorage {
    * Alias: Obtiene todos los elementos de la cola de sincronización
    */
   async getAllSyncItems() {
-    return await this.getSyncQueue()
+    return await this.getSyncQueue();
   }
   async removeSyncItem(syncItemId) {
-    return await this.removeFromSyncQueue(syncItemId)
+    return await this.removeFromSyncQueue(syncItemId);
   }
   async removeFromSyncQueue(syncItemId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['sync_queue'], 'readwrite')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["sync_queue"], "readwrite");
+
     try {
       await this.promisifyRequest(
-        tx.objectStore('sync_queue').delete(syncItemId)
-      )
-      
-      console.log(`[OfflineStorage] Removed item ${syncItemId} from sync queue`)
+        tx.objectStore("sync_queue").delete(syncItemId),
+      );
+
+      //console.log(
+      //  `[OfflineStorage] Removed item ${syncItemId} from sync queue`,
+      //);
     } catch (error) {
-      console.error(`[OfflineStorage] Error removing item ${syncItemId} from sync queue:`, error)
-      throw error
+      console.error(
+        `[OfflineStorage] Error removing item ${syncItemId} from sync queue:`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -559,21 +722,24 @@ class OfflineStorage {
    * Actualiza un elemento de la cola de sincronización
    */
   async updateSyncItem(syncItemId, updates) {
-    const db = await this.openDB()
-    const tx = db.transaction(['sync_queue'], 'readwrite')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["sync_queue"], "readwrite");
+
     try {
-      const store = tx.objectStore('sync_queue')
-      const item = await this.promisifyRequest(store.get(syncItemId))
-      
+      const store = tx.objectStore("sync_queue");
+      const item = await this.promisifyRequest(store.get(syncItemId));
+
       if (item) {
-        Object.assign(item, updates)
-        await this.promisifyRequest(store.put(item))
-        console.log(`[OfflineStorage] Updated sync item ${syncItemId}`)
+        Object.assign(item, updates);
+        await this.promisifyRequest(store.put(item));
+        //console.log(`[OfflineStorage] Updated sync item ${syncItemId}`);
       }
     } catch (error) {
-      console.error(`[OfflineStorage] Error updating sync item ${syncItemId}:`, error)
-      throw error
+      console.error(
+        `[OfflineStorage] Error updating sync item ${syncItemId}:`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -582,7 +748,9 @@ class OfflineStorage {
    */
   async saveFormFillData(formFillId, changedData) {
     if (!formFillId || Object.keys(changedData).length === 0) {
-      console.log('[OfflineStorage] No formFillId or changedData provided. Skipping save.');
+      //console.log(
+      //  "[OfflineStorage] No formFillId or changedData provided. Skipping save.",
+      //);
       return;
     }
 
@@ -593,7 +761,9 @@ class OfflineStorage {
       const syncQueueStore = tx.objectStore("sync_queue");
 
       const numericFormFillId = parseInt(formFillId, 10);
-      const formFill = await this.promisifyRequest(formFillsStore.get(numericFormFillId));
+      const formFill = await this.promisifyRequest(
+        formFillsStore.get(numericFormFillId),
+      );
 
       if (formFill) {
         const updatedData = { ...(formFill.data || {}), ...changedData };
@@ -602,10 +772,10 @@ class OfflineStorage {
         formFill.updated_at = Date.now();
 
         await this.promisifyRequest(formFillsStore.put(formFill));
-        console.log(
-          `[OfflineStorage] FormFill ID ${formFillId} updated in IndexedDB with:`,
-          changedData
-        );
+        //console.log(
+        //  `[OfflineStorage] FormFill ID ${formFillId} updated in IndexedDB with:`,
+        //  changedData,
+        //);
 
         // Agregar a la cola de sincronización SOLO si estamos online.
         // Cuando estamos offline, el flag has_pending_changes será consumido
@@ -613,44 +783,53 @@ class OfflineStorage {
         if (navigator.onLine) {
           const syncItem = {
             id: this.generateUUID(),
-            type: 'form_fill_update',
+            type: "form_fill_update",
             form_fill_id: numericFormFillId,
             payload: {
               form_fill_id: numericFormFillId,
               changes: changedData,
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             },
             created_at: Date.now(),
-            retry_count: 0
+            retry_count: 0,
           };
 
           await this.promisifyRequest(syncQueueStore.add(syncItem));
-          console.log(`[OfflineStorage] Added form_fill_update to sync queue for form fill ${formFillId}`);
+          //console.log(
+          //  `[OfflineStorage] Added form_fill_update to sync queue for form fill ${formFillId}`,
+          //);
         } else {
-          console.log('[OfflineStorage] Offline detected. Skipping enqueue; will sync from has_pending_changes later.')
+          //console.log(
+          //  "[OfflineStorage] Offline detected. Skipping enqueue; will sync from has_pending_changes later.",
+          //);
         }
 
         // Notificar inmediatamente a la UI que existen cambios pendientes (sin necesidad de refrescar)
         try {
-          const evt = new CustomEvent('sync:pending-changes', {
+          const evt = new CustomEvent("sync:pending-changes", {
             detail: { formFillId: numericFormFillId, pending: true },
-            bubbles: true
-          })
-          document.dispatchEvent(evt)
+            bubbles: true,
+          });
+          document.dispatchEvent(evt);
         } catch (e) {
-          console.warn('[OfflineStorage] Failed to dispatch pending-changes event (save data):', e)
+          console.warn(
+            "[OfflineStorage] Failed to dispatch pending-changes event (save data):",
+            e,
+          );
         }
-
       } else {
         console.error(
-          `[OfflineStorage] No se encontró FormFill con ID ${formFillId} en IndexedDB.`
+          `[OfflineStorage] No se encontró FormFill con ID ${formFillId} en IndexedDB.`,
         );
       }
 
       await new Promise((resolve, reject) => {
         tx.oncomplete = () => resolve();
         tx.onerror = (event) => {
-          console.error('[OfflineStorage] Transaction error on saveFormFillData:', event.target.error);
+          console.error(
+            "[OfflineStorage] Transaction error on saveFormFillData:",
+            event.target.error,
+          );
           reject(event.target.error);
         };
       });
@@ -659,27 +838,21 @@ class OfflineStorage {
     }
   }
 
-
-
   /**
    * Obtiene datos de form_fill almacenados offline
    */
   async getFormFillData(formFillId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readonly");
+
     try {
-      const store = tx.objectStore('form_fills')
-      const result = await this.promisifyRequest(store.get(formFillId))
-      
-      if (result) {
-        console.log(`[OfflineStorage] Retrieved form fill data for ${formFillId}`)
-      }
-      
-      return result
+      const store = tx.objectStore("form_fills");
+      const result = await this.promisifyRequest(store.get(formFillId));
+
+      return result;
     } catch (error) {
-      console.error(`[OfflineStorage] Error retrieving form fill data:`, error)
-      throw error
+      console.error(`[OfflineStorage] Error retrieving form fill data:`, error);
+      throw error;
     }
   }
 
@@ -687,16 +860,16 @@ class OfflineStorage {
    * Elimina datos de form_fill del almacenamiento offline
    */
   async removeFormFillData(formFillId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readwrite')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readwrite");
+
     try {
-      const store = tx.objectStore('form_fills')
-      await this.promisifyRequest(store.delete(formFillId))
-      console.log(`[OfflineStorage] Removed form fill data for ${formFillId}`)
+      const store = tx.objectStore("form_fills");
+      await this.promisifyRequest(store.delete(formFillId));
+      //console.log(`[OfflineStorage] Removed form fill data for ${formFillId}`);
     } catch (error) {
-      console.error(`[OfflineStorage] Error removing form fill data:`, error)
-      throw error
+      //console.error(`[OfflineStorage] Error removing form fill data:`, error);
+      throw error;
     }
   }
 
@@ -704,16 +877,16 @@ class OfflineStorage {
    * Verifica si existen datos de form_fill offline
    */
   async hasFormFillData(formFillId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readonly");
+
     try {
-      const store = tx.objectStore('form_fills')
-      const result = await this.promisifyRequest(store.get(formFillId))
-      return !!result
+      const store = tx.objectStore("form_fills");
+      const result = await this.promisifyRequest(store.get(formFillId));
+      return !!result;
     } catch (error) {
-      console.error(`[OfflineStorage] Error checking form fill data:`, error)
-      return false
+      console.error(`[OfflineStorage] Error checking form fill data:`, error);
+      return false;
     }
   }
 
@@ -721,17 +894,17 @@ class OfflineStorage {
    * Obtiene todos los form_fills almacenados offline
    */
   async getAllFormFillData() {
-    const db = await this.openDB()
-    const tx = db.transaction(['form_fills'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["form_fills"], "readonly");
+
     try {
-      const store = tx.objectStore('form_fills')
-      const result = await this.promisifyRequest(store.getAll())
-      console.log(`[OfflineStorage] Retrieved ${result.length} form fills`)
-      return result
+      const store = tx.objectStore("form_fills");
+      const result = await this.promisifyRequest(store.getAll());
+      // console.log(`[OfflineStorage] Retrieved ${result.length} form fills`);
+      return result;
     } catch (error) {
-      console.error(`[OfflineStorage] Error retrieving all form fills:`, error)
-      throw error
+      console.error(`[OfflineStorage] Error retrieving all form fills:`, error);
+      throw error;
     }
   }
 
@@ -739,11 +912,11 @@ class OfflineStorage {
    * Almacena una foto como blob en IndexedDB
    */
   async storePhotoBlob(photoId, blob, metadata = {}) {
-    const db = await this.openDB()
-    const tx = db.transaction(['photos'], 'readwrite')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["photos"], "readwrite");
+
     try {
-      const store = tx.objectStore('photos')
+      const store = tx.objectStore("photos");
       const photoData = {
         id: photoId,
         blob: blob,
@@ -752,15 +925,18 @@ class OfflineStorage {
           stored_at: new Date().toISOString(),
           size: blob.size,
           // Preserve variant in `metadata.type` (original/thumbnail) and record MIME separately
-          mime_type: blob.type
-        }
-      }
-      
-      await this.promisifyRequest(store.put(photoData))
-      console.log(`[OfflineStorage] Stored photo blob ${photoId}`, { size: blob.size, type: blob.type })
+          mime_type: blob.type,
+        },
+      };
+
+      await this.promisifyRequest(store.put(photoData));
+      // console.log(`[OfflineStorage] Stored photo blob ${photoId}`, {
+      //   size: blob.size,
+      //   type: blob.type,
+      // });
     } catch (error) {
-      console.error(`[OfflineStorage] Error storing photo blob:`, error)
-      throw error
+      console.error(`[OfflineStorage] Error storing photo blob:`, error);
+      throw error;
     }
   }
 
@@ -768,22 +944,22 @@ class OfflineStorage {
    * Obtiene una foto almacenada como blob
    */
   async getPhotoBlob(photoId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['photos'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["photos"], "readonly");
+
     try {
-      const store = tx.objectStore('photos')
-      const result = await this.promisifyRequest(store.get(photoId))
-      
+      const store = tx.objectStore("photos");
+      const result = await this.promisifyRequest(store.get(photoId));
+
       if (result) {
-        console.log(`[OfflineStorage] Retrieved photo blob ${photoId}`)
-        return result
+        // console.log(`[OfflineStorage] Retrieved photo blob ${photoId}`);
+        return result;
       }
-      
-      return null
+
+      return null;
     } catch (error) {
-      console.error(`[OfflineStorage] Error retrieving photo blob:`, error)
-      throw error
+      console.error(`[OfflineStorage] Error retrieving photo blob:`, error);
+      throw error;
     }
   }
 
@@ -791,16 +967,16 @@ class OfflineStorage {
    * Elimina una foto del almacenamiento
    */
   async removePhotoBlob(photoId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['photos'], 'readwrite')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["photos"], "readwrite");
+
     try {
-      const store = tx.objectStore('photos')
-      await this.promisifyRequest(store.delete(photoId))
-      console.log(`[OfflineStorage] Removed photo blob ${photoId}`)
+      const store = tx.objectStore("photos");
+      await this.promisifyRequest(store.delete(photoId));
+      // console.log(`[OfflineStorage] Removed photo blob ${photoId}`);
     } catch (error) {
-      console.error(`[OfflineStorage] Error removing photo blob:`, error)
-      throw error
+      console.error(`[OfflineStorage] Error removing photo blob:`, error);
+      throw error;
     }
   }
 
@@ -808,16 +984,16 @@ class OfflineStorage {
    * Verifica si existe una foto almacenada
    */
   async hasPhotoBlob(photoId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['photos'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["photos"], "readonly");
+
     try {
-      const store = tx.objectStore('photos')
-      const result = await this.promisifyRequest(store.get(photoId))
-      return !!result
+      const store = tx.objectStore("photos");
+      const result = await this.promisifyRequest(store.get(photoId));
+      return !!result;
     } catch (error) {
-      console.error(`[OfflineStorage] Error checking photo blob:`, error)
-      return false
+      console.error(`[OfflineStorage] Error checking photo blob:`, error);
+      return false;
     }
   }
 
@@ -825,165 +1001,224 @@ class OfflineStorage {
    * Obtiene todas las fotos almacenadas
    */
   async getAllPhotoBlobs() {
-    const db = await this.openDB()
-    const tx = db.transaction(['photos'], 'readonly')
-    
+    const db = await this.openDB();
+    const tx = db.transaction(["photos"], "readonly");
+
     try {
-      const store = tx.objectStore('photos')
-      const result = await this.promisifyRequest(store.getAll())
-      console.log(`[OfflineStorage] Retrieved ${result.length} photo blobs`)
-      return result
+      const store = tx.objectStore("photos");
+      const result = await this.promisifyRequest(store.getAll());
+      // console.log(`[OfflineStorage] Retrieved ${result.length} photo blobs`);
+      return result;
     } catch (error) {
-      console.error(`[OfflineStorage] Error retrieving all photo blobs:`, error)
-      throw error
+      console.error(
+        `[OfflineStorage] Error retrieving all photo blobs:`,
+        error,
+      );
+      throw error;
     }
   }
 
   // New: Get photos by inspection_id
   async getPhotosByInspection(inspectionId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['photos'], 'readonly')
+    const db = await this.openDB();
+    const tx = db.transaction(["photos"], "readonly");
     try {
-      const store = tx.objectStore('photos')
-      let results = []
+      const store = tx.objectStore("photos");
+      let results = [];
       try {
-        const index = store.index('metadata.inspection_id')
-        results = await this.promisifyRequest(index.getAll(inspectionId))
+        const index = store.index("metadata.inspection_id");
+        results = await this.promisifyRequest(index.getAll(inspectionId));
       } catch (_) {
         // Fallback: filter all
-        const all = await this.promisifyRequest(store.getAll())
-        results = (all || []).filter(p => String(p?.metadata?.inspection_id) === String(inspectionId))
+        const all = await this.promisifyRequest(store.getAll());
+        results = (all || []).filter(
+          (p) => String(p?.metadata?.inspection_id) === String(inspectionId),
+        );
       }
-      return results
+      return results;
     } catch (error) {
-      console.error('[OfflineStorage] Error getting photos by inspection:', error)
-      return []
+      console.error(
+        "[OfflineStorage] Error getting photos by inspection:",
+        error,
+      );
+      return [];
     }
   }
 
   // New: Get photos by form_fill_id
   async getPhotosByFormFill(formFillId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['photos'], 'readonly')
+    const db = await this.openDB();
+    const tx = db.transaction(["photos"], "readonly");
     try {
-      const store = tx.objectStore('photos')
-      let results = []
+      const store = tx.objectStore("photos");
+      let results = [];
       try {
-        const index = store.index('metadata.form_fill_id')
-        results = await this.promisifyRequest(index.getAll(formFillId))
+        const index = store.index("metadata.form_fill_id");
+        results = await this.promisifyRequest(index.getAll(formFillId));
       } catch (_) {
-        const all = await this.promisifyRequest(store.getAll())
-        results = (all || []).filter(p => String(p?.metadata?.form_fill_id) === String(formFillId))
+        const all = await this.promisifyRequest(store.getAll());
+        results = (all || []).filter(
+          (p) => String(p?.metadata?.form_fill_id) === String(formFillId),
+        );
       }
-      return results
+      return results;
     } catch (error) {
-      console.error('[OfflineStorage] Error getting photos by form_fill:', error)
-      return []
+      console.error(
+        "[OfflineStorage] Error getting photos by form_fill:",
+        error,
+      );
+      return [];
     }
   }
 
   // New: Get latest photo for a specific field in a form_fill
   async getLatestPhotoForField(formFillId, fieldName) {
     try {
-      const photos = await this.getPhotosByFormFill(formFillId)
-      const candidates = (photos || []).filter(p => String(p?.metadata?.field_name) === String(fieldName))
-      if (candidates.length === 0) return null
-      candidates.sort((a, b) => new Date(b.metadata?.stored_at || 0) - new Date(a.metadata?.stored_at || 0))
-      return candidates[0]
+      const photos = await this.getPhotosByFormFill(formFillId);
+      const candidates = (photos || []).filter(
+        (p) => String(p?.metadata?.field_name) === String(fieldName),
+      );
+      if (candidates.length === 0) return null;
+      candidates.sort(
+        (a, b) =>
+          new Date(b.metadata?.stored_at || 0) -
+          new Date(a.metadata?.stored_at || 0),
+      );
+      return candidates[0];
     } catch (error) {
-      console.error('[OfflineStorage] Error getting latest photo for field:', error)
-      return null
+      console.error(
+        "[OfflineStorage] Error getting latest photo for field:",
+        error,
+      );
+      return null;
     }
   }
 
   // New: Get all photos for a specific field in a form_fill
   async getPhotosForField(formFillId, fieldName) {
     try {
-      const photos = await this.getPhotosByFormFill(formFillId)
-      const candidates = (photos || []).filter(p => String(p?.metadata?.field_name) === String(fieldName))
+      const photos = await this.getPhotosByFormFill(formFillId);
+      const candidates = (photos || []).filter(
+        (p) => String(p?.metadata?.field_name) === String(fieldName),
+      );
       // Sort by stored_at (oldest first for gallery usually, or newest? Let's use oldest first to match visual order of addition)
-      candidates.sort((a, b) => new Date(a.metadata?.stored_at || 0) - new Date(b.metadata?.stored_at || 0))
-      return candidates
+      candidates.sort(
+        (a, b) =>
+          new Date(a.metadata?.stored_at || 0) -
+          new Date(b.metadata?.stored_at || 0),
+      );
+      return candidates;
     } catch (error) {
-      console.error('[OfflineStorage] Error getting photos for field:', error)
-      return []
+      console.error("[OfflineStorage] Error getting photos for field:", error);
+      return [];
     }
   }
 
-  // New: Remove all photos by inspection_id
+  /**
+   * Elimina todas las fotos asociadas a una inspección.
+   * @param {string|number} inspectionId - ID de la inspección.
+   * @returns {Promise<number>} Cantidad de fotos eliminadas.
+   */
   async removePhotosByInspection(inspectionId) {
-    const db = await this.openDB()
-    const tx = db.transaction(['photos'], 'readwrite')
+    const db = await this.openDB();
+    const tx = db.transaction(["photos"], "readwrite");
     try {
-      const store = tx.objectStore('photos')
-      let toDelete = []
+      const store = tx.objectStore("photos");
+      let toDelete = [];
       try {
-        const index = store.index('metadata.inspection_id')
-        toDelete = await this.promisifyRequest(index.getAll(inspectionId))
+        const index = store.index("metadata.inspection_id");
+        toDelete = await this.promisifyRequest(index.getAll(inspectionId));
       } catch (_) {
-        const all = await this.promisifyRequest(store.getAll())
-        toDelete = (all || []).filter(p => String(p?.metadata?.inspection_id) === String(inspectionId))
+        const all = await this.promisifyRequest(store.getAll());
+        toDelete = (all || []).filter(
+          (p) => String(p?.metadata?.inspection_id) === String(inspectionId),
+        );
       }
       for (const p of toDelete) {
-        await this.promisifyRequest(store.delete(p.id))
+        await this.promisifyRequest(store.delete(p.id));
       }
-      console.log(`[OfflineStorage] Removed ${toDelete.length} photos for inspection ${inspectionId}`)
-      return toDelete.length
+      // console.log(
+      //   `[OfflineStorage] Removed ${toDelete.length} photos for inspection ${inspectionId}`,
+      // );
+      return toDelete.length;
     } catch (error) {
-      console.error('[OfflineStorage] Error removing photos by inspection:', error)
-      return 0
+      console.error(
+        "[OfflineStorage] Error removing photos by inspection:",
+        error,
+      );
+      return 0;
     }
   }
 
   // New: Compute per-inspection storage usage (bytes) for photos
   async getInspectionStorageUsage(inspectionId) {
     try {
-      const photos = await this.getPhotosByInspection(inspectionId)
-      return (photos || []).reduce((sum, p) => sum + (p?.metadata?.size || p?.blob?.size || 0), 0)
+      const photos = await this.getPhotosByInspection(inspectionId);
+      return (photos || []).reduce(
+        (sum, p) => sum + (p?.metadata?.size || p?.blob?.size || 0),
+        0,
+      );
     } catch (error) {
-      console.error('[OfflineStorage] Error computing inspection storage usage:', error)
-      return 0
+      console.error(
+        "[OfflineStorage] Error computing inspection storage usage:",
+        error,
+      );
+      return 0;
     }
   }
 
   // New: Create a thumbnail blob from an image blob
   // For JPEG thumbnails, we fill a white background to avoid black boxes when the source has transparency.
   // You can override the background with { backgroundColor: '#ffffff' } or set outputType to 'image/png' to preserve transparency.
-  async createThumbnailBlob(blob, { maxDimension = 1024, quality = 0.7, outputType = 'image/jpeg', backgroundColor = null } = {}) {
+  async createThumbnailBlob(
+    blob,
+    {
+      maxDimension = 1024,
+      quality = 0.7,
+      outputType = "image/jpeg",
+      backgroundColor = null,
+    } = {},
+  ) {
     try {
-      const imageURL = URL.createObjectURL(blob)
+      const imageURL = URL.createObjectURL(blob);
       const img = await new Promise((resolve, reject) => {
-        const image = new Image()
-        image.onload = () => resolve(image)
-        image.onerror = (e) => reject(e)
-        image.src = imageURL
-      })
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = (e) => reject(e);
+        image.src = imageURL;
+      });
 
-      const { width, height } = img
-      const scale = Math.min(1, maxDimension / Math.max(width, height))
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.max(1, Math.round(width * scale))
-      canvas.height = Math.max(1, Math.round(height * scale))
-      const ctx = canvas.getContext('2d')
+      const { width, height } = img;
+      const scale = Math.min(1, maxDimension / Math.max(width, height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const ctx = canvas.getContext("2d");
       // If we're outputting JPEG, draw a white background to prevent black rectangles
-      const shouldFillBg = (backgroundColor !== null) || (String(outputType).toLowerCase() === 'image/jpeg')
+      const shouldFillBg =
+        backgroundColor !== null ||
+        String(outputType).toLowerCase() === "image/jpeg";
       if (shouldFillBg) {
-        ctx.fillStyle = backgroundColor || '#ffffff'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.fillStyle = backgroundColor || "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      URL.revokeObjectURL(imageURL)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(imageURL);
 
       const thumbnailBlob = await new Promise((resolve, reject) => {
-        canvas.toBlob((b) => {
-          if (b) resolve(b)
-          else reject(new Error('Failed to create thumbnail blob'))
-        }, outputType, quality)
-      })
-      return thumbnailBlob
+        canvas.toBlob(
+          (b) => {
+            if (b) resolve(b);
+            else reject(new Error("Failed to create thumbnail blob"));
+          },
+          outputType,
+          quality,
+        );
+      });
+      return thumbnailBlob;
     } catch (error) {
-      console.error('[OfflineStorage] Error creating thumbnail blob:', error)
-      throw error
+      console.error("[OfflineStorage] Error creating thumbnail blob:", error);
+      throw error;
     }
   }
 
@@ -993,21 +1228,21 @@ class OfflineStorage {
   async storePhotoFromFile(photoId, file, metadata = {}) {
     try {
       // Crear blob desde el archivo
-      const blob = new Blob([file], { type: file.type })
-      
+      const blob = new Blob([file], { type: file.type });
+
       // Agregar metadatos del archivo
       const fileMetadata = {
         ...metadata,
         filename: file.name,
         originalSize: file.size,
-        lastModified: file.lastModified
-      }
-      
-      await this.storePhotoBlob(photoId, blob, fileMetadata)
-      return photoId
+        lastModified: file.lastModified,
+      };
+
+      await this.storePhotoBlob(photoId, blob, fileMetadata);
+      return photoId;
     } catch (error) {
-      console.error(`[OfflineStorage] Error storing photo from file:`, error)
-      throw error
+      console.error(`[OfflineStorage] Error storing photo from file:`, error);
+      throw error;
     }
   }
 
@@ -1016,16 +1251,16 @@ class OfflineStorage {
    */
   async createPhotoURL(photoId) {
     try {
-      const photoData = await this.getPhotoBlob(photoId)
-      
+      const photoData = await this.getPhotoBlob(photoId);
+
       if (photoData && photoData.blob) {
-        return URL.createObjectURL(photoData.blob)
+        return URL.createObjectURL(photoData.blob);
       }
-      
-      return null
+
+      return null;
     } catch (error) {
-      console.error(`[OfflineStorage] Error creating photo URL:`, error)
-      return null
+      console.error(`[OfflineStorage] Error creating photo URL:`, error);
+      return null;
     }
   }
 
@@ -1037,27 +1272,41 @@ class OfflineStorage {
       const db = await this.openDB();
       const estimate = await navigator.storage.estimate();
 
-      const quota = (estimate && Number.isFinite(estimate.quota)) ? estimate.quota : 0;
-      const usage = (estimate && Number.isFinite(estimate.usage)) ? estimate.usage : 0;
-      const usagePercentage = quota > 0 ? ((usage / quota) * 100) : 0;
+      const quota =
+        estimate && Number.isFinite(estimate.quota) ? estimate.quota : 0;
+      const usage =
+        estimate && Number.isFinite(estimate.usage) ? estimate.usage : 0;
+      const usagePercentage = quota > 0 ? (usage / quota) * 100 : 0;
 
-      const tx = db.transaction(['inspections', 'form_fills', 'sync_queue'], 'readonly');
-      const inspectionsStore = tx.objectStore('inspections');
-      const formFillsStore = tx.objectStore('form_fills');
-      const syncQueueStore = tx.objectStore('sync_queue');
+      const tx = db.transaction(
+        ["inspections", "form_fills", "sync_queue"],
+        "readonly",
+      );
+      const inspectionsStore = tx.objectStore("inspections");
+      const formFillsStore = tx.objectStore("form_fills");
+      const syncQueueStore = tx.objectStore("sync_queue");
 
-      const inspectionsCountPromise = this.promisifyRequest(inspectionsStore.count());
-      const allFormFillsPromise = this.promisifyRequest(formFillsStore.getAll());
-      const syncQueueCountPromise = this.promisifyRequest(syncQueueStore.count());
+      const inspectionsCountPromise = this.promisifyRequest(
+        inspectionsStore.count(),
+      );
+      const allFormFillsPromise = this.promisifyRequest(
+        formFillsStore.getAll(),
+      );
+      const syncQueueCountPromise = this.promisifyRequest(
+        syncQueueStore.count(),
+      );
 
-      const [inspectionsCount, allFormFills, syncQueueCount] = await Promise.all([
-        inspectionsCountPromise,
-        allFormFillsPromise,
-        syncQueueCountPromise
-      ]);
+      const [inspectionsCount, allFormFills, syncQueueCount] =
+        await Promise.all([
+          inspectionsCountPromise,
+          allFormFillsPromise,
+          syncQueueCountPromise,
+        ]);
 
-      const pendingChangesCount = allFormFills.filter(formFill => 
-        formFill.has_pending_changes === true || formFill.has_pending_changes === 'true'
+      const pendingChangesCount = allFormFills.filter(
+        (formFill) =>
+          formFill.has_pending_changes === true ||
+          formFill.has_pending_changes === "true",
       ).length;
 
       return {
@@ -1066,118 +1315,319 @@ class OfflineStorage {
         usagePercentage: Number(usagePercentage.toFixed(2)),
         inspectionsCount,
         pendingChangesCount,
-        syncQueue: syncQueueCount
+        syncQueue: syncQueueCount,
       };
     } catch (error) {
-      console.error('[OfflineStorage] Error getting storage stats:', error);
+      console.error("[OfflineStorage] Error getting storage stats:", error);
       throw error;
     }
   }
 
-  // Método para verificar si una inspección está descargada
+  /**
+   * Verifica si una inspección está descargada.
+   * @param {string|number} inspectionId - ID de la inspección.
+   * @returns {Promise<boolean>} True si existe, false si no.
+   */
   async hasInspection(inspectionId) {
     try {
-      const db = await this.openDB()
-      const transaction = db.transaction(['inspections'], 'readonly')
-      const store = transaction.objectStore('inspections')
-      const inspection = await this.promisifyRequest(store.get(inspectionId))
-      
-      console.log(`[OfflineStorage] Checking inspection ${inspectionId}:`, inspection)
-      console.log(`[OfflineStorage] Has inspection result:`, !!inspection)
-      
-      return !!inspection
+      const db = await this.openDB();
+      const transaction = db.transaction(["inspections"], "readonly");
+      const store = transaction.objectStore("inspections");
+      const inspection = await this.promisifyRequest(store.get(inspectionId));
+
+      // console.log(
+      //   `[OfflineStorage] Checking inspection ${inspectionId}:`,
+      //   inspection,
+      // );
+      // console.log(`[OfflineStorage] Has inspection result:`, !!inspection);
+
+      return !!inspection;
     } catch (error) {
-      console.error(`[OfflineStorage] Error checking inspection ${inspectionId}:`, error)
-      return false
+      console.error(
+        `[OfflineStorage] Error checking inspection ${inspectionId}:`,
+        error,
+      );
+      return false;
     }
   }
 
-  // Método para almacenar form templates
+  /**
+   * Almacena un template de formulario.
+   * @param {Object} template - Objeto del template.
+   */
   async storeFormTemplate(template) {
-    const db = await this.openDB()
-    const transaction = db.transaction(['form_templates'], 'readwrite')
-    const store = transaction.objectStore('form_templates')
-    
+    const db = await this.openDB();
+    const transaction = db.transaction(["form_templates"], "readwrite");
+    const store = transaction.objectStore("form_templates");
+
     const templateData = {
       ...template,
-      stored_at: new Date().toISOString()
-    }
-    
-    await store.put(templateData)
-    console.log('Form template stored:', template.id)
+      stored_at: new Date().toISOString(),
+    };
+
+    await store.put(templateData);
+    // console.log("Form template stored:", template.id);
   }
 
-  // Método para remover una inspección y sus datos relacionados
+  /**
+   * Elimina una inspección y sus datos relacionados (form_fills, fotos, sync items).
+   * @param {string|number} inspectionId - ID de la inspección a eliminar.
+   */
   async removeInspection(inspectionId) {
-    const db = await this.openDB()
-    
-    console.log('[OfflineStorage] Removing inspection:', inspectionId)
-    
+    const db = await this.openDB();
+
+    // console.log(
+    //   "[OfflineStorage] Removing inspection (v2 - with sync cleanup):",
+    //   inspectionId,
+    // );
+
     // Remover inspección
-    const inspectionTransaction = db.transaction(['inspections'], 'readwrite')
-    const inspectionStore = inspectionTransaction.objectStore('inspections')
-    await this.promisifyRequest(inspectionStore.delete(inspectionId))
-    console.log('[OfflineStorage] Inspection removed from inspections store')
-    
+    const inspectionTransaction = db.transaction(["inspections"], "readwrite");
+    const inspectionStore = inspectionTransaction.objectStore("inspections");
+    await this.promisifyRequest(inspectionStore.delete(inspectionId));
+    // console.log("[OfflineStorage] Inspection removed from inspections store");
+
     // Remover form_fills relacionados
-    const formFillTransaction = db.transaction(['form_fills'], 'readwrite')
-    const formFillStore = formFillTransaction.objectStore('form_fills')
-    const formFillIndex = formFillStore.index('inspection_id')
-    
+    const formFillTransaction = db.transaction(["form_fills"], "readwrite");
+    const formFillStore = formFillTransaction.objectStore("form_fills");
+    const formFillIndex = formFillStore.index("inspection_id");
+
     // Obtener todos los form_fills relacionados con esta inspección
-    const formFills = await this.promisifyRequest(formFillIndex.getAll(inspectionId))
-    console.log('[OfflineStorage] Found form_fills to remove:', formFills.length)
-    
+    const formFills = await this.promisifyRequest(
+      formFillIndex.getAll(inspectionId),
+    );
+    // console.log(
+    //   "[OfflineStorage] Found form_fills to remove:",
+    //   formFills.length,
+    // );
+
     // Eliminar cada form_fill
     for (const formFill of formFills) {
-      console.log('[OfflineStorage] Removing form_fill:', formFill.id)
-      await this.promisifyRequest(formFillStore.delete(formFill.id))
+      // console.log("[OfflineStorage] Removing form_fill:", formFill.id);
+      await this.promisifyRequest(formFillStore.delete(formFill.id));
+    }
+
+    // New: Remover elementos de la cola de sincronización relacionados (INLINE DEBUGGING)
+    try {
+      // console.log("--- STARTING SYNC QUEUE CLEANUP ---");
+      const formFillIds = formFills.map((ff) => String(ff.id));
+      const targetInspectionId = String(inspectionId);
+      // console.log("Targets:", { targetInspectionId, formFillIds });
+
+      const txSync = db.transaction(["sync_queue"], "readwrite");
+      const syncStore = txSync.objectStore("sync_queue");
+      const allSyncItems = await this.promisifyRequest(syncStore.getAll());
+
+      // console.log(`Found ${allSyncItems.length} total items in sync queue`);
+
+      const itemsToRemove = allSyncItems.filter((item) => {
+        let match = false;
+        // Check inspection_id directly on item
+        if (
+          item.inspection_id &&
+          String(item.inspection_id) === targetInspectionId
+        )
+          match = true;
+        // Check form_fill_id directly on item
+        if (
+          !match &&
+          item.form_fill_id &&
+          formFillIds.includes(String(item.form_fill_id))
+        )
+          match = true;
+        // Check inside payload
+        if (!match && item.payload) {
+          if (
+            item.payload.inspection_id &&
+            String(item.payload.inspection_id) === targetInspectionId
+          )
+            match = true;
+          if (
+            item.payload.form_fill_id &&
+            formFillIds.includes(String(item.payload.form_fill_id))
+          )
+            match = true;
+          if (item.payload.metadata) {
+            if (
+              item.payload.metadata.inspection_id &&
+              String(item.payload.metadata.inspection_id) === targetInspectionId
+            )
+              match = true;
+            if (
+              item.payload.metadata.form_fill_id &&
+              formFillIds.includes(String(item.payload.metadata.form_fill_id))
+            )
+              match = true;
+          }
+        }
+        return match;
+      });
+
+      // console.log(
+      //   `Identified ${itemsToRemove.length} items to remove from sync queue`,
+      // );
+
+      for (const item of itemsToRemove) {
+        // console.log(`Deleting sync item ${item.id}`);
+        await this.promisifyRequest(syncStore.delete(item.id));
+      }
+      // console.log("--- END SYNC QUEUE CLEANUP ---");
+    } catch (err) {
+      console.error("CRITICAL ERROR cleaning sync queue:", err);
     }
 
     // New: Remover fotos relacionadas a la inspección
     try {
-      const removedCount = await this.removePhotosByInspection(inspectionId)
-      console.log(`[OfflineStorage] Also removed ${removedCount} related photos`)
+      const removedCount = await this.removePhotosByInspection(inspectionId);
+      // console.log(
+      //   `[OfflineStorage] Also removed ${removedCount} related photos`,
+      // );
     } catch (e) {
-      console.warn('[OfflineStorage] Failed to remove photos for inspection during cleanup:', e)
+      console.warn(
+        "[OfflineStorage] Failed to remove photos for inspection during cleanup:",
+        e,
+      );
     }
-    
-    console.log('[OfflineStorage] Inspection and related data removed:', inspectionId)
+
+    // console.log(
+    //   "[OfflineStorage] Inspection and related data removed:",
+    //   inspectionId,
+    // );
+  }
+
+  /**
+   * Elimina elementos de sincronización relacionados con una inspección o sus form_fills.
+   * @param {string|number} inspectionId - ID de la inspección.
+   * @param {Array<string|number>} formFillIds - Array de IDs de form_fills.
+   */
+  async removeSyncItemsForInspection(inspectionId, formFillIds = []) {
+    // console.log(
+    //   `[OfflineStorage] removeSyncItemsForInspection called for inspection ${inspectionId} and formFills:`,
+    //   formFillIds,
+    // );
+    const db = await this.openDB();
+    const tx = db.transaction(["sync_queue"], "readwrite");
+    const store = tx.objectStore("sync_queue");
+
+    try {
+      const allItems = await this.promisifyRequest(store.getAll());
+      // console.log(
+      //   `[OfflineStorage] Checking ${allItems.length} items in sync queue for removal`,
+      // );
+
+      // Normalize IDs for comparison
+      const targetInspectionId = String(inspectionId);
+      const targetFormFillIds = new Set(formFillIds.map((id) => String(id)));
+
+      const itemsToRemove = allItems.filter((item) => {
+        let match = false;
+
+        // Check inspection_id directly on item
+        if (
+          item.inspection_id &&
+          String(item.inspection_id) === targetInspectionId
+        )
+          match = true;
+
+        // Check form_fill_id directly on item
+        if (
+          !match &&
+          item.form_fill_id &&
+          targetFormFillIds.has(String(item.form_fill_id))
+        )
+          match = true;
+
+        // Check inside payload
+        if (!match && item.payload) {
+          if (
+            item.payload.inspection_id &&
+            String(item.payload.inspection_id) === targetInspectionId
+          )
+            match = true;
+          if (
+            item.payload.form_fill_id &&
+            targetFormFillIds.has(String(item.payload.form_fill_id))
+          )
+            match = true;
+
+          // Case for photo uploads which might store inspection_id in metadata inside payload
+          if (item.payload.metadata) {
+            if (
+              item.payload.metadata.inspection_id &&
+              String(item.payload.metadata.inspection_id) === targetInspectionId
+            )
+              match = true;
+            if (
+              item.payload.metadata.form_fill_id &&
+              targetFormFillIds.has(String(item.payload.metadata.form_fill_id))
+            )
+              match = true;
+          }
+        }
+
+        if (match) {
+          // console.log(
+          //   `[OfflineStorage] Match found for removal: item ${item.id}`,
+          //   item,
+          // );
+        }
+
+        return match;
+      });
+
+      if (itemsToRemove.length > 0) {
+        // console.log(
+        //   `[OfflineStorage] Removing ${itemsToRemove.length} sync items for inspection ${inspectionId}`,
+        // );
+        for (const item of itemsToRemove) {
+          await this.promisifyRequest(store.delete(item.id));
+        }
+      } else {
+        // console.log("[OfflineStorage] No sync items matched for removal");
+      }
+    } catch (error) {
+      console.error("[OfflineStorage] Error removing sync items:", error);
+      // Don't throw, just log
+    }
   }
 
   /**
    * Limpia datos sincronizados antiguos
    */
   async cleanupSyncedData(olderThanDays = 7) {
-    const db = await this.openDB()
-    const cutoffDate = Date.now() - (olderThanDays * 24 * 60 * 60 * 1000)
-    
+    const db = await this.openDB();
+    const cutoffDate = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
+
     try {
       // Limpiar form_fills sincronizados antiguos
-      const tx = db.transaction(['form_fills'], 'readwrite')
-      const store = tx.objectStore('form_fills')
-      const cursor = await this.promisifyRequest(store.openCursor())
-      
-      let cleanedCount = 0
-      
+      const tx = db.transaction(["form_fills"], "readwrite");
+      const store = tx.objectStore("form_fills");
+      const cursor = await this.promisifyRequest(store.openCursor());
+
+      let cleanedCount = 0;
+
       while (cursor) {
-        const formFill = cursor.value
-        
-        if (!formFill.has_pending_changes && 
-            formFill.synced_at && 
-            formFill.synced_at < cutoffDate) {
-          await this.promisifyRequest(cursor.delete())
-          cleanedCount++
+        const formFill = cursor.value;
+
+        if (
+          !formFill.has_pending_changes &&
+          formFill.synced_at &&
+          formFill.synced_at < cutoffDate
+        ) {
+          await this.promisifyRequest(cursor.delete());
+          cleanedCount++;
         }
-        
-        cursor = await this.promisifyRequest(cursor.continue())
+
+        cursor = await this.promisifyRequest(cursor.continue());
       }
-      
-      console.log(`[OfflineStorage] Cleaned up ${cleanedCount} old synced form fills`)
-      return cleanedCount
+
+      // console.log(
+      //   `[OfflineStorage] Cleaned up ${cleanedCount} old synced form fills`,
+      // );
+      return cleanedCount;
     } catch (error) {
-      console.error('[OfflineStorage] Error during cleanup:', error)
-      throw error
+      console.error("[OfflineStorage] Error during cleanup:", error);
+      throw error;
     }
   }
 
@@ -1187,21 +1637,61 @@ class OfflineStorage {
   promisifyRequest(request) {
     return new Promise((resolve, reject) => {
       if (!request) {
-        reject(new Error('Request is null or undefined'))
-        return
+        reject(new Error("Request is null or undefined"));
+        return;
       }
-      
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
-    })
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
   }
 
   generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0
-      const v = c == 'x' ? r : (r & 0x3 | 0x8)
-      return v.toString(16)
-    })
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+      /[xy]/g,
+      function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c == "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      },
+    );
+  }
+
+  /**
+   * Borra TODOS los datos almacenados offline (Vaciando todos los object stores)
+   * Nota: Usamos clear() en lugar de deleteDatabase() para evitar bloqueos si hay
+   * otras conexiones abiertas (ej. otros tabs o controladores).
+   */
+  async clearAllData() {
+    try {
+      const db = await this.openDB();
+      const storeNames = Array.from(db.objectStoreNames);
+
+      if (storeNames.length === 0) {
+        // console.log("[OfflineStorage] No object stores to clear");
+        return;
+      }
+
+      const tx = db.transaction(storeNames, "readwrite");
+      const promises = storeNames.map((name) => {
+        // console.log(`[OfflineStorage] Clearing store: ${name}`);
+        return this.promisifyRequest(tx.objectStore(name).clear());
+      });
+
+      await Promise.all(promises);
+
+      // Esperar a que la transacción complete
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(new Error("Transaction aborted"));
+      });
+
+      // console.log("[OfflineStorage] All data cleared successfully");
+    } catch (error) {
+      console.error("[OfflineStorage] Error clearing data:", error);
+      throw error;
+    }
   }
 
   /**
@@ -1209,13 +1699,13 @@ class OfflineStorage {
    */
   close() {
     if (this.db) {
-      this.db.close()
-      this.db = null
-      console.log('[OfflineStorage] Database connection closed')
+      this.db.close();
+      this.db = null;
+      // console.log("[OfflineStorage] Database connection closed");
     }
   }
 }
 
 // Exportar como global para importmap
-window.OfflineStorage = OfflineStorage
-export default OfflineStorage
+window.OfflineStorage = OfflineStorage;
+export default OfflineStorage;

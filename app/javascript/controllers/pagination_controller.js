@@ -1,8 +1,15 @@
 import { Controller } from "@hotwired/stimulus";
 
+/**
+ * Controller to handle multi-page form navigation and validation.
+ * Manages page transitions, progress updates, and field validation before navigation.
+ */
 export default class extends Controller {
   static targets = ["pageContent", "backPageBtn", "nextPageBtn"];
 
+  /**
+   * Initializes the controller, sets up initial state, and binds event listeners.
+   */
   connect() {
     this.currentPage = 0;
     this.totalPages = this.pageContentTargets.length;
@@ -13,36 +20,58 @@ export default class extends Controller {
     // Guardar referencias enlazadas para poder removerlas en disconnect
     this._boundChoiceSelected = this.handleChoiceSelected.bind(this);
     this._boundValidationChange = this.handleValidationChange.bind(this);
-    this.element.addEventListener('choice-selected', this._boundChoiceSelected);
-    this.element.addEventListener('field-validation-changed', this._boundValidationChange);
+    this.element.addEventListener("choice-selected", this._boundChoiceSelected);
+    this.element.addEventListener(
+      "field-validation-changed",
+      this._boundValidationChange,
+    );
   }
 
+  /**
+   * Cleans up event listeners and timeouts when the controller is disconnected.
+   */
   disconnect() {
     if (this._boundChoiceSelected) {
-      this.element.removeEventListener('choice-selected', this._boundChoiceSelected);
+      this.element.removeEventListener(
+        "choice-selected",
+        this._boundChoiceSelected,
+      );
     }
     if (this._boundValidationChange) {
-      this.element.removeEventListener('field-validation-changed', this._boundValidationChange);
+      this.element.removeEventListener(
+        "field-validation-changed",
+        this._boundValidationChange,
+      );
     }
     clearTimeout(this.validationTimeout);
   }
 
-  // Handle choice selection events (Pass/Fail buttons)
+  /**
+   * Handles choice selection events (e.g., Pass/Fail buttons).
+   * Triggers validation after a short delay to allow DOM updates.
+   * @param {CustomEvent} event - The choice-selected event.
+   */
   handleChoiceSelected(event) {
-    console.log('Pagination: Choice selected event received:', event.detail);
-    
+    // console.log('Pagination: Choice selected event received:', event.detail);
+
     // Small delay to ensure DOM is updated
     setTimeout(() => {
       this.validateCurrentPage();
     }, 100);
   }
 
-  // Handle general field validation changes
+  /**
+   * Handles general field validation changes.
+   * @param {CustomEvent} event - The field-validation-changed event.
+   */
   handleValidationChange(event) {
-    console.log('Pagination: Field validation changed:', event.detail);
+    // console.log('Pagination: Field validation changed:', event.detail);
     this.validateCurrentPage();
   }
 
+  /**
+   * Sets up event listeners for input fields to trigger validation on change.
+   */
   setupFieldValidation() {
     this.pageContentTargets.forEach((page) => {
       const inputs = page.querySelectorAll("input, select, textarea");
@@ -66,6 +95,9 @@ export default class extends Controller {
     });
   }
 
+  /**
+   * Debounces the validation check to prevent excessive processing during rapid input.
+   */
   debounceValidation() {
     clearTimeout(this.validationTimeout);
     this.validationTimeout = setTimeout(() => {
@@ -73,6 +105,11 @@ export default class extends Controller {
     }, 300);
   }
 
+  /**
+   * Navigates to the next page if validation passes.
+   * Shows a validation message if the next button is disabled.
+   * @param {Event} event - The click event.
+   */
   nextPage(event) {
     if (this.nextPageBtnTarget.classList.contains("is-disabled")) {
       this.showValidationMessage();
@@ -83,6 +120,11 @@ export default class extends Controller {
     this.changeToNextPage();
   }
 
+  /**
+   * Validates the required fields on the current page.
+   * Updates the state of the "Next" button based on validation results.
+   * @returns {boolean} - True if the page is valid, false otherwise.
+   */
   validateCurrentPage() {
     const currentPageElement = this.pageContentTargets[this.currentPage];
     if (!currentPageElement) return;
@@ -91,28 +133,31 @@ export default class extends Controller {
     const emptyRequiredFields = requiredFields.filter((field) => {
       const fieldValue = this.getFieldValue(field);
       const hasValue = fieldValue && fieldValue.trim() !== "";
-      
+
       // Enhanced logging for Pass/Fail fields
-      const fieldType = field.dataset.fieldType;
-      const fieldName = field.dataset.fieldName;
-      
-      if (fieldType === "Pass/Fail") {
-        console.log(`Validating Pass/Fail field "${fieldName}": value="${fieldValue}", hasValue=${hasValue}`);
-      }
-      
+      // const fieldType = field.dataset.fieldType;
+      // const fieldName = field.dataset.fieldName;
+
+      // if (fieldType === "Pass/Fail") {
+      //   console.log(`Validating Pass/Fail field "${fieldName}": value="${fieldValue}", hasValue=${hasValue}`);
+      // }
+
       return !hasValue;
     });
 
     const isValid = emptyRequiredFields.length === 0;
 
     // Enhanced logging
-    console.log(`Page ${this.currentPage + 1} validation result: ${isValid} (${emptyRequiredFields.length} empty required fields)`);
-    
+    // console.log(`Page ${this.currentPage + 1} validation result: ${isValid} (${emptyRequiredFields.length} empty required fields)`);
+
     this.nextPageBtnTarget.classList.toggle("is-disabled", !isValid);
-    
+
     return isValid;
   }
 
+  /**
+   * Logic to advance to the next page, handling skips based on field values.
+   */
   changeToNextPage() {
     let pageIncrement = 1;
     const currentPageElement = this.pageContentTargets[this.currentPage];
@@ -144,6 +189,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Shows a validation error message to the user.
+   */
   showValidationMessage() {
     this.hideValidationMessage();
     const message = document.createElement("div");
@@ -155,8 +203,9 @@ export default class extends Controller {
     setTimeout(() => this.hideValidationMessage(), 3000);
   }
 
-  // (Eliminado duplicado) Mantener una sola implementación de estos métodos
-
+  /**
+   * Removes the validation error message from the DOM.
+   */
   hideValidationMessage() {
     const existingMessage = document.getElementById("validation-message");
     if (existingMessage) {
@@ -164,10 +213,20 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Retrieves all required fields on a given page element.
+   * @param {HTMLElement} pageElement - The page container element.
+   * @returns {HTMLElement[]} - Array of required field elements.
+   */
   getRequiredFieldsOnPage(pageElement) {
     return Array.from(pageElement.querySelectorAll('[data-required="true"]'));
   }
 
+  /**
+   * Extracts the value from a field container based on its type.
+   * @param {HTMLElement} fieldContainer - The container element for the field.
+   * @returns {string} - The extracted value.
+   */
   getFieldValue(fieldContainer) {
     const fieldType = fieldContainer.dataset.fieldType;
     const fieldName = fieldContainer.dataset.fieldName;
@@ -184,32 +243,42 @@ export default class extends Controller {
       case "Pass/Fail":
         // Try multiple methods to get Pass/Fail value
         let passfailValue = "";
-        
+
         // Method 1: Hidden input
-        const hiddenInput = fieldContainer.querySelector('input[type="hidden"]');
+        const hiddenInput = fieldContainer.querySelector(
+          'input[type="hidden"]',
+        );
         if (hiddenInput && hiddenInput.value) {
           passfailValue = hiddenInput.value;
         }
-        
+
         // Method 2: Selected button (fallback)
         if (!passfailValue) {
-          const selectedButton = fieldContainer.querySelector('.choice-button.selected, .radio-choice-button[data-selected="true"]');
+          const selectedButton = fieldContainer.querySelector(
+            '.choice-button.selected, .radio-choice-button[data-selected="true"]',
+          );
           if (selectedButton) {
             passfailValue = selectedButton.dataset.value || "";
           }
         }
-        
+
         // Method 3: Button with selected styling (fallback)
         if (!passfailValue) {
-          const styledButton = fieldContainer.querySelector('.choice-button, .radio-choice-button');
-          if (styledButton && (styledButton.classList.contains('from-blue-600') || styledButton.classList.contains('selected'))) {
+          const styledButton = fieldContainer.querySelector(
+            ".choice-button, .radio-choice-button",
+          );
+          if (
+            styledButton &&
+            (styledButton.classList.contains("from-blue-600") ||
+              styledButton.classList.contains("selected"))
+          ) {
             passfailValue = styledButton.dataset.value || "";
           }
         }
-        
-        console.log(`Pass/Fail field "${fieldName}" value extraction: "${passfailValue}"`);
+
+        // console.log(`Pass/Fail field "${fieldName}" value extraction: "${passfailValue}"`);
         return passfailValue;
-        
+
       case "Radio":
         return (
           fieldContainer.querySelector('input[type="hidden"]')?.value || ""
@@ -226,7 +295,9 @@ export default class extends Controller {
           : "";
       case "Deficiency":
         const riserInput = fieldContainer.querySelector('input[type="number"]');
-        const selectInput = fieldContainer.querySelector("select, input[id$='_select']");
+        const selectInput = fieldContainer.querySelector(
+          "select, input[id$='_select']",
+        );
         return riserInput?.value && selectInput?.value
           ? `${riserInput.value}_${selectInput.value}`
           : "";
@@ -241,13 +312,17 @@ export default class extends Controller {
     }
   }
 
-  // Extract field name from field container
+  /**
+   * Extracts the field name from the field container.
+   * @param {HTMLElement} fieldContainer - The container element.
+   * @returns {string|null} - The field name or null if not found.
+   */
   extractFieldNameFromContainer(fieldContainer) {
     // First try to get it from data attribute
     if (fieldContainer.dataset.fieldName) {
       return fieldContainer.dataset.fieldName;
     }
-    
+
     // Fallback to input name extraction
     const input = fieldContainer.querySelector("input, select, textarea");
     if (input && input.name && input.name.startsWith("form_fill[")) {
@@ -257,19 +332,27 @@ export default class extends Controller {
     return null;
   }
 
-  // Get value from data column for validation
+  /**
+   * Retrieves the value from the central data store (data column) for validation.
+   * @param {string} fieldName - The name of the field.
+   * @param {string} fieldType - The type of the field.
+   * @returns {string|null} - The value or null if not found.
+   */
   getValueFromDataColumn(fieldName, fieldType) {
     if (!fieldName) return null;
 
     try {
       // Try multiple methods to get form data
       let data = null;
-      
+
       // Method 1: From form-fill controller data
-      const formFillElement = document.querySelector('[data-controller*="form-fill"]');
+      const formFillElement = document.querySelector(
+        '[data-controller*="form-fill"]',
+      );
       if (formFillElement) {
         // Try to get from form structure first
-        const structureValue = formFillElement.dataset.formFillFormStructureValue;
+        const structureValue =
+          formFillElement.dataset.formFillFormStructureValue;
         if (structureValue) {
           let structure = null;
           try {
@@ -278,26 +361,50 @@ export default class extends Controller {
             structure = null;
           }
           // Handle potential double-encoded JSON strings
-          if (typeof structure === 'string') {
-            try { structure = JSON.parse(structure); } catch (e2) { /* ignore */ }
+          if (typeof structure === "string") {
+            try {
+              structure = JSON.parse(structure);
+            } catch (e2) {
+              /* ignore */
+            }
           }
           // Only attempt to find if we have an array-like structure
           if (Array.isArray(structure)) {
-            const fieldData = structure.find(field => field && (field.name === fieldName || field.field_name === fieldName));
-            if (fieldData && (fieldData.value !== undefined && fieldData.value !== null)) {
+            const fieldData = structure.find(
+              (field) =>
+                field &&
+                (field.name === fieldName || field.field_name === fieldName),
+            );
+            if (
+              fieldData &&
+              fieldData.value !== undefined &&
+              fieldData.value !== null
+            ) {
               return fieldData.value;
             }
-          } else if (structure && typeof structure === 'object') {
-            const arr = Array.isArray(structure.fields) ? structure.fields : (Array.isArray(structure.form_fields) ? structure.form_fields : null);
+          } else if (structure && typeof structure === "object") {
+            const arr = Array.isArray(structure.fields)
+              ? structure.fields
+              : Array.isArray(structure.form_fields)
+                ? structure.form_fields
+                : null;
             if (arr) {
-              const fieldData = arr.find(field => field && (field.name === fieldName || field.field_name === fieldName));
-              if (fieldData && (fieldData.value !== undefined && fieldData.value !== null)) {
+              const fieldData = arr.find(
+                (field) =>
+                  field &&
+                  (field.name === fieldName || field.field_name === fieldName),
+              );
+              if (
+                fieldData &&
+                fieldData.value !== undefined &&
+                fieldData.value !== null
+              ) {
                 return fieldData.value;
               }
             }
           }
         }
-        
+
         // Try to get from data value
         const dataValue = formFillElement.dataset.formFillDataValue;
         if (dataValue) {
@@ -336,6 +443,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Navigates to the previous page.
+   */
   backPage() {
     if (this.currentPage > 0) {
       this.currentPage--;
@@ -346,12 +456,18 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Updates the visibility of page content based on the current page index.
+   */
   showCurrentPage() {
     this.pageContentTargets.forEach((page, index) => {
       page.classList.toggle("hidden", index !== this.currentPage);
     });
   }
 
+  /**
+   * Updates the state (enabled/disabled/hidden) of navigation buttons.
+   */
   updateButtonStates() {
     this.backPageBtnTarget.disabled = this.currentPage === 0;
 
@@ -363,6 +479,9 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Updates the progress bar and page indicator text.
+   */
   updateProgress() {
     const progressBar = document.getElementById("progress-bar");
     const pageIndicator = document.getElementById("page-indicator");
@@ -374,12 +493,21 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Dispatches events to notify other controllers that the page has changed.
+   * Also triggers an incremental save.
+   */
   notifyPageChange() {
     this.triggerIncrementalSave();
-    this.element.dispatchEvent(new CustomEvent("pageChanged", { bubbles: true }));
+    this.element.dispatchEvent(
+      new CustomEvent("pageChanged", { bubbles: true }),
+    );
   }
 
-  // Trigger incremental save for current page data
+  /**
+   * Triggers an incremental save of the form data.
+   * Attempts to use the form-fill controller directly, or dispatches an event as fallback.
+   */
   triggerIncrementalSave() {
     const formFillElement = document.querySelector(
       '[data-controller*="form-fill"]',
@@ -400,7 +528,11 @@ export default class extends Controller {
     }
   }
 
-  // Get form fill controller instance
+  /**
+   * Helper to retrieve the FormFillController instance.
+   * @param {HTMLElement} formFillElement - The element with the form-fill controller.
+   * @returns {Object|null} - The controller instance or null.
+   */
   getFormFillController(formFillElement) {
     try {
       if (formFillElement && this.application) {
@@ -436,8 +568,13 @@ export default class extends Controller {
     }
   }
 
+  /**
+   * Jumps to a specific page index directly.
+   * Used by external controllers (like page navigation).
+   * @param {number} newIndex - The target page index.
+   */
   jumpToPage(newIndex) {
-    console.log(`[Pagination] Se recibió la llamada para saltar a la página con índice: ${newIndex}`);
+    // console.log(`[Pagination] Se recibió la llamada para saltar a la página con índice: ${newIndex}`);
     if (newIndex >= 0 && newIndex < this.totalPages) {
       this.currentPage = newIndex;
       this.showCurrentPage();

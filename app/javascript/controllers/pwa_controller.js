@@ -4,14 +4,14 @@ export default class extends Controller {
   static targets = ["installButton", "updateButton"]
 
   connect() {
-    console.log("[PWA Controller] PWA Controller connected")
+    //console.log("[PWA Controller] PWA Controller connected")
     this.registerServiceWorker()
     this.setupInstallPrompt()
     
     // Mostrar botón de instalación temporalmente para pruebas
     setTimeout(() => {
       this.showInstallButton()
-      console.log("[PWA Controller] Install button shown for testing")
+      //console.log("[PWA Controller] Install button shown for testing")
     }, 2000)
   }
 
@@ -23,11 +23,11 @@ export default class extends Controller {
           scope: '/'
         })
         
-        console.log('[PWA Controller] Service Worker registered successfully:', registration)
+        //console.log('[PWA Controller] Service Worker registered successfully:', registration)
         
         // Escuchar actualizaciones
         registration.addEventListener('updatefound', () => {
-          console.log('[PWA Controller] Service Worker update found')
+          //console.log('[PWA Controller] Service Worker update found')
           this.handleServiceWorkerUpdate(registration)
         })
 
@@ -48,7 +48,7 @@ export default class extends Controller {
     let deferredPrompt = null
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('[PWA Controller] Install prompt available')
+      //  console.log('[PWA Controller] Install prompt available')
       e.preventDefault()
       deferredPrompt = e
       this.showInstallButton()
@@ -56,7 +56,7 @@ export default class extends Controller {
 
     // Manejar instalación exitosa
     window.addEventListener('appinstalled', () => {
-      console.log('[PWA Controller] App installed successfully')
+      //console.log('[PWA Controller] App installed successfully')
       this.hideInstallButton()
       deferredPrompt = null
     })
@@ -66,8 +66,8 @@ export default class extends Controller {
   }
 
   async install() {
-    console.log('[PWA Controller] Install button clicked')
-    console.log('[PWA Controller] deferredPrompt available:', !!this.deferredPrompt)
+    //console.log('[PWA Controller] Install button clicked')
+    //console.log('[PWA Controller] deferredPrompt available:', !!this.deferredPrompt)
     
     if (this.deferredPrompt) {
       try {
@@ -77,9 +77,9 @@ export default class extends Controller {
         
         console.log('[PWA Controller] User choice:', outcome)
         if (outcome === 'accepted') {
-          console.log('[PWA Controller] User accepted install prompt')
+          //console.log('[PWA Controller] User accepted install prompt')
         } else {
-          console.log('[PWA Controller] User dismissed install prompt')
+          //console.log('[PWA Controller] User dismissed install prompt')
         }
         
         this.deferredPrompt = null
@@ -88,7 +88,7 @@ export default class extends Controller {
         console.error('[PWA Controller] Error during install:', error)
       }
     } else {
-      console.log('[PWA Controller] No deferred prompt available')
+      //console.log('[PWA Controller] No deferred prompt available')
       // Fallback: mostrar instrucciones al usuario
       alert('Para instalar la app:\n\n1. En Chrome: Menú (⋮) > "Instalar AES PRO"\n2. En Safari: Compartir > "Añadir a pantalla de inicio"\n3. En Firefox: Menú > "Instalar"')
     }
@@ -118,7 +118,7 @@ export default class extends Controller {
     
     newWorker.addEventListener('statechange', () => {
       if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-        console.log('[PWA Controller] New Service Worker installed, update available')
+        //console.log('[PWA Controller] New Service Worker installed, update available')
         this.showUpdateButton()
       }
     })

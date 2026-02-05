@@ -14,7 +14,7 @@ export default class extends Controller {
       }
 
       // Canvas disponible en el DOM
-      console.log("Canvas listo");
+      //console.log("Canvas listo");
 
       // Config desde data attributes o defaults
       this.strokeWidth = Number.parseInt(this.element.dataset.strokeWidth || "2", 10) || 2;
@@ -104,7 +104,7 @@ export default class extends Controller {
       this.reportCanvasStatus("connect");
       this.checkCanvasInteractivity();
 
-      console.log("[SignaturePad] Initialized. size:", { cssWidth, cssHeight, dpr });
+      //console.log("[SignaturePad] Initialized. size:", { cssWidth, cssHeight, dpr });
 
       // Observar cambios de tamaño del contenedor para ajustar el canvas y evitar desbordes
       try {
@@ -176,9 +176,9 @@ export default class extends Controller {
   onPointerMove(event) {
     try {
       if (!this.isDrawing) return;
-      console.log("Intentando dibujar");
+      //console.log("Intentando dibujar");
       const { x, y } = this.pointerPos(event);
-      console.log("Coordenadas calculadas para pintado:", { x, y });
+      //console.log("Coordenadas calculadas para pintado:", { x, y });
       this.ctx.strokeStyle = this.strokeColor;
       this.ctx.lineWidth = this.strokeWidth;
       try {
@@ -220,8 +220,8 @@ export default class extends Controller {
     const touch = e.touches && e.touches[0];
     if (!touch) return;
     const { x, y } = this.posFromClient(touch.clientX, touch.clientY);
-    console.log("Intentando dibujar");
-    console.log("Coordenadas calculadas para pintado (touch):", { x, y });
+    //console.log("Intentando dibujar");
+    //console.log("Coordenadas calculadas para pintado (touch):", { x, y });
     try {
       this.ctx.lineTo(x, y);
       this.ctx.stroke();
@@ -239,15 +239,15 @@ export default class extends Controller {
     const rect = this.canvasTarget.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    console.log("Confirmación de cálculo de coordenadas:", { clientX, clientY, rect: { left: rect.left, top: rect.top }, x, y });
+    //console.log("Confirmación de cálculo de coordenadas:", { clientX, clientY, rect: { left: rect.left, top: rect.top }, x, y });
     return { x, y };
   }
 
   // Listener para clicks en canvas (monitoreo)
   onCanvasClick(event) {
     const { x, y } = this.pointerPos(event);
-    console.log("Click detectado en canvas");
-    console.log("Coordenadas del click:", { x, y });
+    //console.log("Click detectado en canvas");
+    //console.log("Coordenadas del click:", { x, y });
   }
 
   async clear(event) {
@@ -341,7 +341,7 @@ export default class extends Controller {
       if (offlinePhotoController && typeof offlinePhotoController.handleFileSelect === "function" && file) {
         const syntheticEvent = { target: { files: [file] } };
         offlinePhotoController.handleFileSelect(syntheticEvent);
-        console.log("[SignaturePad] Signature saved and handed to offline-photo");
+        //console.log("[SignaturePad] Signature saved and handed to offline-photo");
         // UX inmediato: ocultar el canvas y mostrar contenedor de preview si existe
         try {
           this.canvasTarget.classList.add('hidden');
@@ -387,7 +387,7 @@ export default class extends Controller {
         lineWidth: this.strokeWidth,
         strokeColor: this.strokeColor,
       };
-      console.log("[SignaturePad] Estado del canvas:", status);
+      //console.log("[SignaturePad] Estado del canvas:", status);
     } catch (e) {
       console.warn("[SignaturePad] reportCanvasStatus warning:", e);
     }

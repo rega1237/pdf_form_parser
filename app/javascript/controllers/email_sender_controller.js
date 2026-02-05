@@ -8,10 +8,10 @@ export default class extends Controller {
     csrfToken: String,
   };
 
-  connect() {
-    console.log("Email sender controller connected");
-  }
+  // Initializes the controller
+  connect() {}
 
+  // Opens the email modal by cloning the template and appending it to the body
   openModal() {
     const content = this.templateTarget.content.cloneNode(true);
     document.body.appendChild(content);
@@ -25,12 +25,15 @@ export default class extends Controller {
     this.setupEventListeners();
   }
 
+  // Sets up event listeners for the modal elements (close and send buttons)
   setupEventListeners() {
     if (!this.activeModal) return;
 
     // Close buttons
-    const closeButtons = this.activeModal.querySelectorAll('[data-action="close"]');
-    closeButtons.forEach(btn => {
+    const closeButtons = this.activeModal.querySelectorAll(
+      '[data-action="close"]',
+    );
+    closeButtons.forEach((btn) => {
       btn.addEventListener("click", () => this.closeModal());
     });
 
@@ -41,6 +44,7 @@ export default class extends Controller {
     }
   }
 
+  // Closes the modal and cleans up the DOM
   closeModal() {
     if (this.activeModal) {
       this.activeModal.remove();
@@ -49,19 +53,24 @@ export default class extends Controller {
     }
   }
 
+  // Handles the email sending process including validation and API request
   async sendEmail(event) {
     event.preventDefault();
 
     if (this.isLoading) return;
 
     // Get values from active modal
-    const subjectInput = this.activeModal.querySelector("input[name='subject']");
+    const subjectInput = this.activeModal.querySelector(
+      "input[name='subject']",
+    );
     const subject = subjectInput ? subjectInput.value : "";
-    
+
     // For Trix, we need to find the hidden input or the editor value
     // rich_text_area_tag creates a hidden input with name="email_body"
     // But since it's dynamically inserted, let's verify if Trix synced
-    const bodyInput = this.activeModal.querySelector("input[name='email_body']");
+    const bodyInput = this.activeModal.querySelector(
+      "input[name='email_body']",
+    );
     const body = bodyInput ? bodyInput.value : "";
 
     if (!subject) {
@@ -96,6 +105,7 @@ export default class extends Controller {
     }
   }
 
+  // Sends the email request to the server
   async sendEmailRequest(subject, body) {
     const formData = new FormData();
     formData.append("authenticity_token", this.csrfTokenValue);
@@ -112,6 +122,7 @@ export default class extends Controller {
     });
   }
 
+  // Updates the UI to show the loading state
   showLoadingState() {
     this.isLoading = true;
     const submitButton = this.activeModal.querySelector('[data-action="send"]');
@@ -129,9 +140,12 @@ export default class extends Controller {
     }
   }
 
+  // Restores the UI from the loading state
   hideLoadingState() {
     this.isLoading = false;
-    const submitButton = this.activeModal?.querySelector('[data-action="send"]');
+    const submitButton = this.activeModal?.querySelector(
+      '[data-action="send"]',
+    );
     if (submitButton) {
       submitButton.disabled = false;
       if (submitButton.dataset.originalText) {
@@ -140,6 +154,7 @@ export default class extends Controller {
     }
   }
 
+  // Displays a success notification
   handleSuccess(message) {
     // Dispatch custom event for notification system
     window.dispatchEvent(
@@ -152,6 +167,7 @@ export default class extends Controller {
     );
   }
 
+  // Displays an error notification
   handleError(message) {
     // Dispatch custom event for notification system
     window.dispatchEvent(

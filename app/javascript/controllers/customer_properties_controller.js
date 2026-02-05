@@ -3,11 +3,8 @@ import { Controller } from "@hotwired/stimulus";
 export default class extends Controller {
   static targets = ["customerSelect", "propertySelect"];
 
-  connect() {
-    // Este método se ejecuta cada vez que el controlador se conecta al DOM
-    console.log("CustomerProperties controller connected");
-  }
-
+  // Triggered when the customer selection changes.
+  // Initiates the property loading process or resets the select if no customer is chosen.
   loadProperties() {
     const customerId = this.customerSelectTarget.value;
 
@@ -19,22 +16,25 @@ export default class extends Controller {
     }
   }
 
+  // Updates the property select UI to indicate data is being fetched.
   showLoadingState() {
     this.propertySelectTarget.innerHTML =
-      '<option value="">Cargando propiedades...</option>';
+      '<option value="">Loading Properties...</option>';
     this.propertySelectTarget.style.opacity = "0.6";
   }
 
+  // Resets the property select to its default state.
   resetPropertySelect() {
     this.propertySelectTarget.innerHTML =
-      '<option value="">Seleccionar propiedad</option>';
+      '<option value="">Select Property</option>';
     this.propertySelectTarget.style.opacity = "1";
   }
 
+  // Asynchronously fetches properties for the selected customer from the server.
   async fetchProperties(customerId) {
     try {
       const response = await fetch(
-        `/inspections/properties_by_customer?customer_id=${customerId}`
+        `/inspections/properties_by_customer?customer_id=${customerId}`,
       );
 
       if (!response.ok) {
@@ -49,9 +49,10 @@ export default class extends Controller {
     }
   }
 
+  // Populates the property select dropdown with the fetched data.
   populateProperties(properties) {
     this.propertySelectTarget.innerHTML =
-      '<option value="">Seleccionar propiedad</option>';
+      '<option value="">Select Property</option>';
 
     properties.forEach((property) => {
       const option = document.createElement("option");
@@ -60,12 +61,14 @@ export default class extends Controller {
       this.propertySelectTarget.appendChild(option);
     });
 
+    // Restore opacity after population
     this.propertySelectTarget.style.opacity = "1";
   }
 
+  // Updates the property select UI to indicate an error occurred during fetching.
   showErrorState() {
     this.propertySelectTarget.innerHTML =
-      '<option value="">Error cargando propiedades</option>';
+      '<option value="">Error loading properties</option>';
     this.propertySelectTarget.style.opacity = "1";
   }
 }

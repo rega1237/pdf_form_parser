@@ -7,55 +7,55 @@ class PwaController < ApplicationController
 
   def manifest
     # Configuramos el content-type correctamente
-    response.headers['Content-Type'] = 'application/manifest+json'
+    response.headers["Content-Type"] = "application/manifest+json"
 
     # Renderizamos JSON directamente
     render json: {
-      name: 'AES Pro Inspections',
-      short_name: 'AES Pro',
-      description: 'Aplicación de inspecciones para trabajar online y offline.',
-      start_url: '/',
-      display: 'standalone',
-      scope: '/',
-      background_color: '#0f172a',
-      theme_color: '#1e293b',
-      orientation: 'portrait',
+      name: "AES Pro Inspections",
+      short_name: "AES Pro",
+      description: "Aplicaci\u00F3n de inspecciones para trabajar online y offline.",
+      start_url: "/",
+      display: "standalone",
+      scope: "/",
+      background_color: "#0f172a",
+      theme_color: "#1e293b",
+      orientation: "portrait",
       categories: %w[business productivity],
       icons: [
         {
-          src: '/icon.png',
-          type: 'image/png',
-          sizes: '100x100'
+          src: "/icon.png",
+          type: "image/png",
+          sizes: "100x100"
         },
         {
-          src: '/icon_192.png',
-          type: 'image/png',
-          sizes: '192x192'
+          src: "/icon_192.png",
+          type: "image/png",
+          sizes: "192x192"
         },
         {
-          src: '/icon_512.png',
-          type: 'image/png',
-          sizes: '512x512'
+          src: "/icon_512.png",
+          type: "image/png",
+          sizes: "512x512"
         },
         {
-          src: '/icon_512.png',
-          type: 'image/png',
-          sizes: '512x512',
-          purpose: 'any maskable'
+          src: "/icon_512.png",
+          type: "image/png",
+          sizes: "512x512",
+          purpose: "any maskable"
         }
       ],
       screenshots: [
         {
-          src: '/icon_512.png',
-          type: 'image/png',
-          sizes: '512x512',
-          form_factor: 'narrow'
+          src: "/icon_512.png",
+          type: "image/png",
+          sizes: "512x512",
+          form_factor: "narrow"
         },
         {
-          src: '/icon_512.png',
-          type: 'image/png',
-          sizes: '512x512',
-          form_factor: 'wide'
+          src: "/icon_512.png",
+          type: "image/png",
+          sizes: "512x512",
+          form_factor: "wide"
         }
       ]
     }
@@ -63,29 +63,29 @@ class PwaController < ApplicationController
 
   def service_worker
     # Configuramos el content-type correctamente
-    response.headers['Content-Type'] = 'application/javascript'
+    response.headers["Content-Type"] = "application/javascript"
 
     # Lista de recursos críticos para cachear
     app_shell_urls = [
-      '/',
+      "/",
       # IMPORTANTE: no incluir rutas protegidas que requieran sesión (evita cachear login)
       # '/inspections',
       # '/form_fills',
-      view_context.asset_path('application.js'),
-      view_context.asset_path('application.css'),
-      '/icon.png',
-      '/icon_192.png',
-      '/icon_512.png'
+      view_context.asset_path("application.js"),
+      view_context.asset_path("application.css"),
+      "/icon.png",
+      "/icon_192.png",
+      "/icon_512.png"
     ]
 
     # Cache estática en producción, dinámica en desarrollo
     cache_version = if Rails.env.development?
                       # En desarrollo, usar versión fija para evitar updates constantes
-                      'dev-1.0.0'
-                    else
+                      "dev-1.0.0"
+    else
                       # En producción, usar hash de assets para detectar cambios reales
                       Digest::MD5.hexdigest(app_shell_urls.join)[0..7]
-                    end
+    end
 
     # Generamos el JavaScript del Service Worker
     js_content = <<~JAVASCRIPT
@@ -336,7 +336,84 @@ class PwaController < ApplicationController
             }
           })());
         }
-      });
+
+        // Permite eliminar URLs específicas del caché (limpieza de inspecciones offline)
+        if (data.type === 'CLEANUP_URLS' && Array.isArray(data.urls)) {
+          event.waitUntil((async () => {
+            try {
+              const cache = await caches.open(CACHE_NAME);
+              for (const url of data.urls) {
+                try {
+                  // Intentar borrar la URL tal cual y también con la query string predeterminada si existe
+                  // (Service Worker match a veces es estricto con query params)
+                  const deleted = await cache.delete(url, { ignoreSearch: true });
+                   if (deleted) console.log('🗑️ SW: Deleted from cache', url);
+                   else console.log('ℹ️ SW: URL not found in cache to delete', url);
+                 } catch (e) {
+                   console.warn('⚠️ SW: Error deleting', url, e);
+                 }
+               }
+               // Confirmar finalización si se proporcionó un puerto de mensaje
+               if (event.ports && event.ports[0]) {
+                 event.ports[0].postMessage({ done: true });
+               }
+             } catch (e) {
+               console.warn('⚠️ SW: CLEANUP_URLS failed:', e);
+               if (event.ports && event.ports[0]) {
+                 event.ports[0].postMessage({ done: true, error: e.message });
+               }
+             }
+           })());
+         }
+
+         // Limpieza total de cachés (Clean All)
+         if (data.type === 'CLEAR_ALL_CACHE') {
+           event.waitUntil((async () => {
+             try {
+               const keys = await caches.keys();
+               await Promise.all(keys.map(async key => {
+                 if (key === CACHE_NAME) {
+                   // Limpiar datos de usuario del caché principal, preservando App Shell
+                   console.log('🧹 SW: Cleaning user data from App Shell cache...');
+                   const cache = await caches.open(key);
+                   const requests = await cache.keys();
+                   await Promise.all(requests.map(req => {
+                     const url = new URL(req.url);
+                     const pathname = url.pathname;
+      #{'               '}
+                     // Verificar si es parte del App Shell
+                     const isAppShell = APP_SHELL_URLS.some(shellUrl => pathname === shellUrl);
+
+                     if (!isAppShell) {
+                       // Borrar todo lo que no sea App Shell (inspecciones visitadas, fotos cacheadas, etc)
+                       return cache.delete(req);
+                     }
+                     return Promise.resolve();
+                   }));
+                   console.log('🛡️ SW: App Shell preserved in', key);
+                 } else if (key === OFFLINE_CACHE_NAME) {
+                   console.log('🛡️ SW: Preserving Offline Page cache', key);
+                   return Promise.resolve();
+                 } else {
+                   // Borrar otros cachés (API, versiones viejas)
+                   console.log('🗑️ SW: Deleting cache', key);
+                   return caches.delete(key);
+                 }
+               }));
+      #{'         '}
+               console.log('🗑️ SW: User data caches cleared');
+               if (event.ports && event.ports[0]) {
+                 event.ports[0].postMessage({ done: true });
+               }
+             } catch (e) {
+               console.warn('⚠️ SW: CLEAR_ALL_CACHE failed:', e);
+               if (event.ports && event.ports[0]) {
+                 event.ports[0].postMessage({ done: true, error: e.message });
+               }
+             }
+           })());
+         }
+       });
 
       console.log('🚀 Service Worker cargado correctamente - v#{cache_version}');
     JAVASCRIPT

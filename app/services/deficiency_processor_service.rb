@@ -143,10 +143,20 @@ class DeficiencyProcessorService
   end
 
   def add_processed_field(field, value, source_deficiency_name)
+    sanitized_value = sanitize_for_pdf(value)
     processed_field = field.dup
-    processed_field["value"] = value
+    processed_field["value"] = sanitized_value
     @processed_fields << processed_field
-    Rails.logger.info "  -> Mapeo desde '#{source_deficiency_name}': El campo '#{field['name']}' se llenará con '#{value}'."
+    Rails.logger.info "  -> Mapeo desde '#{source_deficiency_name}': El campo '#{field['name']}' se llenará con '#{sanitized_value}'."
+  end
+
+  def sanitize_for_pdf(text)
+    return text unless text.is_a?(String)
+
+    text.gsub(/[\u201c\u201d]/, '"')  # Smart double quotes
+        .gsub(/[\u2018\u2019]/, "'")  # Smart single quotes
+        .gsub(/\u2013/, "-")          # En dash
+        .gsub(/\u2014/, "-")          # Em dash
   end
 
   def get_formatted_date

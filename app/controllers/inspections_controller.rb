@@ -162,7 +162,7 @@ class InspectionsController < ApplicationController
   # PATCH/PUT /inspections/1
   def update
     if @inspection.update(inspection_params)
-      redirect_to @inspection, notice: 'Inspección actualizada exitosamente.'
+      redirect_to @inspection, notice: 'Inspection updated successfully.'
     else
       @selected_customer = @inspection.property.customer
       render :edit, status: :unprocessable_entity
@@ -192,7 +192,7 @@ class InspectionsController < ApplicationController
   def destroy
     authorize @inspection
     @inspection.destroy
-    redirect_to inspections_url, notice: 'Inspección eliminada exitosamente.'
+    redirect_to inspections_url, notice: 'Inspection deleted successfully.'
   end
 
   # GET /inspections/calendar

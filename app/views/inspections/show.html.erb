@@ -133,7 +133,7 @@
                       <div class="text-slate-400 text-sm">No form filled for this inspection</div>
                     <% end %>
                     <!-- All Buttons - Responsive Layout -->
-                    <div class="flex flex-col sm:flex-row gap-3 mt-3">
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-3 mt-3">
                       <!-- Main Form Button -->
                       <% if @form_fill.present? %>
                         <%= link_to 'Continue Filling Form', form_fill_path(@form_fill), 

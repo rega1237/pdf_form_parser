@@ -1,10 +1,16 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-  connect() {
-    console.log("Notification controller connected");
-  }
+  /**
+   * Inicializa el controlador.
+   */
+  connect() {}
 
+  /**
+   * Crea y muestra una notificación tipo toast.
+   * Este método puede ser llamado desde otros controladores o event listeners.
+   * @param {CustomEvent} event - El evento que contiene los detalles de la notificación (tipo, mensaje).
+   */
   showNotification(event) {
     const { type, message } = event.detail;
     const notification = document.createElement("div");
@@ -31,7 +37,9 @@ export default class extends Controller {
     `;
 
     // Eliminar cualquier notificación existente antes de añadir una nueva
-    const existingNotification = document.querySelector('.fixed.top-4.right-4.z-50');
+    const existingNotification = document.querySelector(
+      ".fixed.top-4.right-4.z-50",
+    );
     if (existingNotification) {
       existingNotification.remove();
     }
@@ -53,6 +61,9 @@ export default class extends Controller {
     }, 3000);
   }
 
+  /**
+   * Closes the notification toast with an animation.
+   */
   closeNotification() {
     const notification = this.element;
     notification.classList.add("translate-x-full");

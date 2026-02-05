@@ -195,8 +195,11 @@ class FormTemplatesController < ApplicationController
   def destroy
     authorize @form_template
     # Active Storage se encargará de eliminar los archivos adjuntos
-    @form_template.destroy
-    redirect_to form_templates_path, notice: 'Form template deleted successfully.', status: :see_other
+    if @form_template.destroy
+      redirect_to form_templates_path, notice: 'Form template deleted successfully.', status: :see_other
+    else
+      redirect_to form_templates_path, alert: "Cannot delete form template: #{@form_template.errors.full_messages.join(', ')}", status: :see_other
+    end
   end
 
   private
