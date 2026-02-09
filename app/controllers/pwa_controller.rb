@@ -19,7 +19,7 @@ class PwaController < ApplicationController
       scope: "/",
       background_color: "#0f172a",
       theme_color: "#1e293b",
-      orientation: "portrait",
+      orientation: "any",
       categories: %w[business productivity],
       icons: [
         {
