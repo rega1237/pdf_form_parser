@@ -106,7 +106,7 @@ class PdfMergingService
     contractor = ContractorInfo.first
     license = LicenseInfo.first
 
-    inspection_date = inspection.date.to_s
+    inspection_date = inspection.date&.strftime("%m/%d/%Y") || ""
     property_address = inspection.property&.address || ""
     contractor_name = contractor&.name || ""
     license_number = license&.license_number || ""
