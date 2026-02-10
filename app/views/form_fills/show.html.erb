@@ -363,7 +363,7 @@
               <div class="inline-flex items-center mb-4" data-controller="sync">
                 <button data-action="click->sync#startSync"
                         data-sync-target="syncButton"
-                        class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-2xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105 flex items-center">
+                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-2xl transition-all duration-200 backdrop-blur-sm border border-white/10 hover:scale-105 flex items-center">
                   <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                   </svg>
@@ -382,7 +382,7 @@
                  data-pdf-status-refresh-interval-value="5000">
               <%# --- Botón Generate PDF con estado --- %>
               <% if @form_fill.generating? %>
-                <div class="inline-flex items-center justify-center bg-gradient-to-r from-amber-500 to-amber-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
+                <div class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
                   <svg class="w-5 h-5 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                   </svg>
@@ -395,9 +395,9 @@
                   </svg>
                   PDF Generation Failed
                 </div>
-                <%= button_tag 'Retry Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { controller: 'online-only', online_only_offline_title_value: 'Necesitas conexión a internet para generar el PDF', action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to retry generating the PDF?" }, aria: { label: "Retry Generate PDF" } %>
+                <%= button_tag 'Retry Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-900 font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { controller: 'online-only', online_only_offline_title_value: 'Necesitas conexión a internet para generar el PDF', action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to retry generating the PDF?" }, aria: { label: "Retry Generate PDF" } %>
               <% else %>
-                <%= button_tag 'Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { controller: 'online-only', online_only_offline_title_value: 'Necesitas conexión a internet para generar el PDF', action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." }, aria: { label: "Generate PDF" } %>
+                <%= button_tag 'Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-900 font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { controller: 'online-only', online_only_offline_title_value: 'Necesitas conexión a internet para generar el PDF', action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to generate the PDF? This will finalize the form." }, aria: { label: "Generate PDF" } %>
               <% end %>
 
               <%# --- Botón para ir al formulario principal --- %>
@@ -409,20 +409,20 @@
               <%# --- Botón Additional Risers --- %>
               <% if @additional_risers_form_fill.present? && @additional_risers_form_fill != @form_fill %>
                 <%= link_to 'Additional Risers', form_fill_path(@additional_risers_form_fill),
-                  class: 'inline-flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg' %>
+                  class: 'inline-flex items-center justify-center bg-gradient-to-r from-slate-500 to-slate-700 hover:from-slate-600 hover:to-slate-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg' %>
               <% end %>
 
               <%# --- Botón Corrected Deficiencies --- %>
               <% if @corrections_form_fill.present? && @corrections_form_fill != @form_fill %>
                 <%= link_to 'Corrected Deficiencies', form_fill_path(@corrections_form_fill),
-                  class: 'inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg' %>
+                  class: 'inline-flex items-center justify-center bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg' %>
               <% end %>
 
               <%# --- Botón para el PDF Principal --- %>
               <% if @form_fill.filled_pdf.attached? && @form_fill.completed? %>
                 <a href="<%= download_pdf_form_fill_path(@form_fill, disposition: 'inline') %>"
                   target="_blank"
-                  class="inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-sky-700 hover:from-sky-600 hover:to-sky-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
+                  class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
                   <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                   View Main PDF
                 </a>
@@ -466,7 +466,7 @@
                   <!-- Trigger Button -->
                   <button type="button"
                           data-action="click->email-sender#openModal"
-                          class="inline-flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                          class="inline-flex items-center justify-center bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                     <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                     </svg>
