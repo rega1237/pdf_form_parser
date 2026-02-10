@@ -26,6 +26,10 @@
     
     
     <% if ['Photo', 'pass_photo'].include?(field['type']) %>
+    <% 
+      btn_color = field['type'] == 'pass_photo' ? 'emerald' : 'red'
+      btn_classes = "from-#{btn_color}-500 to-#{btn_color}-700 hover:from-#{btn_color}-600 hover:to-#{btn_color}-800 border-#{btn_color}-400"
+    %>
     <div data-controller="offline-photo photo-capture"
          data-offline-photo-form-fill-id-value="<%= @form_fill.id %>"
          data-offline-photo-field-name-value="<%= field['name'] %>"
@@ -40,7 +44,7 @@
             data: { action: 'change->offline-photo#handleFileSelect' } %>
       
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <button type="button" data-action="click->photo-capture#openNativeCamera" class="w-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold py-6 px-4 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-purple-400">
+        <button type="button" data-action="click->photo-capture#openNativeCamera" class="w-full flex items-center justify-center bg-gradient-to-br <%= btn_classes %> text-white font-bold py-6 px-4 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2">
           <svg class="w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           <span class="text-lg">Take Photo</span>
         </button>
@@ -57,7 +61,7 @@
            existing_photos = @form_fill.get_photos_for_field(field['name'])
         %>
         <% existing_photos.each do |photo| %>
-          <div class="relative bg-slate-700 rounded-2xl p-2 border-2 border-blue-400 group photo-item" id="photo-<%= photo.filename.to_s.split('.').first %>">
+          <div class="relative bg-slate-700 rounded-2xl p-2 border-2 border-<%= btn_color %>-400 group photo-item" id="photo-<%= photo.filename.to_s.split('.').first %>">
             <%= image_tag rails_blob_path(photo), class: "w-full h-48 object-cover rounded-xl", alt: "Photo" %>
             <button type="button" 
                     class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg transform hover:scale-110 transition-all z-10"
