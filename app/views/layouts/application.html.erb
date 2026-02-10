@@ -61,7 +61,7 @@
     </div>
     <div class="app-container">
       <!-- Header Global -->
-      <% unless controller_name == 'form_fills' && action_name == 'show' %>
+      <% unless (controller_name == 'form_fills' && action_name == 'show') || (controller_name == 'sessions' && action_name == 'new') %>
         <header class="sticky top-0 z-50" data-controller="mobile-menu">
           <div class="bg-black/50 backdrop-blur-md border-b border-white/20 ">
             <div class="container mx-auto px-4 py-4">
@@ -258,11 +258,7 @@
                 </p>
               </div>
               <!-- Useful links -->
-              <div class="flex space-x-6">
-                <%= link_to "Home", root_path, class: "text-slate-400 hover:text-white text-sm transition-colors" %>
-                <a href="#" class="text-slate-400 hover:text-white text-sm transition-colors">Support</a>
-                <a href="#" class="text-slate-400 hover:text-white text-sm transition-colors">Help</a>
-              </div>
+
             </div>
           </div>
         </footer>
