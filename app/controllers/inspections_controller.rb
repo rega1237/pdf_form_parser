@@ -182,7 +182,7 @@ class InspectionsController < ApplicationController
         format.json { render json: { success: true, status: @inspection.status }, status: :ok }
       else
         errors = ['Estado inválido.']
-        format.html { redirect_to inspection_path(@inspection), alert: 'Estado inválido.' }
+        format.html { redirect_to inspection_path(@inspection), alert: 'Invalid Status.' }
         format.json { render json: { success: false, errors: errors }, status: :unprocessable_entity }
       end
     end

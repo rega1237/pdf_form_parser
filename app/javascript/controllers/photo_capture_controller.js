@@ -82,7 +82,7 @@ export default class extends Controller {
     for (const file of Array.from(files)) {
       // Validar que sea una imagen
       if (!file.type.startsWith("image/")) {
-        alert(`El archivo ${file.name} no es una imagen válida.`);
+        alert(`The file ${file.name} is not a valid image.`);
         continue;
       }
 
@@ -90,7 +90,7 @@ export default class extends Controller {
       const maxSize = 10 * 1024 * 1024; // 10MB en bytes
       if (file.size > maxSize) {
         alert(
-          `El archivo ${file.name} es demasiado grande. Máximo permitido: 10MB.`,
+          `The file ${file.name} is too large. Maximum allowed: 10MB.`,
         );
         continue;
       }
@@ -138,7 +138,7 @@ export default class extends Controller {
 
     reader.onerror = () => {
       console.error("Error reading file for preview");
-      alert("Error al leer el archivo. Por favor intente nuevamente.");
+      alert("Error reading the file. Please try again.");
       this.clearFileInput();
     };
 
@@ -181,7 +181,7 @@ export default class extends Controller {
     const photoId = event.currentTarget.dataset.photoId;
 
     const confirmMessage =
-      "¿Está seguro de que desea eliminar esta foto? Esta acción no se puede deshacer.";
+      "Are you sure you want to delete this photo? This action cannot be undone.";
     if (!confirm(confirmMessage)) return;
 
     const fieldName = this.getFieldNameFromInput();
@@ -227,23 +227,23 @@ export default class extends Controller {
             // Si es foto de galería, eliminar elemento del DOM
             const photoElement = document.getElementById(`photo-${photoId}`);
             if (photoElement) photoElement.remove();
-            this.showSuccessMessage("Foto eliminada correctamente");
+            this.showSuccessMessage("Photo deleted successfully");
           } else {
             // Limpiar la vista previa (modo legacy/single)
             this.clearPreviewAndInput();
-            this.updateButtonText("Tomar foto / Añadir más");
-            this.showSuccessMessage("Foto eliminada correctamente");
+            this.updateButtonText("Take Photo / Add More");
+            this.showSuccessMessage("Photo deleted successfully");
           }
 
           // También eliminar cualquier copia local (thumbnail/offline) una vez confirmada la eliminación
           this.dispatchConfirmedRemove(photoId);
         } else {
-          alert(`Error eliminando foto: ${result.error}`);
+          alert(`Error deleting photo: ${result.error}`);
         }
       })
       .catch((error) => {
         console.error("Error removing photo:", error);
-        alert("Error de conexión al eliminar la foto");
+        alert("Error connecting to delete the photo");
       })
       .finally(() => {
         // Restaurar estado del botón

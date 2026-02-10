@@ -1223,7 +1223,7 @@ export default class extends Controller {
    * @param {CustomEvent} event - El evento de confirmación.
    */
   handleRemoveConfirmed(event) {
-    if (!confirm("¿Está seguro de que desea eliminar?")) {
+    if (!confirm("Are you sure you want to delete this photo?")) {
       event.stopImmediatePropagation();
       event.preventDefault();
       return;
