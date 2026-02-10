@@ -33,7 +33,7 @@
         <% end %>
 
         <!-- Sign Up Form -->
-        <%= form_for(resource, as: resource_name, url: user_registration_path(resource_name), html: { method: :put, class: "space-y-6" }) do |f| %>
+        <%= form_for(resource, as: resource_name, url: user_registration_path, html: { method: :put, class: "space-y-6", multipart: true }) do |f| %>
           
           <!-- Profile Avatar -->
           <div class="space-y-2">
@@ -178,7 +178,7 @@
             <div class="flex-1">
               <h3 class="text-red-400 font-semibold mb-2">Cancel Account</h3>
               <p class="text-red-300 text-sm mb-4">Unhappy with our service? This action cannot be undone.</p>
-              <%= button_to "Delete My Account", user_registration_path(resource_name), 
+              <%= button_to "Delete My Account", user_registration_path, 
                   data: { confirm: "Are you sure? This action cannot be undone.", turbo_confirm: "Are you sure? This action cannot be undone." }, 
                   method: :delete,
                   class: "bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition-colors duration-200 text-sm" %>
