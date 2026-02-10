@@ -107,6 +107,7 @@ class PdfMergingService
     license = LicenseInfo.first
 
     inspection_date = inspection.date&.strftime("%m/%d/%Y") || ""
+    inspection_job = inspection.job || ""
     property_address = inspection.property&.address || ""
     contractor_name = contractor&.name || ""
     license_number = license&.license_number || ""
@@ -143,6 +144,9 @@ class PdfMergingService
             pdf.move_down 10
             pdf.text "Property", style: :bold, size: 10
             pdf.text property_address, size: 10
+            pdf.move_down 10
+            pdf.text "Job #", style: :bold, size: 10
+            pdf.text inspection_job, size: 10
           end
 
           # Col 2: Contractor Info
