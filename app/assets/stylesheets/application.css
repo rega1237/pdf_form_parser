@@ -33,13 +33,22 @@
 .choice-button {
   flex-grow: 1;
   padding: 12px 10px;
-  border: 2px solid transparent;
+  background-color: white;
+  border: 2px solid #d1d5db;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   text-align: center;
   font-size: 14px;
+  color: #374151;
+}
+
+.choice-button:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 @media (min-width: 768px) {
@@ -51,17 +60,7 @@
 
 .choice-button.selected {
   color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.choice-button[data-value="Pass"] {
-  background-color: #c6f6d5;
-  border-color: #68d391;
-  color: #2f855a;
-}
-
-.choice-button[data-value="Pass"]:hover {
-  background-color: #9ae6b4;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 .choice-button[data-value="Pass"].selected {
@@ -70,30 +69,10 @@
   color: white;
 }
 
-.choice-button[data-value="Fail"] {
-  background-color: #fed7d7;
-  border-color: #fc8181;
-  color: #c53030;
-}
-
-.choice-button[data-value="Fail"]:hover {
-  background-color: #fbb6b6;
-}
-
 .choice-button[data-value="Fail"].selected {
   background-color: #e53e3e;
   border-color: #c53030;
   color: white;
-}
-
-.choice-button[data-value="N/A"] {
-  background-color: #e2e8f0;
-  border-color: #a0aec0;
-  color: #4a5568;
-}
-
-.choice-button[data-value="N/A"]:hover {
-  background-color: #cbd5e0;
 }
 
 .choice-button[data-value="N/A"].selected {
