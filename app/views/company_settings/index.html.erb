@@ -168,24 +168,44 @@
                   <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Email</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Role</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Created At</th>
                     <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody class="bg-slate-800/50 divide-y divide-white/10">
                   <% @users.each do |user| %>
-                    <tr>
+                    <tr class="<%= 'opacity-60' unless user.is_active? %>">
                       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white"><%= user.email %></td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 capitalize"><%= user.role&.level || 'N/A' %></td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <% if user.is_active? %>
+                          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Active
+                          </span>
+                        <% else %>
+                          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Inactive
+                          </span>
+                        <% end %>
+                      </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400"><%= user.created_at.strftime("%b %d, %Y") %></td>
                       <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <% if user != current_user %>
-                          <%= link_to admin_user_path(user), 
-                      data: { "turbo-method": :delete, "turbo-confirm": "Are you sure?" },
-                      class: "text-slate-400 hover:text-red-400 transition-colors p-1" do %>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
+                          <%= button_to admin_user_path(user), 
+                                      method: :delete,
+                                      data: { turbo_confirm: "Are you sure you want to #{user.is_active? ? 'deactivate' : 'activate'} this user?" },
+                                      class: "text-slate-400 hover:text-indigo-400 transition-colors p-1 bg-transparent border-none cursor-pointer inline-block",
+                                      title: user.is_active? ? "Deactivate User" : "Activate User" do %>
+                            <% if user.is_active? %>
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                              </svg>
+                            <% else %>
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            <% end %>
                           <% end %>
                         <% end %>
                       </td>

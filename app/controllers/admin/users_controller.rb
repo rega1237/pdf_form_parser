@@ -43,8 +43,14 @@ class Admin::UsersController < ApplicationController
 
   def destroy
     authorize @user
-    @user.destroy
-    redirect_to settings_path, notice: "User was successfully destroyed."
+    if @user.is_active?
+      @user.deactivate!
+      message = "User was successfully deactivated."
+    else
+      @user.activate!
+      message = "User was successfully activated."
+    end
+    redirect_to settings_path, notice: message
   end
 
   private
