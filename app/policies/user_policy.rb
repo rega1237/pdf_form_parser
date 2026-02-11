@@ -19,6 +19,10 @@ class UserPolicy < ApplicationPolicy
     admin_or_developer? || record == user
   end
 
+  def change_role?
+    user.developer?
+  end
+
   class Scope < Scope
     def resolve
       if user.admin? || user.developer?

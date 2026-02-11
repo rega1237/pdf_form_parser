@@ -1,6 +1,6 @@
 class Admin::UsersController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_user, only: %i[edit update destroy]
+  before_action :set_user, only: %i[edit update destroy update_role]
 
   def new
     authorize User
@@ -51,6 +51,15 @@ class Admin::UsersController < ApplicationController
       message = "User was successfully activated."
     end
     redirect_to settings_path, notice: message
+  end
+
+  def update_role
+    authorize @user, :change_role?
+    if @user.update(role_id: params[:role_id])
+      redirect_to settings_path, notice: "User role updated successfully."
+    else
+      redirect_to settings_path, alert: "Failed to update user role."
+    end
   end
 
   private

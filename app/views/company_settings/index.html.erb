@@ -177,7 +177,18 @@
                   <% @users.each do |user| %>
                     <tr class="<%= 'opacity-60' unless user.is_active? %>">
                       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white"><%= user.email %></td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 capitalize"><%= user.role&.level || 'N/A' %></td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                        <% if policy(user).change_role? %>
+                          <%= form_with url: update_role_admin_user_path(user), method: :patch, class: "flex items-center space-x-2" do |f| %>
+                            <%= f.collection_select :role_id, @roles, :id, :level, 
+                                { selected: user.role_id }, 
+                                { onchange: "this.form.requestSubmit()", 
+                                  class: "bg-slate-700/50 border border-white/10 rounded-lg text-xs text-white focus:ring-indigo-500 focus:border-indigo-500 py-1 pl-2 pr-8 capitalize" } %>
+                          <% end %>
+                        <% else %>
+                          <span class="capitalize"><%= user.role&.level || 'N/A' %></span>
+                        <% end %>
+                      </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <% if user.is_active? %>
                           <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">

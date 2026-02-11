@@ -85,7 +85,11 @@ Rails.application.routes.draw do
   get 'settings', to: 'company_settings#index'
 
   namespace :admin do
-    resources :users, only: %i[create destroy]
+    resources :users, only: %i[create destroy] do
+      member do
+        patch :update_role
+      end
+    end
   end
 
   # Health check route
