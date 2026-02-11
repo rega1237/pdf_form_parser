@@ -38,6 +38,7 @@ class PropertiesController < ApplicationController
 
   def destroy
     @customer = @property.customer
+    authorize @property
 
     if @property.destroy
       redirect_to edit_customer_path(@customer), notice: '✅ Property deleted successfully'

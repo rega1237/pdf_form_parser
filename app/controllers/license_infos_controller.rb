@@ -26,6 +26,7 @@ class LicenseInfosController < ApplicationController
   end
 
   def destroy
+    authorize @license_info
     @license_info.destroy
     redirect_to company_settings_path, notice: 'License info was successfully destroyed.'
   end

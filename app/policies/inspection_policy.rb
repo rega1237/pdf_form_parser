@@ -2,7 +2,7 @@ class InspectionPolicy < ApplicationPolicy
   class Scope < Scope
     def resolve
       # Comprueba el nombre del rol a través de la asociación
-      if user && user.role&.level == 'Admin'
+      if user && (user.admin? || user.developer?)
         scope.all
       else
         scope.where(user_id: user.id)
@@ -11,11 +11,11 @@ class InspectionPolicy < ApplicationPolicy
   end
 
   def create?
-    user && user.role&.level == 'Admin'
+    user && (user.admin? || user.developer?)
   end
 
   def show?
-    user&.role&.level == 'Admin' || record.user_id == user.id
+    user&.admin? || user&.developer? || record.user_id == user.id
   end
 
   def calendar?
@@ -25,15 +25,15 @@ class InspectionPolicy < ApplicationPolicy
   end
 
   def update?
-    user && user.role&.level == 'Admin'
+    user && (user.admin? || user.developer?)
   end
 
   def update_status?
     # Permite que el Admin o el dueño de la inspección cambien el estado
-    user.present? && (user.role&.level == 'Admin' || record.user_id == user.id)
+    user.present? && (user.admin? || user.developer? || record.user_id == user.id)
   end
 
   def destroy?
-    user && user.role&.level == 'Admin'
+    user && (user.admin? || user.developer?)
   end
 end

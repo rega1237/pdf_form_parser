@@ -1,5 +1,5 @@
 class CompanySettingsPolicy < ApplicationPolicy
   def index?
-    user && user.role&.level == 'Admin'
+    admin_or_developer?
   end
 end

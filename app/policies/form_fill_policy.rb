@@ -2,7 +2,7 @@ class FormFillPolicy < ApplicationPolicy
   class Scope < Scope
     def resolve
       # Check user role level through the association
-      if user && user.role&.level == 'Admin'
+      if user && (user.admin? || user.developer?)
         scope.all
       else
         # Users can only access form fills for inspections they own
@@ -12,25 +12,25 @@ class FormFillPolicy < ApplicationPolicy
   end
 
   def show?
-    user&.role&.level == 'Admin' || record.inspection&.user_id == user.id
+    user&.admin? || user&.developer? || record.inspection&.user_id == user.id
   end
 
   def create?
-    user && user.role&.level == 'Admin'
+    admin_or_developer?
   end
 
   def update?
-    user&.role&.level == 'Admin' || record.inspection&.user_id == user.id
+    user&.admin? || user&.developer? || record.inspection&.user_id == user.id
   end
 
   def destroy?
-    user && user.role&.level == 'Admin'
+    admin_or_developer?
   end
 
   # Custom action for sending emails
   def send_email?
     # Allow users to send emails for their own inspections or admins for all
-    user&.role&.level == 'Admin' || record.inspection&.user_id == user.id
+    user&.admin? || user&.developer? || record.inspection&.user_id == user.id
   end
 
   # Additional actions that might be needed

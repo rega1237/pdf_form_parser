@@ -8,6 +8,22 @@ class ApplicationPolicy
     @record = record
   end
 
+  protected
+
+  def admin?
+    user&.admin?
+  end
+
+  def developer?
+    user&.developer?
+  end
+
+  def admin_or_developer?
+    admin? || developer?
+  end
+
+  public
+
   def index?
     false
   end

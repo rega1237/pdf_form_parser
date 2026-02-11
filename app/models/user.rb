@@ -9,4 +9,16 @@ class User < ApplicationRecord
   def display_name
     name.present? ? name : email
   end
+
+  def admin?
+    role&.level == "Admin"
+  end
+
+  def developer?
+    role&.level == "Developer"
+  end
+
+  def technician?
+    role&.level == "Technician"
+  end
 end
