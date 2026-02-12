@@ -284,8 +284,9 @@
                       <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
                         <%
                           always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency']
-                          visible_fields = fields_in_section.select { |field| always_visible_types.include?(field['type']) || field['required'] == true }
-                          hidden_fields = fields_in_section.reject { |field| always_visible_types.include?(field['type']) || field['required'] == true }
+                          always_visible_sections = ['Signature', 'Property Information', 'License']
+                          visible_fields = fields_in_section.select { |field| always_visible_types.include?(field['type']) || field['required'] == true || always_visible_sections.include?(field['section_name']) }
+                          hidden_fields = fields_in_section.reject { |field| always_visible_types.include?(field['type']) || field['required'] == true || always_visible_sections.include?(field['section_name']) }
                         %>
                         <% visible_fields.each_with_index do |field, index| %>
                           <%
