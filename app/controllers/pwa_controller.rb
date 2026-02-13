@@ -11,15 +11,15 @@ class PwaController < ApplicationController
 
     # Renderizamos JSON directamente
     render json: {
-      name: "AES Pro Inspections",
-      short_name: "AES Pro",
-      description: "Aplicaci\u00F3n de inspecciones para trabajar online y offline.",
+      name: "AES Fire Inspections",
+      short_name: "AES Fire Inspections",
+      description: "Aplication for fire inspections",
       start_url: "/",
       display: "standalone",
       scope: "/",
       background_color: "#0f172a",
       theme_color: "#1e293b",
-      orientation: "portrait",
+      orientation: "any",
       categories: %w[business productivity],
       icons: [
         {

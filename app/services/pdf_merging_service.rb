@@ -1,6 +1,6 @@
-require 'combine_pdf'
-require 'prawn'
-require 'stringio'
+require "combine_pdf"
+require "prawn"
+require "stringio"
 
 class PdfMergingService
   def initialize(main_pdf_path, deficiencies_pdf_path = nil)
@@ -24,17 +24,17 @@ class PdfMergingService
     # Reject signatures if they accidentally get passed in.
     photos_with_context = Array(photos_with_context).reject do |h|
       fname = h[:photo]&.filename.to_s.downcase
-      fname.include?('_signature_') || fname.start_with?('signature_') || fname.include?('firma')
+      fname.include?("_signature_") || fname.start_with?("signature_") || fname.include?("firma")
     end
 
     return pdf_object if photos_with_context.empty?
 
     # Group photos by the main section part (before '|')
     grouped_photos = photos_with_context.group_by do |h|
-      (h[:section_name].presence || 'Uncategorized Photos').split('|').first.strip
+      (h[:section_name].presence || "Uncategorized Photos").split("|").first.strip
     end
 
-    all_photos_pdf_data = Prawn::Document.new(page_size: 'LETTER', margin: 30) do |pdf|
+    all_photos_pdf_data = Prawn::Document.new(page_size: "LETTER", margin: 30) do |pdf|
       # 1. Use the dynamic title.
       pdf.text title, size: 18, style: :bold, align: :center
       pdf.move_down 25
@@ -61,27 +61,27 @@ class PdfMergingService
           # Controlar el salto de página si la fila no cabe.
           pdf.start_new_page if pdf.cursor < cell_height
 
-          pdf.bounding_box([0, pdf.cursor], width: pdf.bounds.width, height: cell_height) do
+          pdf.bounding_box([ 0, pdf.cursor ], width: pdf.bounds.width, height: cell_height) do
             row_of_photos.each_with_index do |photo_data, col_index|
               image_blob_data = photo_data[:photo].download
               sio = StringIO.new(image_blob_data)
               x_position = col_index * (cell_width + padding)
 
-              pdf.bounding_box([x_position, pdf.bounds.top], width: cell_width, height: cell_height - label_height) do
-                pdf.image(sio, fit: [pdf.bounds.width, pdf.bounds.height], position: :center, vposition: :center)
+              pdf.bounding_box([ x_position, pdf.bounds.top ], width: cell_width, height: cell_height - label_height) do
+                pdf.image(sio, fit: [ pdf.bounds.width, pdf.bounds.height ], position: :center, vposition: :center)
               end
 
               # Correct caption logic: use part after '|' from section_name, or fallback.
-              section_parts = (photo_data[:section_name] || '').split('|')
+              section_parts = (photo_data[:section_name] || "").split("|")
               caption = if section_parts.length > 1
                           section_parts[1].strip
-                        else
+              else
                           photo_data[:label_name].presence || photo_data[:photo].filename.base.to_s
-                        end
+              end
 
-              pdf.bounding_box([x_position, pdf.bounds.top - (cell_height - label_height)], width: cell_width,
+              pdf.bounding_box([ x_position, pdf.bounds.top - (cell_height - label_height) ], width: cell_width,
                                                                                             height: label_height) do
-                pdf.text caption.capitalize, size: 7, align: :center, valign: :center, overflow: :shrink_to_fit
+                pdf.text caption.upcase, size: 7, align: :center, valign: :center, overflow: :shrink_to_fit
               end
             rescue StandardError => e
               Rails.logger.error "No se pudo procesar la imagen #{photo_data[:photo].filename}: #{e.message}"
@@ -106,27 +106,28 @@ class PdfMergingService
     contractor = ContractorInfo.first
     license = LicenseInfo.first
 
-    inspection_date = inspection.date.to_s
-    property_address = inspection.property&.address || ''
-    contractor_name = contractor&.name || ''
-    license_number = license&.license_number || ''
-    contractor_address = contractor&.address || ''
-    customer_name = inspection.property&.customer&.name || ''
-    logo_path = Rails.root.join('app/assets/images/firemex_logo.png')
+    inspection_date = inspection.date&.strftime("%m/%d/%Y") || ""
+    inspection_job = inspection.job || ""
+    property_address = inspection.property&.address || ""
+    contractor_name = contractor&.name || ""
+    license_number = license&.license_number || ""
+    contractor_address = contractor&.address || ""
+    customer_name = inspection.property&.customer&.name || ""
+    logo_path = Rails.root.join("app/assets/images/firemex_logo.png")
 
-    annex_pdf_data = Prawn::Document.new(page_size: 'LETTER', margin: 30) do |pdf|
+    annex_pdf_data = Prawn::Document.new(page_size: "LETTER", margin: 30) do |pdf|
       images.each_with_index do |image, idx|
         pdf.start_new_page if idx > 0
 
         # --- Top Section ---
         # Draw a box around the header info
         top_box_height = 200
-        pdf.bounding_box([0, pdf.cursor], width: pdf.bounds.width, height: top_box_height) do
+        pdf.bounding_box([ 0, pdf.cursor ], width: pdf.bounds.width, height: top_box_height) do
           pdf.stroke_bounds
 
           pdf.pad(10) do
             pdf.indent(10) do
-              pdf.text 'Report of Inspection / Test', size: 16, style: :bold
+              pdf.text "Report of Inspection / Test", size: 16, style: :bold
             end
           end
 
@@ -137,41 +138,44 @@ class PdfMergingService
           col_width = pdf.bounds.width / 3.0
 
           # Col 1: Date & Property
-          pdf.bounding_box([10, y_start], width: col_width - 10, height: 140) do
-            pdf.text 'Date', style: :bold, size: 10
+          pdf.bounding_box([ 10, y_start ], width: col_width - 10, height: 140) do
+            pdf.text "Date", style: :bold, size: 10
             pdf.text inspection_date, size: 10
             pdf.move_down 10
-            pdf.text 'Property', style: :bold, size: 10
+            pdf.text "Property", style: :bold, size: 10
             pdf.text property_address, size: 10
+            pdf.move_down 10
+            pdf.text "Job #", style: :bold, size: 10
+            pdf.text inspection_job, size: 10
           end
 
           # Col 2: Contractor Info
-          pdf.bounding_box([10 + col_width, y_start], width: col_width, height: 140) do
-            pdf.text 'Inspection conducted by:', size: 10
+          pdf.bounding_box([ 10 + col_width, y_start ], width: col_width, height: 140) do
+            pdf.text "Inspection conducted by:", size: 10
             pdf.move_down 10
             pdf.text contractor_name, size: 10
             pdf.text "C16-#{license_number}", size: 10
             pdf.text contractor_address, size: 10
-            pdf.text 'itm@firemexsolutions.com', size: 10
+            pdf.text "itm@firemexsolutions.com", size: 10
           end
 
           # Col 3: Logo
-          pdf.bounding_box([10 + (col_width * 2), y_start], width: col_width - 20, height: 100) do
-            pdf.image logo_path, fit: [col_width - 20, 80], position: :right if File.exist?(logo_path)
+          pdf.bounding_box([ 10 + (col_width * 2), y_start ], width: col_width - 20, height: 100) do
+            pdf.image logo_path, fit: [ col_width - 20, 80 ], position: :right if File.exist?(logo_path)
           end
         end
 
         # --- Middle Section (Grey Bar) ---
-        pdf.fill_color 'E0E0E0'
-        pdf.fill_rectangle([0, pdf.cursor], pdf.bounds.width, 25)
+        pdf.fill_color "E0E0E0"
+        pdf.fill_rectangle([ 0, pdf.cursor ], pdf.bounds.width, 25)
 
         # Add border
-        pdf.stroke_color '000000'
-        pdf.stroke_rectangle([0, pdf.cursor], pdf.bounds.width, 25)
+        pdf.stroke_color "000000"
+        pdf.stroke_rectangle([ 0, pdf.cursor ], pdf.bounds.width, 25)
 
-        pdf.fill_color '000000'
+        pdf.fill_color "000000"
 
-        pdf.text_box 'Customers Signature', at: [10, pdf.cursor - 7], size: 10, style: :bold
+        pdf.text_box "Customers Signature", at: [ 10, pdf.cursor - 7 ], size: 10, style: :bold
         pdf.move_down 25
 
         # --- Bottom Section (Signature Table) ---
@@ -186,22 +190,22 @@ class PdfMergingService
         # We'll use bounding boxes with borders to simulate the table for better control over the image
 
         # Col 1: Customer Name
-        pdf.bounding_box([0, y_table_start], width: 180, height: table_height) do
+        pdf.bounding_box([ 0, y_table_start ], width: 180, height: table_height) do
           pdf.stroke_bounds
           pdf.indent(5) do
             pdf.move_down 5
-            pdf.text 'Customer Name', size: 9, style: :bold
+            pdf.text "Customer Name", size: 9, style: :bold
             pdf.move_down 20
             pdf.text customer_name, size: 11
           end
         end
 
         # Col 2: Signature
-        pdf.bounding_box([180, y_table_start], width: 272, height: table_height) do
+        pdf.bounding_box([ 180, y_table_start ], width: 272, height: table_height) do
           pdf.stroke_bounds
           pdf.indent(5) do
             pdf.move_down 5
-            pdf.text 'Signature', size: 9, style: :bold
+            pdf.text "Signature", size: 9, style: :bold
           end
 
           # Insert Signature Image
@@ -210,8 +214,8 @@ class PdfMergingService
             sio = StringIO.new(data)
 
             # Image box inside the cell
-            pdf.bounding_box([5, table_height - 20], width: 262, height: table_height - 30) do
-              pdf.image sio, fit: [262, table_height - 30], position: :center, vposition: :center
+            pdf.bounding_box([ 5, table_height - 20 ], width: 262, height: table_height - 30) do
+              pdf.image sio, fit: [ 262, table_height - 30 ], position: :center, vposition: :center
             end
           rescue StandardError => e
             Rails.logger.error("No se pudo incrustar la imagen de firma en el anexo: #{e.message}")
@@ -219,11 +223,11 @@ class PdfMergingService
         end
 
         # Col 3: Date
-        pdf.bounding_box([180 + 272, y_table_start], width: 100, height: table_height) do
+        pdf.bounding_box([ 180 + 272, y_table_start ], width: 100, height: table_height) do
           pdf.stroke_bounds
           pdf.indent(5) do
             pdf.move_down 5
-            pdf.text 'Date', size: 9, style: :bold
+            pdf.text "Date", size: 9, style: :bold
             pdf.move_down 20
             pdf.text inspection_date, size: 11
           end
