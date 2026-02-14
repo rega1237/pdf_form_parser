@@ -38,12 +38,12 @@ Rails.application.configure do
   config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
 
   config.action_mailer.smtp_settings = {
-    address: "smtp.mailgun.org",
-    port: 587, # Usamos 587 en local (normalmente no está bloqueado por ISPs residenciales)
-    domain: "mg.aesfireinspections.com",
+    address: ENV.fetch("SMTP_SERVER", "smtp.mailgun.org"),
+    port: ENV.fetch("SMTP_PORT", 587).to_i,
+    domain: ENV.fetch("SMTP_DOMAIN", "mg.aesfireinspections.com"),
     user_name: ENV["SMTP_USERNAME"],
     password: ENV["SMTP_PASSWORD"],
-    authentication: "plain",
+    authentication: ENV.fetch("SMTP_AUTH_METHOD", "plain").to_sym,
     enable_starttls_auto: true
   }
 
