@@ -1,10 +1,4 @@
-class CustomerPolicy < ApplicationPolicy
-  class Scope < Scope
-    def resolve
-      user && (user.admin? || user.developer?) ? scope.all : scope.none
-    end
-  end
-
+class PropertyPolicy < ApplicationPolicy
   def index?
     admin_or_developer?
   end
@@ -23,5 +17,15 @@ class CustomerPolicy < ApplicationPolicy
 
   def destroy?
     admin_or_developer?
+  end
+
+  class Scope < Scope
+    def resolve
+      if user.admin? || user.developer?
+        scope.all
+      else
+        scope.none
+      end
+    end
   end
 end

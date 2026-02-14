@@ -1,8 +1,8 @@
 # Crear categorías de intervalo si no existen
 interval_categories = [
-  ["Quarterly Inspection", 3],
-  ["Annual Inspection", 12],
-  ["5-Year Inspection", 60]
+  [ "Quarterly Inspection", 3 ],
+  [ "Annual Inspection", 12 ],
+  [ "5-Year Inspection", 60 ]
 ]
 
 interval_categories.each do |interval|
@@ -11,8 +11,10 @@ end
 
 puts "Categorías de intervalo creadas exitosamente"
 
-# Crear rol de Admin si no existe
+# Crear roles si no existen
 admin_role = Role.find_or_create_by(level: "Admin")
+developer_role = Role.find_or_create_by(level: "Developer")
+technician_role = Role.find_or_create_by(level: "Technician")
 
 # Crear usuario administrador si no existe
 admin_user = User.find_or_create_by(email: "rega1237@gmail.com") do |user|

@@ -4,24 +4,29 @@ class IntervalCategoriesController < ApplicationController
   # GET /interval_categories or /interval_categories.json
   def index
     @interval_categories = IntervalCategory.all
+    authorize @interval_categories
   end
 
   # GET /interval_categories/1 or /interval_categories/1.json
   def show
+    authorize @interval_category
   end
 
   # GET /interval_categories/new
   def new
     @interval_category = IntervalCategory.new
+    authorize @interval_category
   end
 
   # GET /interval_categories/1/edit
   def edit
+    authorize @interval_category
   end
 
   # POST /interval_categories or /interval_categories.json
   def create
     @interval_category = IntervalCategory.new(interval_category_params)
+    authorize @interval_category
 
     respond_to do |format|
       if @interval_category.save
@@ -38,6 +43,7 @@ class IntervalCategoriesController < ApplicationController
 
   # PATCH/PUT /interval_categories/1 or /interval_categories/1.json
   def update
+    authorize @interval_category
     respond_to do |format|
       if @interval_category.update(interval_category_params)
         format.html do

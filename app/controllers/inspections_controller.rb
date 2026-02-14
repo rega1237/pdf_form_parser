@@ -335,7 +335,14 @@ class InspectionsController < ApplicationController
 
   def load_technicians
     technician_role = Role.find_by(level: 'Technician')
-    @technicians = technician_role ? technician_role.users.order(:email) : User.none
+    return @technicians = User.none unless technician_role
+
+    @technicians = technician_role.users.active.order(:email)
+
+    # Si la inspección ya tiene un técnico asignado que está inactivo, lo incluimos en la lista
+    if @inspection&.user_id.present? && !@inspection.user.is_active?
+      @technicians = User.where(id: @technicians.pluck(:id) + [@inspection.user_id]).order(:email)
+    end
   end
 
   def get_form_template(params)

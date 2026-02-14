@@ -81,7 +81,7 @@ class PdfMergingService
 
               pdf.bounding_box([ x_position, pdf.bounds.top - (cell_height - label_height) ], width: cell_width,
                                                                                             height: label_height) do
-                pdf.text caption.upcase, size: 7, align: :center, valign: :center, overflow: :shrink_to_fit
+                pdf.text caption, size: 7, align: :center, valign: :center, overflow: :shrink_to_fit
               end
             rescue StandardError => e
               Rails.logger.error "No se pudo procesar la imagen #{photo_data[:photo].filename}: #{e.message}"

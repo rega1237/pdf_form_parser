@@ -1,5 +1,5 @@
 class ContractorInfosController < ApplicationController
-  before_action :set_contractor_info, only: [:edit, :update, :destroy]
+  before_action :set_contractor_info, only: [ :edit, :update, :destroy ]
 
   def new
     @contractor_info = ContractorInfo.new
@@ -8,26 +8,29 @@ class ContractorInfosController < ApplicationController
   def create
     @contractor_info = ContractorInfo.new(contractor_info_params)
     if @contractor_info.save
-      redirect_to settings_path, notice: 'Contractor info was successfully created.'
+      redirect_to settings_path, notice: "Contractor info was successfully created."
     else
       render :new
     end
   end
 
   def edit
+    authorize @contractor_info
   end
 
   def update
+    authorize @contractor_info
     if @contractor_info.update(contractor_info_params)
-      redirect_to settings_path, notice: 'Contractor info was successfully updated.'
+      redirect_to settings_path, notice: "Contractor info was successfully updated."
     else
       render :edit
     end
   end
 
   def destroy
+    authorize @contractor_info
     @contractor_info.destroy
-    redirect_to company_settings_path, notice: 'Contractor info was successfully destroyed.'
+    redirect_to company_settings_path, notice: "Contractor info was successfully destroyed."
   end
 
   private

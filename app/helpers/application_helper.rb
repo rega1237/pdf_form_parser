@@ -2,52 +2,52 @@
 module ApplicationHelper
   def status_glassmorphism_class(status)
     case status.to_s.downcase
-    when 'completed'
-      'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-    when 'in_progress'
-      'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-    when 'pending'
-      'bg-slate-500/20 text-slate-300 border border-slate-500/30'
-    when 'cancelled'
-      'bg-red-500/20 text-red-300 border border-red-500/30'
-    when 'scheduled'
-      'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-    when 'overdue'
-      'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+    when "completed"
+      "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+    when "in_progress"
+      "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+    when "pending"
+      "bg-slate-500/20 text-slate-300 border border-slate-500/30"
+    when "cancelled"
+      "bg-red-500/20 text-red-300 border border-red-500/30"
+    when "scheduled"
+      "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+    when "overdue"
+      "bg-orange-500/20 text-orange-300 border border-orange-500/30"
     else
-      'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+      "bg-slate-500/20 text-slate-300 border border-slate-500/30"
     end
   end
 
   # Helper adicional para iconos de estado
   def status_icon_svg(status)
     case status.to_s.downcase
-    when 'completed'
+    when "completed"
       content_tag :svg, class: "w-4 h-4 mr-1.5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" do
         content_tag :path, nil, 'stroke-linecap': "round", 'stroke-linejoin': "round", 'stroke-width': "2",
                                 d: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       end
-    when 'in_progress'
+    when "in_progress"
       content_tag :svg, class: "w-4 h-4 mr-1.5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" do
         content_tag :path, nil, 'stroke-linecap': "round", 'stroke-linejoin': "round", 'stroke-width': "2",
                                 d: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
       end
-    when 'pending'
+    when "pending"
       content_tag :svg, class: "w-4 h-4 mr-1.5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" do
         content_tag :path, nil, 'stroke-linecap': "round", 'stroke-linejoin': "round", 'stroke-width': "2",
                                 d: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
       end
-    when 'cancelled'
+    when "cancelled"
       content_tag :svg, class: "w-4 h-4 mr-1.5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" do
         content_tag :path, nil, 'stroke-linecap': "round", 'stroke-linejoin': "round", 'stroke-width': "2",
                                 d: "M6 18L18 6M6 6l12 12"
       end
-    when 'scheduled'
+    when "scheduled"
       content_tag :svg, class: "w-4 h-4 mr-1.5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" do
         content_tag :path, nil, 'stroke-linecap': "round", 'stroke-linejoin': "round", 'stroke-width': "2",
                                 d: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
       end
-    when 'overdue'
+    when "overdue"
       content_tag :svg, class: "w-4 h-4 mr-1.5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" do
         content_tag :path, nil, 'stroke-linecap': "round", 'stroke-linejoin': "round", 'stroke-width': "2",
                                 d: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
@@ -61,18 +61,18 @@ module ApplicationHelper
   end
 
   # Helper para usar en badges con iconos
-  def status_badge_with_icon(status, size: 'default')
+  def status_badge_with_icon(status, size: "default")
     css_classes = status_glassmorphism_class(status)
 
     # Tamaños disponibles
     size_classes = case size
-                   when 'small'
-                     'px-2 py-1 text-xs'
-                   when 'large'
-                     'px-4 py-2 text-sm'
-                   else
-                     'px-3 py-1 text-xs'
-                   end
+    when "small"
+                     "px-2 py-1 text-xs"
+    when "large"
+                     "px-4 py-2 text-sm"
+    else
+                     "px-3 py-1 text-xs"
+    end
 
     content_tag :span, class: "inline-flex items-center #{size_classes} font-semibold rounded-full #{css_classes}" do
       concat(status_icon_svg(status))
@@ -83,53 +83,53 @@ module ApplicationHelper
   # Helper para colores de fondo de estado (útil para otros elementos)
   def status_bg_color(status)
     case status.to_s.downcase
-    when 'completed'
-      'from-emerald-500 to-emerald-700'
-    when 'in_progress'
-      'from-amber-500 to-orange-600'
-    when 'pending'
-      'from-slate-500 to-slate-700'
-    when 'cancelled'
-      'from-red-500 to-red-700'
-    when 'scheduled'
-      'from-blue-500 to-blue-700'
-    when 'overdue'
-      'from-orange-500 to-red-600'
+    when "completed"
+      "from-emerald-500 to-emerald-700"
+    when "in_progress"
+      "from-amber-500 to-orange-600"
+    when "pending"
+      "from-slate-500 to-slate-700"
+    when "cancelled"
+      "from-red-500 to-red-700"
+    when "scheduled"
+      "from-blue-500 to-blue-700"
+    when "overdue"
+      "from-orange-500 to-red-600"
     else
-      'from-slate-500 to-slate-700'
+      "from-slate-500 to-slate-700"
     end
   end
 
   # Helper para obtener el color del texto del estado
   def status_text_color(status)
     case status.to_s.downcase
-    when 'completed'
-      'text-emerald-300'
-    when 'in_progress'
-      'text-amber-300'
-    when 'pending'
-      'text-slate-300'
-    when 'cancelled'
-      'text-red-300'
-    when 'scheduled'
-      'text-blue-300'
-    when 'overdue'
-      'text-orange-300'
+    when "completed"
+      "text-emerald-300"
+    when "in_progress"
+      "text-amber-300"
+    when "pending"
+      "text-slate-300"
+    when "cancelled"
+      "text-red-300"
+    when "scheduled"
+      "text-blue-300"
+    when "overdue"
+      "text-orange-300"
     else
-      'text-slate-300'
+      "text-slate-300"
     end
   end
 
   def radio_choice_button_classes(is_selected)
     # Clases que siempre están presentes
-    static_classes = "radio-choice-button w-full flex items-center justify-start px-6 py-4 text-base lg:text-lg font-semibold rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-gradient-to-br"
+    static_classes = "radio-choice-button w-full flex items-center justify-start px-6 py-4 text-base lg:text-lg font-semibold rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md"
 
     # Clases que cambian según el estado
     dynamic_classes = if is_selected
-                        "from-blue-600 to-blue-700 border-2 border-blue-900 text-white shadow-xl"
-                      else
-                        "from-slate-100 to-slate-200 border-2 border-slate-400 text-slate-900 hover:from-slate-200 hover:to-slate-300 hover:border-slate-500 hover:-translate-y-0.5 hover:shadow-lg"
-                      end
+                        "bg-gradient-to-br from-blue-600 to-blue-700 border-2 border-blue-900 text-white shadow-xl"
+    else
+                        "bg-white border-2 border-gray-300 text-slate-900 hover:bg-gray-50 hover:border-gray-400 hover:-translate-y-0.5 hover:shadow-lg"
+    end
 
     # Unimos ambas partes y las devolvemos como un solo string
     "#{static_classes} #{dynamic_classes}"
