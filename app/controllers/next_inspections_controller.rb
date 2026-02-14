@@ -50,7 +50,7 @@ class NextInspectionsController < ApplicationController
 
     unless duplicate_info
       # Redirigir según el rol del usuario
-      if current_user.role.level == 'Admin'
+      if current_user.admin? || current_user.developer?
         redirect_to next_inspections_path, alert: 'No duplicate information was found.'
       else
         redirect_to inspections_path, alert: 'No duplicate information was found.'
@@ -77,7 +77,7 @@ class NextInspectionsController < ApplicationController
         generate_pdf_for_form_fill(form_fill_id)
         redirect_to form_fill_path(form_fill_id),
                     notice: 'Previous inspection deleted and new one created. PDF being generated.'
-      elsif current_user.role.level == 'Admin'
+      elsif current_user.admin? || current_user.developer?
         # Redirigir según el rol del usuario si no hay form_fill
         redirect_to next_inspections_path, notice: 'Previous inspection deleted and new one successfully created.'
       else
@@ -93,7 +93,7 @@ class NextInspectionsController < ApplicationController
         generate_pdf_for_form_fill(form_fill_id)
         redirect_to form_fill_path(form_fill_id),
                     notice: 'The existing next inspection was retained. PDF being generated.'
-      elsif current_user.role.level == 'Admin'
+      elsif current_user.admin? || current_user.developer?
         # Redirigir según el rol del usuario si no hay form_fill
         redirect_to next_inspections_path, notice: 'The existing next inspection was maintained.'
       else

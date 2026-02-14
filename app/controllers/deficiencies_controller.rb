@@ -36,6 +36,7 @@ class DeficienciesController < ApplicationController
 
   # PATCH/PUT /deficiencies/1 or /deficiencies/1.json
   def update
+    authorize @deficiency
     respond_to do |format|
       if @deficiency.update(deficiency_params)
         format.html { redirect_to settings_path, notice: "Deficiency was successfully updated." }
