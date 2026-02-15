@@ -656,12 +656,13 @@ class FormFillsController < ApplicationController
     @form_fill = FormFill.find(params[:id])
     authorize @form_fill
 
-    # Extract optional subject and body
+    # Extract optional subject, body, and recipient_email
     subject = params[:subject]
     body = params[:body]
+    recipient_email = params[:recipient_email]
 
     # Use EmailService to handle email sending with proper validation and error handling
-    result = EmailService.send_inspection_pdf(@form_fill, nil, subject, body)
+    result = EmailService.send_inspection_pdf(@form_fill, recipient_email, subject, body)
 
     respond_to do |format|
       if result.success?
