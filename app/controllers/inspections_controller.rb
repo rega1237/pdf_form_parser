@@ -11,7 +11,7 @@ class InspectionsController < ApplicationController
   # GET /inspections
   def index
     @inspections = policy_scope(Inspection)
-                   .includes(:property, :form_fills, :user, property: :customer)
+                   .includes(:property, { form_fills: :form_template }, :user, property: :customer)
                    .order(date: :desc)
 
     # Filtros opcionales
