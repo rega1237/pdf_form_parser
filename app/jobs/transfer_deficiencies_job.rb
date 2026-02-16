@@ -50,7 +50,8 @@ class TransferDeficienciesJob < ApplicationJob
     processor = DeficiencyProcessorService.new(
       deficiencies_data: all_deficiencies,
       target_fields: target_fields,
-      inspection_date: inspection.date
+      inspection_date: inspection.date,
+      strict_date_mode: true
     )
 
     result = processor.process

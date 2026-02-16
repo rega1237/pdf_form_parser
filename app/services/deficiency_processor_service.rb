@@ -1,10 +1,11 @@
 class DeficiencyProcessorService
-  def initialize(deficiencies_data:, target_fields:, inspection_date: nil)
+  def initialize(deficiencies_data:, target_fields:, inspection_date: nil, strict_date_mode: false)
     @deficiencies_data = deficiencies_data || []
     @target_fields = target_fields || []
     @inspection_date = inspection_date
     @processed_fields = []
     @unprocessed_deficiencies = []
+    @strict_date_mode = strict_date_mode
   end
 
   def process
@@ -104,11 +105,21 @@ class DeficiencyProcessorService
 
     case label_name
     when /^date/
-      # Only set date if there's actual deficiency data to go with it
-      if has_deficiency_content?(deficiency)
+      # If strict_date_mode is on, only map validation dates (Date Found)
+      # Otherwise, map any date field (legacy behavior)
+      should_map_date = if @strict_date_mode
+                          label_name.include?("found")
+      else
+                          true
+      end
+
+      # Only set date if:
+      # 1. We should map this date based on mode
+      # 2. There's actual deficiency data
+      if should_map_date && has_deficiency_content?(deficiency)
         formatted_date
       else
-        nil # Don't set date for empty deficiencies
+        nil
       end
     when /deficien/
       deficiency_text = "#{deficiency['value'].presence}  #{deficiency['comment_value']}"
