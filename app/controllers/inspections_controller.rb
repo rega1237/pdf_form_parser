@@ -40,8 +40,8 @@ class InspectionsController < ApplicationController
     @form_fill = @inspection.form_fills.find_by(form_template_id: @inspection.form_template_id)
 
     # Buscar los formularios adicionales
-    @additional_risers_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
-    @corrections_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Corrected Deficiencies' })
+    @additional_risers_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: "Additional Risers" })
+    @corrections_form_fill = @inspection.form_fills.joins(:form_template).find_by(form_templates: { name: "Corrected Deficiencies" })
 
     # Calcular conteos del formulario principal si existe
     @form_counts = @form_fill&.calculate_form_counts || { pass: 0, fail: 0, na: 0 }
@@ -107,7 +107,7 @@ class InspectionsController < ApplicationController
       end
 
       # 2. Create deficiencies form fill
-      deficiencies_template = FormTemplate.find_by(name: 'Deficiencies')
+      deficiencies_template = FormTemplate.find_by(name: "Deficiencies")
       if deficiencies_template
         deficiencies_form_name = "#{property.property_name} - Deficiencies"
         FormFill.create!(
@@ -121,7 +121,7 @@ class InspectionsController < ApplicationController
       end
 
       # 3. Create additional risers form fill
-      additional_risers_template = FormTemplate.find_by(name: 'Additional Risers')
+      additional_risers_template = FormTemplate.find_by(name: "Additional Risers")
       if additional_risers_template
         additional_risers_form_name = "#{property.property_name} - Additional Risers"
         FormFill.create!(
@@ -135,7 +135,7 @@ class InspectionsController < ApplicationController
       end
 
       # 4. Create corrections form fill
-      corrections_template = FormTemplate.find_by(name: 'Corrected Deficiencies')
+      corrections_template = FormTemplate.find_by(name: "Corrected Deficiencies")
       if corrections_template
         corrections_form_name = "#{property.property_name} - Corrected Deficiencies"
         FormFill.create!(
@@ -152,7 +152,7 @@ class InspectionsController < ApplicationController
       HeaderAutoFillerService.new(@inspection).call
     end
 
-    redirect_to @inspection, notice: 'Inspection created successfully.'
+    redirect_to @inspection, notice: "Inspection created successfully."
   rescue ActiveRecord::RecordInvalid => e
     @selected_customer = @inspection.property&.customer
     @inspection.errors.add(:base, "Error al crear la inspección o sus formularios: #{e.message}")
@@ -162,7 +162,7 @@ class InspectionsController < ApplicationController
   # PATCH/PUT /inspections/1
   def update
     if @inspection.update(inspection_params)
-      redirect_to @inspection, notice: 'Inspection updated successfully.'
+      redirect_to @inspection, notice: "Inspection updated successfully."
     else
       @selected_customer = @inspection.property.customer
       render :edit, status: :unprocessable_entity
@@ -173,16 +173,17 @@ class InspectionsController < ApplicationController
   def update_status
     authorize @inspection, :update_status?
 
-    new_status = params[:status].presence || 'completed'
+    new_status = params[:status].presence || "completed"
     allowed_statuses = %w[pending in_progress completed canceled]
 
     respond_to do |format|
       if allowed_statuses.include?(new_status) && @inspection.update(status: new_status)
+        TransferDeficienciesJob.perform_later(@inspection.id) if new_status == "completed"
         format.html { redirect_to inspection_path(@inspection), notice: "Inspección marcada como #{new_status}." }
         format.json { render json: { success: true, status: @inspection.status }, status: :ok }
       else
-        errors = ['Estado inválido.']
-        format.html { redirect_to inspection_path(@inspection), alert: 'Invalid Status.' }
+        errors = [ "Estado inv\u00E1lido." ]
+        format.html { redirect_to inspection_path(@inspection), alert: "Invalid Status." }
         format.json { render json: { success: false, errors: errors }, status: :unprocessable_entity }
       end
     end
@@ -192,7 +193,7 @@ class InspectionsController < ApplicationController
   def destroy
     authorize @inspection
     @inspection.destroy
-    redirect_to inspections_url, notice: 'Inspection deleted successfully.'
+    redirect_to inspections_url, notice: "Inspection deleted successfully."
   end
 
   # GET /inspections/calendar
@@ -249,8 +250,8 @@ class InspectionsController < ApplicationController
   # GET /inspections/dashboard
   def dashboard
     @total_inspections = Inspection.count
-    @pending_inspections = Inspection.where(status: 'pending').count
-    @completed_inspections = Inspection.where(status: 'completed').count
+    @pending_inspections = Inspection.where(status: "pending").count
+    @completed_inspections = Inspection.where(status: "completed").count
     @this_month_inspections = Inspection.where(date: Date.current.beginning_of_month..Date.current.end_of_month).count
 
     @upcoming_inspections = Inspection.includes(:property, property: :customer)
@@ -278,9 +279,9 @@ class InspectionsController < ApplicationController
 
     # Para los totales en la tarjeta de resumen (sin paginación)
     @total_inspections = @property.inspections.count
-    @completed_inspections = @property.inspections.where(status: 'completed').count
-    @pending_inspections = @property.inspections.where(status: 'pending').count
-    @due_soon_inspections = @property.inspections.where('date > ? AND date <= ?', Date.current, 3.days.from_now).count
+    @completed_inspections = @property.inspections.where(status: "completed").count
+    @pending_inspections = @property.inspections.where(status: "pending").count
+    @due_soon_inspections = @property.inspections.where("date > ? AND date <= ?", Date.current, 3.days.from_now).count
   end
 
   # API endpoint para obtener propiedades por customer (AJAX)
@@ -334,14 +335,14 @@ class InspectionsController < ApplicationController
   end
 
   def load_technicians
-    technician_role = Role.find_by(level: 'Technician')
+    technician_role = Role.find_by(level: "Technician")
     return @technicians = User.none unless technician_role
 
     @technicians = technician_role.users.active.order(:email)
 
     # Si la inspección ya tiene un técnico asignado que está inactivo, lo incluimos en la lista
     if @inspection&.user_id.present? && !@inspection.user.is_active?
-      @technicians = User.where(id: @technicians.pluck(:id) + [@inspection.user_id]).order(:email)
+      @technicians = User.where(id: @technicians.pluck(:id) + [ @inspection.user_id ]).order(:email)
     end
   end
 

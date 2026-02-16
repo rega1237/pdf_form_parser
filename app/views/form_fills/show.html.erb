@@ -282,12 +282,22 @@
                         <h3 class="text-white font-bold text-xl lg:text-2xl"><%= section_name %></h3>
                       </div>
                       <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
-                        <%
-                          always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency']
-                          always_visible_sections = ['Signature', 'Property Information', 'License']
-                          visible_fields = fields_in_section.select { |field| always_visible_types.include?(field['type']) || field['required'] == true || always_visible_sections.include?(field['section_name']) }
-                          hidden_fields = fields_in_section.reject { |field| always_visible_types.include?(field['type']) || field['required'] == true || always_visible_sections.include?(field['section_name']) }
-                        %>
+                          <%
+                            always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency']
+                            always_visible_sections = ['Signature', 'Property Information', 'License', 'Corrective Action Performed']
+                            visible_fields = fields_in_section.select { |field| 
+                              always_visible_types.include?(field['type']) || 
+                              field['required'] == true || 
+                              always_visible_sections.any? { |s| field['section_name'].to_s.include?(s) } ||
+                              field['value'].present?
+                            }
+                            hidden_fields = fields_in_section.reject { |field| 
+                              always_visible_types.include?(field['type']) || 
+                              field['required'] == true || 
+                              always_visible_sections.any? { |s| field['section_name'].to_s.include?(s) } ||
+                              field['value'].present?
+                            }
+                          %>
                         <% visible_fields.each_with_index do |field, index| %>
                           <%
                             column_width_int = field['column_width'].to_i

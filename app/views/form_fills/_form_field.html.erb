@@ -462,14 +462,19 @@
     </div>
   </div>
 <% else %>
-  <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 shadow-lg">
-    <div class="flex items-start space-x-3">
-      <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
-      <div>
-        <h4 class="text-amber-800 font-bold mb-2 text-lg"><%= raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}") %></h4>
-        <p class="text-amber-700 text-sm mb-2">Type: <span class="font-mono font-semibold"><%= field['type'] %></span></p>
-        <p class="text-amber-700 text-sm">This field type is not yet compatible with the web interface</p>
-      </div>
-    </div>
-  </div>
+   <div class="form-field space-y-4">
+     <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+     
+     <% if field['type'] == 'Date' %>
+       <%= form.date_field field['name'],
+           value: field['value'],
+           id: field_id,
+           class: "w-full rounded-2xl py-3 px-4 text-base font-medium bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+     <% else %>
+       <%= form.text_field field['name'],
+           value: field['value'],
+           id: field_id,
+           class: "w-full rounded-2xl py-3 px-4 text-base font-medium bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+     <% end %>
+   </div>
 <% end %>

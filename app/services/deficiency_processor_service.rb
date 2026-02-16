@@ -117,6 +117,8 @@ class DeficiencyProcessorService
       deficiency["Item"].present? ? deficiency["Item"] : nil
     when /^riser/
       deficiency["Riser"].present? ? deficiency["Riser"] : nil
+    when /^form/
+      "AES 19"
     when /\Ad\d*\z/
       deficiency["D"] == "Yes" ? "X" : nil
     when /\Ac\d*\z/
