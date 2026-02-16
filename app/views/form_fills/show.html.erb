@@ -502,7 +502,7 @@
                                 <div class="relative">
                                   <input type="text" 
                                          name="recipient_email" 
-                                         class="block w-full rounded-lg bg-slate-700/50 border-white/10 text-white placeholder-slate-400 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                                         class="block w-full rounded-lg p-2 bg-slate-700/50 border-white/10 text-white placeholder-slate-400 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
                                          value="<%= @form_fill.inspection.property.customer.email %>"
                                          placeholder="email1@example.com, email2@example.com">
                                   <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -518,7 +518,7 @@
                               <div>
                                 <label for="email-subject" class="block text-sm font-medium text-slate-300 mb-1">Subject</label>
                                 <input type="text" id="email-subject" name="subject"
-                                       class="block w-full rounded-lg bg-slate-700/50 border-white/10 text-white placeholder-slate-400 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                                       class="block w-full rounded-lg p-2 bg-slate-700/50 border-white/10 text-white placeholder-slate-400 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
                                        value="Inspection Report for <%= @form_fill.inspection.property.property_name %> - <%= @form_fill.inspection.date.strftime('%B %d, %Y') %>">
                               </div>
 
