@@ -242,14 +242,33 @@
           <li class="py-2 px-4 text-slate-300">Jump to a section...</li>
           <% @navigation_sections.each do |section| %>
             <%
-              section_name = section[:name].humanize
-              if section_name.downcase.include?('year') && section_name.include?('|') || section_name.downcase.include?('annual') || section_name.downcase.include?('quarterly') && section_name.include?('|')
-                section_name = section_name.split('|').last.strip
+              full_name = section[:name]
+              pipe_count = full_name.count('|')
+
+              if pipe_count >= 2
+                section_display_name = full_name
+              elsif pipe_count == 1
+                parts = full_name.split('|', 2).map(&:strip)
+                # Extraer contenido entre paréntesis de la primera parte (ej. (I), (M), (T))
+                parenthesis_match = parts[0].match(/\((.*?)\)/)
+                parenthesis = parenthesis_match ? parenthesis_match[0] : nil
+                
+                target_text = parts[1]
+                
+                # Si hay paréntesis y el texto de destino empieza con un número (ej. 1.1)
+                if parenthesis && target_text.match?(/^\d+(\.\d+)*(\s+|$)/)
+                  # Insertar el paréntesis justo después del primer grupo de números
+                  section_display_name = target_text.sub(/^(\d+(?:\.\d+)*)/, "\\1 #{parenthesis}")
+                else
+                  section_display_name = target_text
+                end
+              else
+                section_display_name = full_name
               end
             %>
             <li data-action="click->searchable-select#select" data-value="<%= section[:page] - 1 %>"
                 class="cursor-pointer py-2 px-4 hover:bg-white/10 text-white">
-              Page <%= section[:page] %>: <%= section_name %>
+              Page <%= section[:page] %>: <%= section_display_name %>
             </li>
           <% end %>
         </ul>
