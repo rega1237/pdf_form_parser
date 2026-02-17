@@ -337,12 +337,25 @@
     </div>
   </div>
 <% elsif field['type'] == "Date" %>
-  <div>
-    <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg mb-3" %>
+  <div <% if field['label_name']&.downcase&.include?('corrected') && field['section_name']&.starts_with?('Corrective Action Performed') %> data-controller="date-auto-fill" data-date-auto-fill-format-value="MM/DD/YYYY" <% end %>>
+    <div class="flex items-center justify-between mb-3">
+      <%= form.label field['name'], raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}"), for: field_id, class: "block text-white font-bold text-base lg:text-lg" %>
+      
+      <% if field['label_name']&.downcase&.include?('corrected') && field['section_name']&.starts_with?('Corrective Action Performed') %>
+        <div class="flex items-center space-x-2 bg-blue-900/40 px-3 py-1.5 rounded-xl border border-blue-400/30">
+          <input type="checkbox" id="<%= field_id %>_corrected" class="w-5 h-5 rounded border-blue-400 text-blue-600 focus:ring-blue-500 bg-slate-800 cursor-pointer" 
+                 data-date-auto-fill-target="checkbox" 
+                 data-action="change->date-auto-fill#fillDate"
+                 <%= 'checked' if field['value'].present? %>>
+          <label for="<%= field_id %>_corrected" class="text-white text-sm font-semibold cursor-pointer select-none">Mark Corrected</label>
+        </div>
+      <% end %>
+    </div>
+    
     <div class="relative">
-      <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+      <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z"></path></svg>
       <% if field['section_name']&.starts_with?('Corrective Action Performed') %>
-        <%= form.text_field field['name'], id: field_id, value: field['value'].presence, data: { controller: "datepicker" }, required: field['required'] == true, placeholder: "MM/DD/YYYY", pattern: "^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/[0-9]{4}$", autocomplete: "off", class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
+        <%= form.text_field field['name'], id: field_id, value: field['value'].presence, data: { controller: "datepicker", "date-auto-fill-target": "input" }, required: field['required'] == true, placeholder: "MM/DD/YYYY", pattern: "^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/[0-9]{4}$", autocomplete: "off", class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
       <% else %>
         <%= form.text_field field['name'], id: field_id, value: field['value'].presence, data: { controller: "date-fix", "date-fix-auto-set": "on-focus" }, required: field['required'] == true, placeholder: "MM/DD/YY", pattern: "^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/[0-9]{2}$", autocomplete: "off", class: "w-full rounded-2xl py-4 pl-14 pr-4 text-base lg:text-lg font-medium transition-all duration-200 shadow-md bg-white/95 border-2 border-blue-800 text-blue-900 placeholder:text-blue-800/70 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-800/20" %>
       <% end %>
