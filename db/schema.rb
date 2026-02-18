@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_18_104044) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_18_141323) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -95,6 +95,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_104044) do
     t.string "pdf_generation_status", default: "ready"
     t.jsonb "data", default: {}, null: false
     t.boolean "pdf_created", default: false, null: false
+    t.datetime "last_generated_at"
     t.index ["data"], name: "index_form_fills_on_data", using: :gin
     t.index ["form_template_id"], name: "index_form_fills_on_form_template_id"
     t.index ["inspection_id"], name: "index_form_fills_on_inspection_id"

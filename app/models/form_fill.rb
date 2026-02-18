@@ -6,10 +6,10 @@ class FormFill < ApplicationRecord
 
   # Estados de generación del PDF
   enum :pdf_generation_status, {
-    ready: 'ready',           # Listo para generar PDF
-    generating: 'generating', # Generando PDF
-    completed: 'completed',   # PDF generado exitosamente
-    failed: 'failed'          # Error en la generación
+    ready: "ready",           # Listo para generar PDF
+    generating: "generating", # Generando PDF
+    completed: "completed",   # PDF generado exitosamente
+    failed: "failed"          # Error en la generación
   }
 
   # Método para generar ID único de photo attachment
@@ -17,7 +17,7 @@ class FormFill < ApplicationRecord
     return nil if field_section.blank? || inspection.blank?
 
     # 1. Reemplaza el '|' por '__' para la separacion del section y no ocurran errores luego
-    safe_section_name = field_section.gsub('|', '__')
+    safe_section_name = field_section.gsub("|", "__")
 
     # 2. Continúa con la sanitización normal
     parameterized_name = safe_section_name.parameterize.underscore
@@ -30,32 +30,32 @@ class FormFill < ApplicationRecord
 
   # Método para adjuntar foto a un campo específico (soporta múltiples fotos)
   def attach_photo_for_field(field_name, photo_file)
-    return { success: false, error: 'Campo o archivo vacío' } if field_name.blank? || photo_file.blank?
+    return { success: false, error: "Campo o archivo vac\u00EDo" } if field_name.blank? || photo_file.blank?
 
     begin
       # 1. Parsear la estructura para encontrar el section_name y tipo
       structure = JSON.parse(form_structure)
-      field_data = structure.find { |field| field['name'] == field_name }
+      field_data = structure.find { |field| field["name"] == field_name }
 
       # Si el campo es de tipo Signature técnico en campo o anexo de cliente, usar la lógica especial de firma
-      if %w[Signature Signature_Field Signature_Annex].include?(field_data&.dig('type').to_s)
+      if %w[Signature Signature_Field Signature_Annex].include?(field_data&.dig("type").to_s)
         return attach_signature_for_field(field_name, photo_file)
       end
 
       # Usar el section_name si existe, de lo contrario, usar el field_name como fallback
-      field_section = field_data&.dig('section_name').presence || field_name
+      field_section = field_data&.dig("section_name").presence || field_name
 
       # 2. NO eliminar fotos existentes, para permitir múltiples
 
       # 3. Generar el ID único usando el section_name
       unique_attachment_id = generate_unique_photo_attachment_id(field_section)
-      return { success: false, error: 'No se pudo generar ID único' } if unique_attachment_id.blank?
+      return { success: false, error: "No se pudo generar ID \u00FAnico" } if unique_attachment_id.blank?
 
       # 4. Adjuntar la nueva foto con el nombre de archivo basado en el section_name
       photos.attach(
         io: photo_file,
         filename: "#{unique_attachment_id}.jpg",
-        content_type: photo_file.content_type || 'image/jpeg'
+        content_type: photo_file.content_type || "image/jpeg"
       )
 
       # 5. Actualizar la estructura del formulario añadiendo el ID del adjunto a la lista
@@ -65,11 +65,11 @@ class FormFill < ApplicationRecord
         Rails.logger.info "Photo attached for field: #{field_name} with ID: #{unique_attachment_id}"
         { success: true, attachment_id: unique_attachment_id }
       else
-        { success: false, error: 'Error al actualizar estructura del formulario' }
+        { success: false, error: "Error al actualizar estructura del formulario" }
       end
     rescue JSON::ParserError => e
       Rails.logger.error "Error parsing form_structure: #{e.message}"
-      { success: false, error: 'Error al parsear la estructura del formulario' }
+      { success: false, error: "Error al parsear la estructura del formulario" }
     rescue StandardError => e
       Rails.logger.error "Error attaching photo for field #{field_name}: #{e.message}"
       { success: false, error: e.message }
@@ -85,14 +85,14 @@ class FormFill < ApplicationRecord
     # Usar el tipo de campo para determinar si es técnico o cliente
     # Signature_Field = técnico, Signature_Annex = cliente
     signature_type = case field_type&.to_s
-                     when 'Signature_Field'
-                       'technician'
-                     when 'Signature_Annex'
-                       'client'
-                     else
+    when "Signature_Field"
+                       "technician"
+    when "Signature_Annex"
+                       "client"
+    else
                        # Fallback: usar el nombre del campo si no hay tipo
-                       field_name.to_s.downcase.include?('client') ? 'client' : 'technician'
-                     end
+                       field_name.to_s.downcase.include?("client") ? "client" : "technician"
+    end
 
     random_suffix = SecureRandom.hex(4)
     # Formato: inspection_<id>_signature_<type>_<hex>
@@ -101,31 +101,31 @@ class FormFill < ApplicationRecord
 
   # Adjuntar imagen de firma para un campo de tipo Signature
   def attach_signature_for_field(field_name, image_file)
-    return { success: false, error: 'Campo o archivo vacío' } if field_name.blank? || image_file.blank?
+    return { success: false, error: "Campo o archivo vac\u00EDo" } if field_name.blank? || image_file.blank?
 
     begin
       structure = JSON.parse(form_structure)
-      field_data = structure.find { |field| field['name'] == field_name }
+      field_data = structure.find { |field| field["name"] == field_name }
       # Aceptar tanto "Signature" como "Signature_Field" y "Signature_Annex"
-      unless %w[Signature Signature_Field Signature_Annex].include?(field_data&.dig('type').to_s)
+      unless %w[Signature Signature_Field Signature_Annex].include?(field_data&.dig("type").to_s)
         return { success: false,
-                 error: 'The field is not type Signature/Signature_Field/Signature_Annex' }
+                 error: "The field is not type Signature/Signature_Field/Signature_Annex" }
       end
 
       # Validación de tipo MIME (solo PNG/JPEG para preservar calidad original)
-      allowed_types = ['image/png', 'image/jpeg']
-      content_type = image_file.content_type || 'image/jpeg'
+      allowed_types = [ "image/png", "image/jpeg" ]
+      content_type = image_file.content_type || "image/jpeg"
       unless allowed_types.include?(content_type)
-        return { success: false, error: 'Tipo de archivo no permitido para firma. Use PNG o JPEG.' }
+        return { success: false, error: "Tipo de archivo no permitido para firma. Use PNG o JPEG." }
       end
 
       # Evitar duplicados: eliminar cualquier firma previa del mismo campo
       remove_all_signatures_for_field(field_name)
 
-      field_section = field_data&.dig('section_name').presence || field_name
-      field_type = field_data&.dig('type')
+      field_section = field_data&.dig("section_name").presence || field_name
+      field_type = field_data&.dig("type")
       unique_attachment_id = generate_unique_signature_attachment_id(field_name, field_section, field_type)
-      return { success: false, error: 'No se pudo generar ID único de firma' } if unique_attachment_id.blank?
+      return { success: false, error: "No se pudo generar ID \u00FAnico de firma" } if unique_attachment_id.blank?
 
       # Adjuntar sin alterar el binario (mantener calidad original)
       photos.attach(
@@ -140,11 +140,11 @@ class FormFill < ApplicationRecord
         Rails.logger.info "Signature attached for field: #{field_name} with ID: #{unique_attachment_id}"
         { success: true, attachment_id: unique_attachment_id }
       else
-        { success: false, error: 'Error al actualizar estructura del formulario para la firma' }
+        { success: false, error: "Error al actualizar estructura del formulario para la firma" }
       end
     rescue JSON::ParserError => e
       Rails.logger.error "Error parsing form_structure (signature): #{e.message}"
-      { success: false, error: 'Error al parsear la estructura del formulario' }
+      { success: false, error: "Error al parsear la estructura del formulario" }
     rescue StandardError => e
       Rails.logger.error "Error attaching signature for field #{field_name}: #{e.message}"
       { success: false, error: e.message }
@@ -169,12 +169,12 @@ class FormFill < ApplicationRecord
       else
         # 2) Si no hay attachment_id, eliminar por prefijo específico de sección + nombre de campo
         structure = JSON.parse(form_structure) if form_structure.present?
-        field_data = structure&.find { |field| field['name'] == field_name }
-        field_section = field_data&.dig('section_name').presence || field_name
-        safe_section_name = field_section.gsub('|', '__')
+        field_data = structure&.find { |field| field["name"] == field_name }
+        field_section = field_data&.dig("section_name").presence || field_name
+        safe_section_name = field_section.gsub("|", "__")
         parameterized_section = safe_section_name.parameterize.underscore
 
-        safe_field_name = field_name.to_s.gsub('|', '__')
+        safe_field_name = field_name.to_s.gsub("|", "__")
         parameterized_field = safe_field_name.parameterize.underscore
 
         specific_prefix = "inspection_#{inspection.id}_signature_#{parameterized_section}_#{parameterized_field}_"
@@ -221,12 +221,12 @@ class FormFill < ApplicationRecord
 
       # Fallback: buscar por tipo de campo (Signature_Field vs Signature_Annex)
       structure = JSON.parse(form_structure) if form_structure.present?
-      field_data = structure&.find { |f| f['name'] == field_name }
+      field_data = structure&.find { |f| f["name"] == field_name }
 
       # Determine signature type based on field type ONLY
-      field_type = field_data&.dig('type').to_s
-      is_technician_field = field_type == 'Signature_Field'
-      is_client_field = field_type == 'Signature_Annex'
+      field_type = field_data&.dig("type").to_s
+      is_technician_field = field_type == "Signature_Field"
+      is_client_field = field_type == "Signature_Annex"
 
       Rails.logger.info "Searching for signature - Field type: #{field_type}, is_technician: #{is_technician_field}, is_client: #{is_client_field}"
       Rails.logger.info "Available photos: #{photos.map(&:filename).join(', ')}" if photos.attached?
@@ -234,7 +234,7 @@ class FormFill < ApplicationRecord
       # Buscar por prefijo basado en tipo (nuevo formato simplificado)
       if is_technician_field
         # Buscar firmas de técnico
-        technician_candidates = photos.select { |p| p.filename.to_s.include?('signature_technician') }
+        technician_candidates = photos.select { |p| p.filename.to_s.include?("signature_technician") }
         if technician_candidates.any?
           candidate = technician_candidates.first
           Rails.logger.info "Found technician signature: #{candidate&.filename}"
@@ -245,7 +245,7 @@ class FormFill < ApplicationRecord
         return nil
       elsif is_client_field
         # Buscar firmas de cliente
-        client_candidates = photos.select { |p| p.filename.to_s.include?('signature_client') }
+        client_candidates = photos.select { |p| p.filename.to_s.include?("signature_client") }
         if client_candidates.any?
           candidate = client_candidates.first
           Rails.logger.info "Found client signature: #{candidate&.filename}"
@@ -257,13 +257,13 @@ class FormFill < ApplicationRecord
       end
 
       # Fallback para compatibilidad con archivos antiguos (formato anterior)
-      Rails.logger.info 'No signature found with new format, trying legacy format...'
+      Rails.logger.info "No signature found with new format, trying legacy format..."
 
-      field_section = field_data&.dig('section_name').presence || field_name
-      safe_section_name = field_section.gsub('|', '__')
+      field_section = field_data&.dig("section_name").presence || field_name
+      safe_section_name = field_section.gsub("|", "__")
       parameterized_section = safe_section_name.parameterize.underscore
 
-      safe_field_name = field_name.to_s.gsub('|', '__')
+      safe_field_name = field_name.to_s.gsub("|", "__")
       parameterized_field = safe_field_name.parameterize.underscore
 
       specific_prefix = "inspection_#{inspection.id}_signature_#{parameterized_section}_#{parameterized_field}_"
@@ -279,7 +279,7 @@ class FormFill < ApplicationRecord
 
         # Filtrar por tipo de firma en archivos legacy
         if is_technician_field
-          candidate = section_candidates.find { |p| p.filename.to_s.include?('technician') }
+          candidate = section_candidates.find { |p| p.filename.to_s.include?("technician") }
           Rails.logger.info "Found technician signature via section prefix: #{candidate&.filename}" if candidate
           # Si no hay firmas technician en esta sección, no usar firmas cliente
           if candidate.nil? && section_candidates.any?
@@ -287,7 +287,7 @@ class FormFill < ApplicationRecord
             return nil
           end
         elsif is_client_field
-          candidate = section_candidates.find { |p| p.filename.to_s.include?('client') }
+          candidate = section_candidates.find { |p| p.filename.to_s.include?("client") }
           Rails.logger.info "Found client signature via section prefix: #{candidate&.filename}" if candidate
           # Si no hay firmas cliente en esta sección, no usar firmas technician
           if candidate.nil? && section_candidates.any?
@@ -305,7 +305,7 @@ class FormFill < ApplicationRecord
 
         # Filtrar por tipo de firma en archivos legacy
         if is_technician_field
-          candidate = legacy_candidates.find { |p| p.filename.to_s.include?('technician') }
+          candidate = legacy_candidates.find { |p| p.filename.to_s.include?("technician") }
           Rails.logger.info "Found technician signature via legacy prefix: #{candidate&.filename}" if candidate
           # Si no hay firmas technician con este prefijo, no usar firmas cliente
           if candidate.nil? && legacy_candidates.any?
@@ -313,7 +313,7 @@ class FormFill < ApplicationRecord
             return nil
           end
         elsif is_client_field
-          candidate = legacy_candidates.find { |p| p.filename.to_s.include?('client') }
+          candidate = legacy_candidates.find { |p| p.filename.to_s.include?("client") }
           Rails.logger.info "Found client signature via legacy prefix: #{candidate&.filename}" if candidate
           # Si no hay firmas cliente con este prefijo, no usar firmas technician
           if candidate.nil? && legacy_candidates.any?
@@ -359,11 +359,11 @@ class FormFill < ApplicationRecord
       # Normalizar a array
       ids = if current_value.is_a?(Array)
               current_value
-            elsif current_value.present?
-              [current_value]
-            else
+      elsif current_value.present?
+              [ current_value ]
+      else
               []
-            end
+      end
 
       # Añadir si no existe
       unless ids.include?(attachment_id)
@@ -404,11 +404,11 @@ class FormFill < ApplicationRecord
       # Normalizar a array de strings
       target_ids = if attachment_ids.is_a?(Array)
                      attachment_ids.map(&:to_s)
-                   elsif attachment_ids.present?
-                     [attachment_ids.to_s]
-                   else
+      elsif attachment_ids.present?
+                     [ attachment_ids.to_s ]
+      else
                      []
-                   end
+      end
 
       return [] if target_ids.empty?
 
@@ -433,13 +433,13 @@ class FormFill < ApplicationRecord
     # Get all photo attachment IDs from data column
     data.each do |key, value|
       # Look for keys that end with '_photo_attachment_id'
-      next unless key.end_with?('_photo_attachment_id') && value.present?
+      next unless key.end_with?("_photo_attachment_id") && value.present?
 
       # Extract field name by removing the suffix
-      field_name = key.gsub('_photo_attachment_id', '')
+      field_name = key.gsub("_photo_attachment_id", "")
 
       # Handle array or single value
-      attachment_ids = value.is_a?(Array) ? value : [value]
+      attachment_ids = value.is_a?(Array) ? value : [ value ]
 
       Rails.logger.info "[DEBUG] get_photos_by_field: Field '#{field_name}' has IDs: #{attachment_ids.inspect}"
 
@@ -471,11 +471,11 @@ class FormFill < ApplicationRecord
     begin
       # Parsear la estructura para obtener información del campo
       structure = JSON.parse(form_structure) if form_structure.present?
-      field_data = structure&.find { |field| field['name'] == field_name && field['type'] == 'Photo' }
+      field_data = structure&.find { |field| field["name"] == field_name && field["type"] == "Photo" }
 
       # Obtener el section_name para buscar fotos
-      field_section = field_data&.dig('section_name').presence || field_name
-      safe_section_name = field_section.gsub('|', '__')
+      field_section = field_data&.dig("section_name").presence || field_name
+      safe_section_name = field_section.gsub("|", "__")
       parameterized_name = safe_section_name.parameterize.underscore
 
       # Buscar todas las fotos que coincidan con el patrón del campo (nuevo esquema con inspection + section)
@@ -524,7 +524,7 @@ class FormFill < ApplicationRecord
 
   # Método para eliminar foto de un campo específico (interfaz pública)
   def remove_photo_for_field(field_name, photo_id = nil)
-    return { success: false, error: 'Campo vacío' } if field_name.blank?
+    return { success: false, error: "Campo vac\u00EDo" } if field_name.blank?
 
     begin
       if photo_id.present?
@@ -538,9 +538,9 @@ class FormFill < ApplicationRecord
 
         if success
           Rails.logger.info "Photo removed completely for field: #{field_name}"
-          { success: true, message: 'Photo removed successfully' }
+          { success: true, message: "Photo removed successfully" }
         else
-          { success: false, error: 'Error updating form structure' }
+          { success: false, error: "Error updating form structure" }
         end
       end
     rescue StandardError => e
@@ -565,9 +565,9 @@ class FormFill < ApplicationRecord
 
     ids = if current_value.is_a?(Array)
             current_value
-          else
-            (current_value.present? ? [current_value] : [])
-          end
+    else
+            (current_value.present? ? [ current_value ] : [])
+    end
 
     if ids.include?(photo_id)
       ids.delete(photo_id)
@@ -575,7 +575,7 @@ class FormFill < ApplicationRecord
       Rails.logger.info "Removed photo ID #{photo_id} from field #{field_name}"
     end
 
-    { success: true, message: 'Photo removed successfully' }
+    { success: true, message: "Photo removed successfully" }
   end
 
   # Método para limpiar photo_attachment_id en data column (updated for new structure)
@@ -588,7 +588,7 @@ class FormFill < ApplicationRecord
       set_field_value(photo_data_key, nil)
 
       # Also clear the field value
-      set_field_value(field_name, '')
+      set_field_value(field_name, "")
 
       Rails.logger.info "Cleared photo attachment ID for field '#{field_name}'"
       true
@@ -600,18 +600,18 @@ class FormFill < ApplicationRecord
 
   # Método para limpiar fotos duplicadas existentes
   def cleanup_duplicate_photos!
-    return { cleaned: 0, message: 'No photos to clean' } unless photos.attached? && form_structure.present?
+    return { cleaned: 0, message: "No photos to clean" } unless photos.attached? && form_structure.present?
 
     begin
       structure = JSON.parse(form_structure)
-      photo_fields = structure.select { |field| field['type'] == 'Photo' }
+      photo_fields = structure.select { |field| field["type"] == "Photo" }
 
       cleaned_count = 0
 
       photo_fields.each do |field|
-        field_name = field['name']
-        field_section = field.dig('section_name').presence || field_name
-        safe_section_name = field_section.gsub('|', '__')
+        field_name = field["name"]
+        field_section = field.dig("section_name").presence || field_name
+        safe_section_name = field_section.gsub("|", "__")
         parameterized_name = safe_section_name.parameterize.underscore
         field_pattern = "inspection_#{inspection.id}_#{parameterized_name}_"
 
@@ -634,8 +634,8 @@ class FormFill < ApplicationRecord
         next unless photos_to_keep.any?
 
         kept_photo = photos_to_keep.first
-        attachment_id = kept_photo.filename.to_s.split('.').first
-        field['photo_attachment_id'] = attachment_id
+        attachment_id = kept_photo.filename.to_s.split(".").first
+        field["photo_attachment_id"] = attachment_id
       end
 
       # Actualizar la estructura si se hicieron cambios
@@ -658,24 +658,24 @@ class FormFill < ApplicationRecord
 
     begin
       structure = JSON.parse(form_structure)
-      photo_fields = structure.select { |field| field['type'] == 'Photo' }
+      photo_fields = structure.select { |field| field["type"] == "Photo" }
       structure_updated = false
 
       photo_fields.each do |field|
-        field_name = field['name']
+        field_name = field["name"]
 
         # Si el campo ya tiene photo_attachment_id, verificar que la foto existe
-        if field['photo_attachment_id'].present?
+        if field["photo_attachment_id"].present?
           existing_photo = get_photo_for_field(field_name)
           # Si no existe la foto, limpiar el attachment_id
           if existing_photo.blank?
-            field['photo_attachment_id'] = nil
+            field["photo_attachment_id"] = nil
             structure_updated = true
           end
         else
           # Si no tiene attachment_id, buscar si hay una foto para este campo
-          field_section = field.dig('section_name').presence || field_name
-          safe_section_name = field_section.gsub('|', '__')
+          field_section = field.dig("section_name").presence || field_name
+          safe_section_name = field_section.gsub("|", "__")
           parameterized_name = safe_section_name.parameterize.underscore
           field_pattern = "inspection_#{inspection.id}_#{parameterized_name}_"
 
@@ -684,8 +684,8 @@ class FormFill < ApplicationRecord
 
           if matching_photo
             # Extraer el attachment_id del filename
-            attachment_id = matching_photo.filename.to_s.split('.').first
-            field['photo_attachment_id'] = attachment_id
+            attachment_id = matching_photo.filename.to_s.split(".").first
+            field["photo_attachment_id"] = attachment_id
             structure_updated = true
             Rails.logger.info "Synced photo for field #{field_name}: #{attachment_id}"
           end
@@ -733,11 +733,11 @@ class FormFill < ApplicationRecord
       data.each_value do |data_value|
         value = data_value.to_s.downcase
         case value
-        when 'pass'
+        when "pass"
           counts[:pass] += 1
-        when 'fail'
+        when "fail"
           counts[:fail] += 1
-        when 'n/a', 'na'
+        when "n/a", "na"
           counts[:na] += 1
         end
       end
@@ -750,17 +750,17 @@ class FormFill < ApplicationRecord
   end
 
   def get_sprinklers_data
-    sprinklers = { number: 0, date: '', brand: '', notes: '' }
+    sprinklers = { number: 0, date: "", brand: "", notes: "" }
 
     data.each do |key, value|
       case key
-      when 'Number_of_sprinklers'
+      when "Number_of_sprinklers"
         sprinklers[:number] = value
-      when 'Manufactering_Date'
+      when "Manufactering_Date"
         sprinklers[:date] = value
-      when 'Brand'
+      when "Brand"
         sprinklers[:brand] = value
-      when 'Notes'
+      when "Notes"
         sprinklers[:notes] = value
       end
     end
@@ -833,7 +833,7 @@ class FormFill < ApplicationRecord
       structure = JSON.parse(form_structure)
 
       # Check if any field in the structure has a 'value' key (legacy format)
-      structure.any? { |field| field.key?('value') && field['value'].present? }
+      structure.any? { |field| field.key?("value") && field["value"].present? }
     rescue JSON::ParserError => e
       Rails.logger.error "Error parsing form_structure in has_legacy_data?: #{e.message}"
       false
@@ -850,8 +850,8 @@ class FormFill < ApplicationRecord
 
       # Extract values from form_structure and build data hash
       structure.each do |field|
-        field_name = field['name']
-        field_value = field['value']
+        field_name = field["name"]
+        field_value = field["value"]
 
         # Only migrate non-empty values
         migrated_data[field_name] = field_value if field_name.present? && field_value.present?
@@ -868,7 +868,7 @@ class FormFill < ApplicationRecord
         # Clear values from form_structure (keep structure, remove values)
         cleaned_structure = structure.map do |field|
           field_copy = field.dup
-          field_copy.delete('value') # Remove the value key
+          field_copy.delete("value") # Remove the value key
           field_copy
         end
 
@@ -903,15 +903,15 @@ class FormFill < ApplicationRecord
       # Merge data values back into structure for PDF generation
       structure.map do |field|
         field_copy = field.dup
-        field_name = field['name']
+        field_name = field["name"]
 
         # Get value from data column first, then fallback to existing value in structure
         if field_name.present?
           data_value = get_field_value(field_name)
-          structure_value = field['value']
+          structure_value = field["value"]
 
           # Use data column value if available, otherwise use structure value
-          field_copy['value'] = data_value.present? ? data_value : structure_value
+          field_copy["value"] = data_value.present? ? data_value : structure_value
         end
 
         field_copy
@@ -931,7 +931,7 @@ class FormFill < ApplicationRecord
 
   # Mark PDF as created when successfully generated
   def mark_pdf_created!
-    update!(pdf_created: true, pdf_generation_status: 'completed')
+    update!(pdf_created: true, pdf_generation_status: "completed", last_generated_at: Time.current)
   end
 
   # Check if this form fill has an individual PDF created
@@ -955,12 +955,12 @@ class FormFill < ApplicationRecord
 
     begin
       structure = JSON.parse(form_structure)
-      deficiency_fields = structure.select { |field| field['type'] == 'Deficiency' }
+      deficiency_fields = structure.select { |field| field["type"] == "Deficiency" }
 
       deficiencies_with_data = []
 
       deficiency_fields.each do |field|
-        field_name = field['name']
+        field_name = field["name"]
         collection_json = data["#{field_name}_collection"]
 
         if collection_json.present?
@@ -969,13 +969,13 @@ class FormFill < ApplicationRecord
             if collection.is_a?(Array)
               collection.each do |item|
                 deficiencies_with_data << {
-                  'name' => field_name,
-                  'value' => item['value'] || '',
-                  'comment_value' => item['comment_value'] || '',
-                  'Item' => item['Item'] || '',
-                  'Riser' => item['Riser'] || '',
-                  'C' => item['C'] || '',
-                  'D' => item['D'] || ''
+                  "name" => field_name,
+                  "value" => item["value"] || "",
+                  "comment_value" => item["comment_value"] || "",
+                  "Item" => item["Item"] || "",
+                  "Riser" => item["Riser"] || "",
+                  "C" => item["C"] || "",
+                  "D" => item["D"] || ""
                 }
               end
             end
@@ -1000,13 +1000,13 @@ class FormFill < ApplicationRecord
 
   def build_single_deficiency_data(field_name)
     {
-      'name' => field_name,
-      'value' => data["#{field_name}_select"] || '',
-      'comment_value' => data["#{field_name}_comment"] || '',
-      'Item' => data["#{field_name}_item"] || '',
-      'Riser' => data["#{field_name}_riser"] || '',
-      'C' => data["#{field_name}_c"] || '',
-      'D' => data["#{field_name}_d"] || ''
+      "name" => field_name,
+      "value" => data["#{field_name}_select"] || "",
+      "comment_value" => data["#{field_name}_comment"] || "",
+      "Item" => data["#{field_name}_item"] || "",
+      "Riser" => data["#{field_name}_riser"] || "",
+      "C" => data["#{field_name}_c"] || "",
+      "D" => data["#{field_name}_d"] || ""
     }
   end
 
@@ -1014,7 +1014,7 @@ class FormFill < ApplicationRecord
     return [] unless form_structure.present? && photos.attached?
 
     begin
-      structure_map = JSON.parse(form_structure).index_by { |field| field['name'] }
+      structure_map = JSON.parse(form_structure).index_by { |field| field["name"] }
       photos_by_field = get_photos_by_field # Usamos el método que ya existe
 
       # Create a case-insensitive map as fallback
@@ -1034,7 +1034,7 @@ class FormFill < ApplicationRecord
           next []
         end
 
-        unless %w[Photo pass_photo].include?(field_info['type'])
+        unless %w[Photo pass_photo].include?(field_info["type"])
           Rails.logger.warn "[DEBUG] get_photos_with_context: Field '#{field_name}' has type '#{field_info['type']}', but has photo attachments. Including it."
           # We allow it to proceed, assuming if it has a photo attachment, it should be included.
         end
@@ -1043,9 +1043,9 @@ class FormFill < ApplicationRecord
         Array(photo_list).map do |photo_data|
           {
             photo: photo_data[:photo],
-            field_type: field_info['type'], # 'Photo' o 'pass_photo'
-            section_name: field_info['section_name'],
-            label_name: field_info['label_name']
+            field_type: field_info["type"], # 'Photo' o 'pass_photo'
+            section_name: field_info["section_name"],
+            label_name: field_info["label_name"]
           }
         end
       end.compact

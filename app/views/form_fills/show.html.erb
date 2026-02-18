@@ -387,6 +387,9 @@
                 <div>
                   <h3 class="text-white font-bold text-xl mb-2">Form Actions</h3>
                   <p class="text-slate-300 text-base mb-4">Save your progress or generate the final PDF</p>
+                  <% if @form_fill.last_generated_at.present? %>
+                    <p class="text-slate-400 text-sm italic mb-4">Last generated: <%= l @form_fill.last_generated_at.in_time_zone("Pacific Time (US & Canada)"), format: :long %></p>
+                  <% end %>
                 </div>
               </div>
               <!-- Sync Button and Status -->
