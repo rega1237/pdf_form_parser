@@ -1,11 +1,11 @@
 Rails.application.routes.draw do
-  devise_for :users, skip: [:registrations]
+  devise_for :users, skip: [ :registrations ]
 
   devise_scope :user do
-    get 'users/edit', to: 'devise/registrations#edit', as: 'edit_user_registration'
-    patch 'users', to: 'devise/registrations#update', as: 'user_registration'
-    put 'users', to: 'devise/registrations#update'
-    delete 'users', to: 'devise/registrations#destroy', as: 'destroy_user_registration'
+    get "users/edit", to: "devise/registrations#edit", as: "edit_user_registration"
+    patch "users", to: "devise/registrations#update", as: "user_registration"
+    put "users", to: "devise/registrations#update"
+    delete "users", to: "devise/registrations#destroy", as: "destroy_user_registration"
   end
 
   # Customers routes
@@ -14,19 +14,19 @@ Rails.application.routes.draw do
   # Properties routes with nested and member routes
   resources :properties do
     # Nested inspections for viewing inspections by property
-    resources :inspections, only: [:index], controller: 'inspections', action: 'by_property'
+    resources :inspections, only: [ :index ], controller: "inspections", action: "by_property"
 
     # Member route for creating inspection from specific property
     member do
-      get :new_inspection, to: 'inspections#new'
+      get :new_inspection, to: "inspections#new"
     end
   end
 
   # Form templates routes
   resources :form_templates do
     member do
-      get 'form_builder' # Route to display the form builder
-      patch 'form_builder_update' # Route for updating form structure
+      get "form_builder" # Route to display the form builder
+      patch "form_builder_update" # Route for updating form structure
     end
   end
 
@@ -62,27 +62,15 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :next_inspections, only: %i[index show destroy] do
-    collection do
-      get :calendar # Ruta para la vista calendario
-      post :handle_duplicate # Ruta para manejar duplicados
-      post :create_after_duplicate_resolution # Ruta para crear después de resolver duplicado
-    end
-
-    member do
-      # Esta ruta nos permitirá crear una inspección a partir de una 'NextInspection'
-      post :create_inspection_from_next
-    end
-  end
 
   resources :deficiencies
   resources :interval_categories
   resources :system_categories
   resources :roles
-  resources :contractor_infos, only: [:new, :create, :edit, :update, :destroy]
-  resources :license_infos, only: [:new, :create, :edit, :update, :destroy]
+  resources :contractor_infos, only: [ :new, :create, :edit, :update, :destroy ]
+  resources :license_infos, only: [ :new, :create, :edit, :update, :destroy ]
 
-  get 'settings', to: 'company_settings#index'
+  get "settings", to: "company_settings#index"
 
   namespace :admin do
     resources :users, only: %i[create destroy] do
@@ -93,7 +81,7 @@ Rails.application.routes.draw do
   end
 
   # Health check route
-  get 'up' => 'rails/health#show', as: :rails_health_check
+  get "up" => "rails/health#show", as: :rails_health_check
 
   # API routes for offline functionality
   namespace :api do
@@ -104,16 +92,16 @@ Rails.application.routes.draw do
         end
       end
 
-      post 'sync', to: 'sync#sync_data' # Endpoint para sincronización de datos offline
-      post 'sync/upload_photo', to: 'sync#upload_photo' # Endpoint para subir fotos desde offline
-      get 'sync/status', to: 'sync#sync_status' # Endpoint para verificar estado de sincronización
+      post "sync", to: "sync#sync_data" # Endpoint para sincronización de datos offline
+      post "sync/upload_photo", to: "sync#upload_photo" # Endpoint para subir fotos desde offline
+      get "sync/status", to: "sync#sync_status" # Endpoint para verificar estado de sincronización
     end
   end
 
   # PWA routes - Service Worker debe estar en la raíz para scope '/'
-  get 'manifest.json', to: 'pwa#manifest', as: 'pwa_manifest'
-  get 'service-worker.js', to: 'pwa#service_worker', as: 'pwa_service_worker'
+  get "manifest.json", to: "pwa#manifest", as: "pwa_manifest"
+  get "service-worker.js", to: "pwa#service_worker", as: "pwa_service_worker"
 
   # Root route
-  root 'home#index'
+  root "home#index"
 end

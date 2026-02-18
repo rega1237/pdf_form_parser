@@ -578,16 +578,6 @@ class FormFillsController < ApplicationController
 
     # Determinar qué tipo de PDF generar basado en el form template
     if @form_fill.main_form_fill?
-      # Para el formulario principal, crear next inspection y luego generar PDF completo
-      create_next_inspection_from_structure(@form_fill.data)
-
-      # Si hay un duplicado detectado, no proceder con la generación del PDF
-      if session[:duplicate_next_inspection]
-        redirect_to @form_fill,
-                    notice: "Se detect\u00F3 una Next Inspection duplicada. Por favor, resuelve el duplicado antes de generar el PDF."
-        return
-      end
-
       # Generar PDF completo con merge
       generate_main_pdf_with_merge
     else
@@ -1054,89 +1044,6 @@ class FormFillsController < ApplicationController
       deficiency_keys.each { |key| update_params.delete(key) }
     rescue JSON::ParserError => e
       Rails.logger.error "Error processing deficiency fields: #{e.message}"
-    end
-  end
-
-  def create_next_inspection_from_structure(form_data)
-    inspection = @form_fill.inspection
-
-    unless inspection && form_data.present?
-      Rails.logger.warn "Skipping NextInspection creation: Inspection or form_data missing (FormFill ##{@form_fill.id})"
-      return
-    end
-
-    begin
-      # Intentar obtener los nombres de los campos dinámicamente desde la estructura
-      system_category_name = "System category" # Default
-      interval_category_name = "Interval Category" # Default
-
-      if @form_fill.form_structure.present?
-        begin
-          structure = JSON.parse(@form_fill.form_structure)
-
-          sys_field = structure.find { |f| f["type"] == "System Category" }
-          system_category_name = sys_field["name"] if sys_field && sys_field["name"].present?
-
-          int_field = structure.find { |f| f["type"] == "Interval Category" }
-          interval_category_name = int_field["name"] if int_field && int_field["name"].present?
-        rescue JSON::ParserError
-          Rails.logger.warn "Could not parse form_structure to find category field names"
-        end
-      end
-
-      # Encontrar los valores seleccionados en el formulario
-      system_category_data = form_data[system_category_name]
-      interval_category_data = form_data[interval_category_name]
-
-      # Fallback: Try common variations if nil (case insensitive check essentially)
-      system_category_data ||= form_data["System Category"] || form_data["System category"]
-      interval_category_data ||= form_data["Interval Category"] || form_data["Interval category"]
-
-      Rails.logger.info "NextInspection check: System='#{system_category_data}', Interval='#{interval_category_data}' (fields: #{system_category_name}, #{interval_category_name})"
-
-      # Proceder si tenemos toda la información
-      if system_category_data.present? && interval_category_data.present?
-        system_category = SystemCategory.find_by(name: system_category_data)
-        interval_category = IntervalCategory.find_by(name: interval_category_data)
-
-        # Calcular fecha usando la lógica encapsulada en el modelo (soporta Weekly)
-        next_date = interval_category&.next_inspection_date(inspection.date)
-
-        if system_category && next_date.present?
-          # Verificar si ya existe una next inspection con los mismos parámetros
-          existing_next_inspection = NextInspection.find_duplicate(
-            inspection.property.id,
-            system_category.id,
-            interval_category.id
-          )
-
-          if existing_next_inspection
-            # Almacenar información del duplicado en la sesión para mostrar al usuario
-            session[:duplicate_next_inspection] = {
-              existing: existing_next_inspection.duplicate_info,
-              new_date: next_date,
-              form_fill_id: @form_fill.id
-            }
-            Rails.logger.info "Duplicate next inspection found for property #{inspection.property.id}"
-          else
-            # Crear la nueva next inspection si no hay duplicados
-            NextInspection.create!(
-              property: inspection.property,
-              system_category: system_category,
-              interval_category: interval_category,
-              next_inspection_date: next_date,
-              status: "scheduled"
-            )
-            Rails.logger.info "Next inspection scheduled for property #{inspection.property.id} on #{next_date}"
-          end
-        else
-          Rails.logger.warn("Could not find System/Interval category or could not calculate date. System found: #{system_category.present?}, Interval found: #{interval_category.present?}, Next Date: #{next_date.inspect}")
-        end
-      else
-        Rails.logger.warn "Skipping NextInspection: Missing category data in form. System data: '#{system_category_data}', Interval data: '#{interval_category_data}'"
-      end
-    rescue JSON::ParserError => e
-      Rails.logger.error "Failed to parse form_structure for next inspection: #{e.message}"
     end
   end
 end
