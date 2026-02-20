@@ -14,11 +14,19 @@ class Inspection < ApplicationRecord
   scope :by_date_range, ->(start_date, end_date) { where(date: start_date..end_date) }
   scope :recent, -> { order(date: :desc) }
 
+  after_update :trigger_deficiency_transfer, if: -> { saved_change_to_status? && status == 'completed' }
+
   def customer_name
     property.customer.name
   end
 
   def property_address
     property.address
+  end
+
+  private
+
+  def trigger_deficiency_transfer
+    TransferDeficienciesJob.perform_later(id)
   end
 end

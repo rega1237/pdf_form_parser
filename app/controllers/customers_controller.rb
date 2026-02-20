@@ -2,7 +2,8 @@ class CustomersController < ApplicationController
   before_action :set_customer, only: %i[show edit update]
 
   def index
-    @customers = policy_scope(Customer)
+    @customers = policy_scope(Customer).order(:name)
+    @customers = @customers.search_by_name(params[:query]) if params[:query].present?
   end
 
   def show
@@ -18,7 +19,7 @@ class CustomersController < ApplicationController
     authorize Customer
     @customer = Customer.new(customer_params)
     if @customer.save
-      redirect_to @customer, notice: 'Customer was successfully created.'
+      redirect_to @customer, notice: "Customer was successfully created."
     else
       render :new
     end
@@ -31,7 +32,7 @@ class CustomersController < ApplicationController
   def update
     authorize @customer
     if @customer.update(customer_params)
-      redirect_to @customer, notice: 'Customer was successfully updated.'
+      redirect_to @customer, notice: "Customer was successfully updated."
     else
       render :edit
     end

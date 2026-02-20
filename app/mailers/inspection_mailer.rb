@@ -1,5 +1,5 @@
 class InspectionMailer < ApplicationMailer
-  def send_inspection_pdf(form_fill_id, recipient_email = nil, subject = nil, body = nil)
+  def send_inspection_pdf(form_fill_id, recipients, subject = nil, body = nil)
     @form_fill = FormFill.find(form_fill_id)
     @inspection = @form_fill.inspection
     @property = @inspection.property
@@ -8,11 +8,11 @@ class InspectionMailer < ApplicationMailer
     @company_name = "Firemex Solutions"
     @custom_body = body
 
-    # Use provided email or fallback to customer email
-    recipient = recipient_email.presence || @customer.email
+    # Ensure recipients is an array and remove any empty strings
+    recipient_list = Array(recipients).flatten.compact.reject(&:blank?)
 
     # Raise error if no recipient email available
-    raise ArgumentError, "No recipient email available" if recipient.blank?
+    raise ArgumentError, "No recipient email available" if recipient_list.empty?
 
     # Generate dynamic subject line with inspection details
     final_subject = subject.presence || "Inspection Report for #{@property.property_name} - #{@inspection.date.strftime('%B %d, %Y')}"
@@ -28,7 +28,7 @@ class InspectionMailer < ApplicationMailer
     attachments[filename] = @form_fill.filled_pdf.download
 
     mail(
-      to: recipient,
+      to: recipient_list,
       subject: final_subject,
       from: "#{@company_name} <#{ENV.fetch('MAILER_FROM_EMAIL', 'noreply@example.com')}>"
     )

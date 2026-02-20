@@ -53,23 +53,35 @@ class EmailService
       inspection = form_fill.inspection
       inspector = inspection.user
 
-      # Determine recipient email
-      final_recipient = recipient_email.presence || customer.email
+      # Determine recipient email(s)
+      final_recipients = if recipient_email.present?
+                           recipient_email.split(",").map(&:strip).select { |e| valid_email_format?(e) }
+      else
+                           [ customer.email ]
+      end
+
+      if final_recipients.empty?
+        return Result.new(
+          success: false,
+          message: "No valid email addresses found.",
+          error_code: ERROR_CODES[:invalid_email_format]
+        )
+      end
 
       begin
         # Log email sending attempt
-        Rails.logger.info "EmailService: Sending email to #{final_recipient} for FormFill ##{form_fill.id}"
+        Rails.logger.info "EmailService: Sending email to #{final_recipients.join(', ')} for FormFill ##{form_fill.id}"
         Rails.logger.info "EmailService: Property: #{property.property_name}, Customer: #{customer.name}"
 
         # Send email via mailer
-        InspectionMailer.send_inspection_pdf(form_fill.id, final_recipient, subject, body).deliver_now
+        InspectionMailer.send_inspection_pdf(form_fill.id, final_recipients, subject, body).deliver_now
 
         # Log successful email sending
-        Rails.logger.info "EmailService: Successfully sent email to #{final_recipient} for FormFill ##{form_fill.id}"
+        Rails.logger.info "EmailService: Successfully sent email to #{final_recipients.join(', ')} for FormFill ##{form_fill.id}"
 
         Result.new(
           success: true,
-          message: "Email sent successfully to #{final_recipient}"
+          message: "Email sent successfully to #{final_recipients.join(', ')}"
         )
       rescue Net::SMTPAuthenticationError => e
         error_message = "SMTP authentication failed"
@@ -214,12 +226,15 @@ class EmailService
         )
       end
 
-      # Validate email format
-      unless valid_email_format?(email_to_validate)
-        Rails.logger.warn "EmailService: Invalid email format '#{email_to_validate}' for FormFill ##{form_fill.id}"
+      # Validate email format (handles multiple comma-separated emails)
+      emails = email_to_validate.split(",").map(&:strip)
+      invalid_emails = emails.reject { |email| valid_email_format?(email) }
+
+      if invalid_emails.any?
+        Rails.logger.warn "EmailService: Invalid email format(s) '#{invalid_emails.join(', ')}' for FormFill ##{form_fill.id}"
         return Result.new(
           success: false,
-          message: "Customer email address format is invalid. Please update customer information.",
+          message: "One or more email addresses are invalid: #{invalid_emails.join(', ')}",
           error_code: ERROR_CODES[:invalid_email_format]
         )
       end
@@ -231,11 +246,12 @@ class EmailService
     # @param email [String] Email to validate
     # @return [Boolean] True if email format is valid
     def valid_email_format?(email)
-      # Simple email validation regex - more strict to avoid consecutive dots
-      email_regex = /\A[\w+\-.]+@[a-z\d-]+(\.[a-z\d-]+)*\.[a-z]+\z/i
-      return false if email.include?("..") # Reject consecutive dots
+      # More permissible email validation regex
+      # Allows standard emails but rejects obvious garbage
+      email_regex = /\A[^@\s]+@[^@\s]+\z/
 
-      email.match?(email_regex)
+      return false if email.blank?
+      email.strip.match?(email_regex)
     end
   end
 end

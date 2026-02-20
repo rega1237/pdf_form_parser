@@ -68,22 +68,34 @@ export default class extends Controller {
         try {
           const fs = ff.form_structure;
           let structureJSONString = "[]";
-          if (typeof fs === "string") {
-            // Ya es una cadena JSON
-            structureJSONString = fs;
-          } else if (Array.isArray(fs)) {
-            structureJSONString = JSON.stringify(fs);
-          } else if (fs && typeof fs === "object") {
-            const arr = Array.isArray(fs.fields)
-              ? fs.fields
-              : Array.isArray(fs.form_fields)
-                ? fs.form_fields
-                : Array.isArray(fs.structure)
-                  ? fs.structure
-                  : null;
-            structureJSONString = JSON.stringify(arr || []);
+
+          // Verificar si ya tenemos estructura del servidor (prioritaria si estamos online)
+          const serverStructureStr =
+            this.element.dataset.formFillFormStructureValue;
+          const hasServerStructure =
+            serverStructureStr &&
+            serverStructureStr !== "[]" &&
+            serverStructureStr !== "null";
+
+          if (!hasServerStructure) {
+            if (typeof fs === "string") {
+              // Ya es una cadena JSON
+              structureJSONString = fs;
+            } else if (Array.isArray(fs)) {
+              structureJSONString = JSON.stringify(fs);
+            } else if (fs && typeof fs === "object") {
+              const arr = Array.isArray(fs.fields)
+                ? fs.fields
+                : Array.isArray(fs.form_fields)
+                  ? fs.form_fields
+                  : Array.isArray(fs.structure)
+                    ? fs.structure
+                    : null;
+              structureJSONString = JSON.stringify(arr || []);
+            }
+            this.element.dataset.formFillFormStructureValue =
+              structureJSONString;
           }
-          this.element.dataset.formFillFormStructureValue = structureJSONString;
         } catch (e) {
           console.warn(
             "[form_fill_controller] Failed to normalize form_structure: ",
@@ -94,16 +106,57 @@ export default class extends Controller {
 
         try {
           const dataObj = ff.data;
-          let dataJSONString = "{}";
+          let localData = {};
+
           if (typeof dataObj === "string") {
-            // Ya es una cadena JSON
-            dataJSONString = dataObj;
+            try {
+              localData = JSON.parse(dataObj);
+            } catch (e) {
+              localData = {};
+            }
           } else {
-            dataJSONString = JSON.stringify(dataObj || {});
+            localData = dataObj || {};
           }
-          this.element.dataset.formFillDataValue = dataJSONString;
+
+          // Obtener datos del servidor (si existen) para fusionar
+          let serverData = {};
+          try {
+            const serverDataStr = this.element.dataset.formFillDataValue;
+            if (
+              serverDataStr &&
+              serverDataStr !== "{}" &&
+              serverDataStr !== "[]"
+            ) {
+              serverData = JSON.parse(serverDataStr);
+            }
+          } catch (e) {
+            console.warn(
+              "[form_fill_controller] Failed to parse server data for merge:",
+              e,
+            );
+          }
+
+          // Fusionar: Priorizar datos locales, pero rellenar huecos con datos del servidor
+          // Esto es crucial para campos poblados por trabajos en segundo plano (ej. Corrected Deficiencies)
+          const mergedData = { ...localData };
+
+          Object.keys(serverData).forEach((key) => {
+            // Si el valor local no existe o está vacío, y el servidor tiene un valor, usar el del servidor
+            if (
+              mergedData[key] === undefined ||
+              mergedData[key] === "" ||
+              mergedData[key] === null
+            ) {
+              mergedData[key] = serverData[key];
+            }
+          });
+
+          this.element.dataset.formFillDataValue = JSON.stringify(mergedData);
         } catch (e) {
-          console.warn("[form_fill_controller] Failed to normalize data: ", e);
+          console.warn(
+            "[form_fill_controller] Failed to normalize and merge data: ",
+            e,
+          );
           this.element.dataset.formFillDataValue = "{}";
         }
 

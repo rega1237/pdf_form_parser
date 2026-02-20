@@ -49,6 +49,7 @@ export default class extends Controller {
     if (this.activeModal) {
       this.activeModal.remove();
       this.activeModal = null;
+      this.isLoading = false; // Ensure loading state is reset when modal closes
       document.body.classList.remove("overflow-hidden");
     }
   }
@@ -65,6 +66,11 @@ export default class extends Controller {
     );
     const subject = subjectInput ? subjectInput.value : "";
 
+    const recipientInput = this.activeModal.querySelector(
+      "input[name='recipient_email']",
+    );
+    const recipientEmail = recipientInput ? recipientInput.value : "";
+
     // For Trix, we need to find the hidden input or the editor value
     // rich_text_area_tag creates a hidden input with name="email_body"
     // But since it's dynamically inserted, let's verify if Trix synced
@@ -72,6 +78,11 @@ export default class extends Controller {
       "input[name='email_body']",
     );
     const body = bodyInput ? bodyInput.value : "";
+
+    if (!recipientEmail) {
+      this.handleError("Please enter at least one recipient email");
+      return;
+    }
 
     if (!subject) {
       this.handleError("Please enter a subject");
@@ -83,11 +94,16 @@ export default class extends Controller {
 
     try {
       // Send AJAX request
-      const response = await this.sendEmailRequest(subject, body);
+      const response = await this.sendEmailRequest(
+        recipientEmail,
+        subject,
+        body,
+      );
 
       if (response.ok) {
         const data = await response.json();
         this.closeModal();
+        this.isLoading = false; // Reset loading state on success
         this.handleSuccess(data.message || "Email sent successfully!");
       } else {
         const errorData = await response.json();
@@ -106,9 +122,10 @@ export default class extends Controller {
   }
 
   // Sends the email request to the server
-  async sendEmailRequest(subject, body) {
+  async sendEmailRequest(recipientEmail, subject, body) {
     const formData = new FormData();
     formData.append("authenticity_token", this.csrfTokenValue);
+    formData.append("recipient_email", recipientEmail);
     formData.append("subject", subject);
     formData.append("body", body);
 
@@ -169,6 +186,7 @@ export default class extends Controller {
 
   // Displays an error notification
   handleError(message) {
+    console.error("EmailSender Error:", message);
     // Dispatch custom event for notification system
     window.dispatchEvent(
       new CustomEvent("show-notification", {

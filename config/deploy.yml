@@ -42,19 +42,16 @@ env:
     - DO_SPACES_ENDPOINT
     - SMTP_PASSWORD
   clear:
-    # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
-    # When you start using multiple servers, you should split out job processing to a dedicated machine.
-    SOLID_QUEUE_IN_PUMA: true
-    RAILS_SERVE_STATIC_FILES: true
-    
-    # SMTP Configuration
-    SMTP_SERVER: smtp.gmail.com
-    SMTP_PORT: 587
-    SMTP_DOMAIN: aesfireinspections.com
-    SMTP_USERNAME: firemex@aesfireinspections.com
+    SMTP_SERVER: smtp.mailgun.org
+    SMTP_PORT: 2525
+    SMTP_DOMAIN: mg.aesfireinspections.com
+    SMTP_USERNAME: firemex@mg.aesfireinspections.com
     MAILER_FROM_EMAIL: firemex@aesfireinspections.com
     MAILER_REPLY_TO: firemex@aesfireinspections.com
     COMPANY_NAME: AES Fire Inspections
+    SOLID_QUEUE_IN_PUMA: true
+    RAILS_SERVE_STATIC_FILES: true
+
     # Set number of processes dedicated to Solid Queue (default: 1)
     # JOB_CONCURRENCY: 3
 

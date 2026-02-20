@@ -242,14 +242,33 @@
           <li class="py-2 px-4 text-slate-300">Jump to a section...</li>
           <% @navigation_sections.each do |section| %>
             <%
-              section_name = section[:name].humanize
-              if section_name.downcase.include?('year') && section_name.include?('|') || section_name.downcase.include?('annual') || section_name.downcase.include?('quarterly') && section_name.include?('|')
-                section_name = section_name.split('|').last.strip
+              full_name = section[:name]
+              pipe_count = full_name.count('|')
+
+              if pipe_count >= 2
+                section_display_name = full_name
+              elsif pipe_count == 1
+                parts = full_name.split('|', 2).map(&:strip)
+                # Extraer contenido entre paréntesis de la primera parte (ej. (I), (M), (T))
+                parenthesis_match = parts[0].match(/\((.*?)\)/)
+                parenthesis = parenthesis_match ? parenthesis_match[0] : nil
+                
+                target_text = parts[1]
+                
+                # Si hay paréntesis y el texto de destino empieza con un número (ej. 1.1)
+                if parenthesis && target_text.match?(/^\d+(\.\d+)*(\s+|$)/)
+                  # Insertar el paréntesis justo después del primer grupo de números
+                  section_display_name = target_text.sub(/^(\d+(?:\.\d+)*)/, "\\1 #{parenthesis}")
+                else
+                  section_display_name = target_text
+                end
+              else
+                section_display_name = full_name
               end
             %>
             <li data-action="click->searchable-select#select" data-value="<%= section[:page] - 1 %>"
                 class="cursor-pointer py-2 px-4 hover:bg-white/10 text-white">
-              Page <%= section[:page] %>: <%= section_name %>
+              Page <%= section[:page] %>: <%= section_display_name %>
             </li>
           <% end %>
         </ul>
@@ -282,12 +301,22 @@
                         <h3 class="text-white font-bold text-xl lg:text-2xl"><%= section_name %></h3>
                       </div>
                       <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
-                        <%
-                          always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency']
-                          always_visible_sections = ['Signature', 'Property Information', 'License']
-                          visible_fields = fields_in_section.select { |field| always_visible_types.include?(field['type']) || field['required'] == true || always_visible_sections.include?(field['section_name']) }
-                          hidden_fields = fields_in_section.reject { |field| always_visible_types.include?(field['type']) || field['required'] == true || always_visible_sections.include?(field['section_name']) }
-                        %>
+                          <%
+                            always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency']
+                            always_visible_sections = ['Signature', 'Property Information', 'License', 'Corrective Action Performed']
+                            visible_fields = fields_in_section.select { |field| 
+                              always_visible_types.include?(field['type']) || 
+                              field['required'] == true || 
+                              always_visible_sections.any? { |s| field['section_name'].to_s.include?(s) } ||
+                              field['value'].present?
+                            }
+                            hidden_fields = fields_in_section.reject { |field| 
+                              always_visible_types.include?(field['type']) || 
+                              field['required'] == true || 
+                              always_visible_sections.any? { |s| field['section_name'].to_s.include?(s) } ||
+                              field['value'].present?
+                            }
+                          %>
                         <% visible_fields.each_with_index do |field, index| %>
                           <%
                             column_width_int = field['column_width'].to_i
@@ -358,6 +387,9 @@
                 <div>
                   <h3 class="text-white font-bold text-xl mb-2">Form Actions</h3>
                   <p class="text-slate-300 text-base mb-4">Save your progress or generate the final PDF</p>
+                  <% if @form_fill.last_generated_at.present? %>
+                    <p class="text-slate-400 text-sm italic mb-4">Last generated: <%= l @form_fill.last_generated_at.in_time_zone("Pacific Time (US & Canada)"), format: :long %></p>
+                  <% end %>
                 </div>
               </div>
               <!-- Sync Button and Status -->
@@ -498,20 +530,27 @@
                             <div class="px-4 py-5 sm:p-6 space-y-4">
                               <!-- Recipient -->
                               <div>
-                                <label class="block text-sm font-medium text-slate-300 mb-1">To</label>
-                                <div class="flex items-center bg-slate-700/50 rounded-lg px-3 py-2 border border-white/10">
-                                  <svg class="h-5 w-5 text-slate-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                  </svg>
-                                  <span class="text-white"><%= @form_fill.inspection.property.customer.email %></span>
+                                <label class="block text-sm font-medium text-slate-300 mb-1">To (comma separated)</label>
+                                <div class="relative">
+                                  <input type="text" 
+                                         name="recipient_email" 
+                                         class="block w-full rounded-lg p-2 bg-slate-700/50 border-white/10 text-white placeholder-slate-400 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                                         value="<%= @form_fill.inspection.property.customer.email %>"
+                                         placeholder="email1@example.com, email2@example.com">
+                                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                  </div>
                                 </div>
+                                <p class="mt-1 text-xs text-slate-400">Separate multiple emails with commas</p>
                               </div>
 
                               <!-- Subject -->
                               <div>
                                 <label for="email-subject" class="block text-sm font-medium text-slate-300 mb-1">Subject</label>
                                 <input type="text" id="email-subject" name="subject"
-                                       class="block w-full rounded-lg bg-slate-700/50 border-white/10 text-white placeholder-slate-400 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                                       class="block w-full rounded-lg p-2 bg-slate-700/50 border-white/10 text-white placeholder-slate-400 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
                                        value="Inspection Report for <%= @form_fill.inspection.property.property_name %> - <%= @form_fill.inspection.date.strftime('%B %d, %Y') %>">
                               </div>
 
