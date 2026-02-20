@@ -13,6 +13,7 @@ class CustomersController < ApplicationController
   def new
     authorize Customer
     @customer = Customer.new
+    @customer.customer_emails.build
   end
 
   def create
@@ -27,6 +28,7 @@ class CustomersController < ApplicationController
 
   def edit
     authorize @customer
+    @customer.customer_emails.build if @customer.customer_emails.empty?
   end
 
   def update
@@ -45,7 +47,9 @@ class CustomersController < ApplicationController
   end
 
   def customer_params
-    params.require(:customer).permit(:thumbnail, :customer_type, :name, :address, :city_state_zip, :email, :phone_1,
-                                     :phone_2, :note)
+    params.require(:customer).permit(
+      :thumbnail, :customer_type, :name, :address, :city_state_zip, :email, :phone_1, :phone_2, :note,
+      customer_emails_attributes: [ :id, :address, :primary, :_destroy ]
+    )
   end
 end

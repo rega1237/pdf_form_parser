@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_18_141323) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_20_175655) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -63,6 +63,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_141323) do
     t.string "misc"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "customer_emails", force: :cascade do |t|
+    t.string "address", null: false
+    t.boolean "primary", default: false, null: false
+    t.bigint "customer_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_customer_emails_on_customer_id"
   end
 
   create_table "customers", force: :cascade do |t|
@@ -204,6 +213,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_141323) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "customer_emails", "customers"
   add_foreign_key "form_fills", "form_templates"
   add_foreign_key "form_fills", "inspections"
   add_foreign_key "form_templates_interval_categories", "form_templates"
