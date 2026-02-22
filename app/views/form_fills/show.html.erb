@@ -535,7 +535,7 @@
                                   <input type="text" 
                                          name="recipient_email" 
                                          class="block w-full rounded-lg p-2 bg-slate-700/50 border-white/10 text-white placeholder-slate-400 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                                         value="<%= @form_fill.inspection.property.customer.email %>"
+                                         value="<%= @form_fill.inspection.property.customer.customer_emails.pluck(:address).join(', ') %>"
                                          placeholder="email1@example.com, email2@example.com">
                                   <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                     <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
