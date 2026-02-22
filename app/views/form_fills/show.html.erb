@@ -492,7 +492,7 @@
 
               <% if email_enabled %>
                 <div data-controller="email-sender"
-                     data-email-sender-recipient-email-value="<%= @form_fill.inspection.property.customer.email %>"
+                     data-email-sender-recipient-email-value="<%= @form_fill.inspection.property.customer.customer_emails.pluck(:address).join(', ') %>"
                      data-email-sender-form-fill-id-value="<%= @form_fill.id %>"
                      data-email-sender-csrf-token-value="<%= form_authenticity_token %>">
                   

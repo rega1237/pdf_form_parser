@@ -9,10 +9,12 @@ class Customer < ApplicationRecord
   scope :search_by_name, ->(query) { where("name ILIKE ?", "%#{query}%") }
 
   def email
-    return super if super.present?
-
-    # Fallback to the primary email or the first available email if primary is not set
+    # Check for the primary email or the first available email in the new association first
     primary_email = customer_emails.find_by(primary: true)
-    primary_email&.address || customer_emails.first&.address
+    new_email = primary_email&.address || customer_emails.first&.address
+    return new_email if new_email.present?
+
+    # Ultimate fallback to the legacy column
+    super
   end
 end

@@ -77,9 +77,15 @@
                     <div class="text-slate-300 font-medium"><%= @customer.name %></div>
                     <div class="text-slate-400 text-sm"><%= @customer.address %></div>
                     <div class="flex flex-wrap gap-3 text-sm">
-                      <% if @customer.email.present? %>
+                      <% primary_emails = @customer.customer_emails.where(primary: true) %>
+                      <% if primary_emails.any? %>
+                        <% primary_emails.each do |email| %>
+                          <%= mail_to email.address, email.address, 
+                              class: 'text-indigo-400 hover:text-indigo-300 transition-colors duration-200 block' %>
+                        <% end %>
+                      <% elsif @customer.email.present? %>
                         <%= mail_to @customer.email, @customer.email, 
-                            class: 'text-indigo-400 hover:text-indigo-300 transition-colors duration-200' %>
+                            class: 'text-indigo-400 hover:text-indigo-300 transition-colors duration-200 block' %>
                       <% end %>
                       <% if @customer.phone_1.present? %>
                         <%= link_to @customer.phone_1, "tel:#{@customer.phone_1}", 
