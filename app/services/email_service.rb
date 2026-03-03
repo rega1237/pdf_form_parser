@@ -50,8 +50,6 @@ class EmailService
       # Extract customer and property data
       customer = form_fill.inspection.property.customer
       property = form_fill.inspection.property
-      inspection = form_fill.inspection
-      inspector = inspection.user
 
       # Determine recipient email(s)
       final_recipients = if recipient_email.present?
@@ -192,20 +190,8 @@ class EmailService
     # @param form_fill [FormFill] The form fill to check
     # @return [Result] Validation result
     def validate_pdf_size(form_fill)
-      return Result.new(success: true, message: "PDF size validation passed") unless form_fill.filled_pdf.attached?
-
-      pdf_size = form_fill.filled_pdf.byte_size
-
-      if pdf_size > MAX_ATTACHMENT_SIZE
-        Rails.logger.warn "EmailService: PDF too large for FormFill ##{form_fill.id}: #{pdf_size} bytes"
-        return Result.new(
-          success: false,
-          message: "PDF file is too large for email attachment (#{(pdf_size / 1.megabyte).round(1)}MB). Maximum size is #{MAX_ATTACHMENT_SIZE / 1.megabyte}MB.",
-          error_code: ERROR_CODES[:attachment_too_large]
-        )
-      end
-
-      Result.new(success: true, message: "PDF size validation passed")
+      # By user request, bypassing size limits for email attachments
+      Result.new(success: true, message: "PDF size validation bypassed")
     end
 
     # Validate customer email availability and format
@@ -242,16 +228,14 @@ class EmailService
       Result.new(success: true, message: "Email validation passed")
     end
 
-    # Validate email format using a simple regex
+    # Validate email format using standard Ruby regex
     # @param email [String] Email to validate
     # @return [Boolean] True if email format is valid
     def valid_email_format?(email)
-      # More permissible email validation regex
-      # Allows standard emails but rejects obvious garbage
-      email_regex = /\A[^@\s]+@[^@\s]+\z/
-
       return false if email.blank?
-      email.strip.match?(email_regex)
+
+      # Use Ruby's built-in email validation regex for robust checking
+      !!email.strip.match?(URI::MailTo::EMAIL_REGEXP)
     end
   end
 end
