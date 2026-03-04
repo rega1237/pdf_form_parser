@@ -16,6 +16,7 @@ class InspectionsController < ApplicationController
 
     # Filtros opcionales
     @inspections = @inspections.where(status: params[:status]) if params[:status].present?
+    @inspections = @inspections.where(system_category: params[:system_category]) if params[:system_category].present?
     if params[:customer_id].present?
       @inspections = @inspections.joins(:property).where(properties: { customer_id: params[:customer_id] })
     end
@@ -34,6 +35,7 @@ class InspectionsController < ApplicationController
                    .distinct
                    .order(:name)
     @statuses = Inspection.distinct.pluck(:status).compact
+    @system_categories = SystemCategory.order(:name)
   end
 
   def show
