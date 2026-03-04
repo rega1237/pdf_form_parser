@@ -25,8 +25,14 @@ class InspectionsController < ApplicationController
 
     @inspections = @inspections.page(params[:page]).per(20) if defined?(Kaminari)
 
-    # Para los filtros en la vista
-    @customers = Customer.order(:name)
+    # Para los filtros en la vista — solo customers con inspections visibles al usuario actual
+    scoped_inspection_ids = policy_scope(Inspection).select(:id)
+    @customers = Customer
+                   .joins(properties: :inspections)
+                   .where(inspections: { id: scoped_inspection_ids })
+                   .includes(:properties)
+                   .distinct
+                   .order(:name)
     @statuses = Inspection.distinct.pluck(:status).compact
   end
 
