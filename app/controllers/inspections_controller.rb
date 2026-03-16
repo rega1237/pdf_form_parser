@@ -163,7 +163,7 @@ class InspectionsController < ApplicationController
     redirect_to @inspection, notice: "Inspection created successfully."
   rescue ActiveRecord::RecordInvalid => e
     @selected_customer = @inspection.property&.customer
-    @inspection.errors.add(:base, "Error al crear la inspección o sus formularios: #{e.message}")
+    @inspection.errors.add(:base, "Error to create inspection or its forms: #{e.message}")
     render :new, status: :unprocessable_entity
   end
 
