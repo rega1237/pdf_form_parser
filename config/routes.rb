@@ -57,7 +57,6 @@ Rails.application.routes.draw do
 
     collection do
       get :calendar
-      get :dashboard
       get :properties_by_customer
     end
   end

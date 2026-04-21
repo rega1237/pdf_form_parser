@@ -5,7 +5,9 @@ one:
   form_template: one
   inspection: one
   pdf_generation_status: completed
-  data: '{"field1": "value1", "field2": "value2"}'
+  data: 
+    field1: value1
+    field2: value2
   form_structure: '[{"name": "test_field", "type": "Text", "page_number": 1, "section_name": "General", "required": true}]'
 
 two:
@@ -13,11 +15,14 @@ two:
   form_template: two
   inspection: two
   pdf_generation_status: ready
-  data: '{"field3": "value3", "field4": "value4"}'
+  data: 
+    field3: value3
+    field4: value4
 
 three:
   name: Test Form Fill Three
   form_template: one
   inspection: one
   pdf_generation_status: failed
-  data: '{"field5": "value5"}'
+  data: 
+    field5: value5

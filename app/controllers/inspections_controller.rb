@@ -255,23 +255,6 @@ class InspectionsController < ApplicationController
     end
   end
 
-  # GET /inspections/dashboard
-  def dashboard
-    @total_inspections = Inspection.count
-    @pending_inspections = Inspection.where(status: "pending").count
-    @completed_inspections = Inspection.where(status: "completed").count
-    @this_month_inspections = Inspection.where(date: Date.current.beginning_of_month..Date.current.end_of_month).count
-
-    @upcoming_inspections = Inspection.includes(:property, property: :customer)
-                                      .where(date: Date.current..1.week.from_now)
-                                      .where(status: %w[pending in_progress])
-                                      .order(:date)
-                                      .limit(10)
-
-    @recent_inspections = Inspection.includes(:property, property: :customer)
-                                    .order(created_at: :desc)
-                                    .limit(10)
-  end
 
   # GET /properties/:property_id/inspections
   # GET /properties/:property_id/inspections
