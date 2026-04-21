@@ -101,6 +101,7 @@ class GeneratePdfJob < ApplicationJob
         main_form_fill.mark_pdf_created!
         Rails.logger.info "Complete inspection PDF generated successfully for FormFill ##{main_form_fill.id}."
       else
+        puts "DEBUG: final_pdf_object is nil, setting failed"
         main_form_fill.update!(pdf_generation_status: 'failed')
         Rails.logger.error "Failed to generate complete inspection PDF for FormFill ##{main_form_fill.id}"
       end
@@ -108,6 +109,8 @@ class GeneratePdfJob < ApplicationJob
       # Clean up temporary files
       cleanup_temp_files([main_pdf_path, deficiencies_pdf_path])
     rescue StandardError => e
+      puts "PDF JOB ERROR: #{e.message}"
+      puts e.backtrace.first(10).join("\n")
       main_form_fill.update!(pdf_generation_status: 'failed')
       Rails.logger.error "Error in GeneratePdfJob for FormFill ##{main_form_fill.id}: #{e.message}\n#{e.backtrace.join("\n")}"
     end
@@ -150,7 +153,7 @@ class GeneratePdfJob < ApplicationJob
 
       case field_copy['type']
       when 'Photo'
-        field_copy['photo_attachment_id'] = data["#{name}_photo_attachment_id"]
+        field_copy['photo_attachment_id'] = data["#{name}_photo_attachment_id"] || field_copy['photo_attachment_id']
         [field_copy]
       when 'Deficiency'
         collection_json = data["#{name}_collection"]
@@ -182,16 +185,16 @@ class GeneratePdfJob < ApplicationJob
             [field_copy]
           end
         else
-          field_copy['value'] = data["#{name}_select"]
-          field_copy['comment_value'] = data["#{name}_comment"]
-          field_copy['Item'] = data["#{name}_item"]
-          field_copy['Riser'] = data["#{name}_riser"]
-          field_copy['C'] = data["#{name}_c"]
-          field_copy['D'] = data["#{name}_d"]
+          field_copy['value'] = data["#{name}_select"] || field_copy['value']
+          field_copy['comment_value'] = data["#{name}_comment"] || field_copy['comment_value']
+          field_copy['Item'] = data["#{name}_item"] || field_copy['Item']
+          field_copy['Riser'] = data["#{name}_riser"] || field_copy['Riser']
+          field_copy['C'] = data["#{name}_c"] || field_copy['C']
+          field_copy['D'] = data["#{name}_d"] || field_copy['D']
           [field_copy]
         end
       else
-        field_copy['value'] = data[name]
+        field_copy['value'] = data[name] || field_copy['value']
         [field_copy]
       end
     end

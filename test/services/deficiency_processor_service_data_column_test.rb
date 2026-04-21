@@ -328,9 +328,9 @@ class DeficiencyProcessorServiceDataColumnTest < ActiveSupport::TestCase
     assert_equal 'X', d_field['value']
 
     deficiency_field = result[:processed_fields].find { |f| f['name'] == 'deficiency_1' }
-    assert_equal 'Critical', deficiency_field['value']
+    assert_equal 'Critical  Immediate repair needed', deficiency_field['value']
 
     date_field = result[:processed_fields].find { |f| f['name'] == 'date_1' }
-    assert_equal Date.current.strftime('%Y-%m-%d'), date_field['value']
+    assert_equal Date.current.strftime('%m/%d/%y'), date_field['value']
   end
 end

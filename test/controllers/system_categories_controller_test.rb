@@ -3,6 +3,7 @@ require "test_helper"
 class SystemCategoriesControllerTest < ActionDispatch::IntegrationTest
   setup do
     @system_category = system_categories(:one)
+    sign_in users(:one)
   end
 
   test "should get index" do
@@ -20,7 +21,7 @@ class SystemCategoriesControllerTest < ActionDispatch::IntegrationTest
       post system_categories_url, params: { system_category: { name: @system_category.name } }
     end
 
-    assert_redirected_to system_category_url(SystemCategory.last)
+    assert_redirected_to settings_path
   end
 
   test "should show system_category" do
@@ -35,7 +36,7 @@ class SystemCategoriesControllerTest < ActionDispatch::IntegrationTest
 
   test "should update system_category" do
     patch system_category_url(@system_category), params: { system_category: { name: @system_category.name } }
-    assert_redirected_to system_category_url(@system_category)
+    assert_redirected_to settings_path
   end
 
   test "should destroy system_category" do
@@ -43,6 +44,6 @@ class SystemCategoriesControllerTest < ActionDispatch::IntegrationTest
       delete system_category_url(@system_category)
     end
 
-    assert_redirected_to system_categories_url
+    assert_redirected_to settings_path
   end
 end

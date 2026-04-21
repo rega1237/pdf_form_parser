@@ -5,7 +5,7 @@ class InspectionMailer < ApplicationMailer
     @property = @inspection.property
     @customer = @property.customer
     @inspector = @inspection.user
-    @company_name = "Firemex Solutions"
+    @company_name = ENV.fetch('COMPANY_NAME', 'Firemex Solutions')
     @custom_body = body
 
     # Ensure recipients is an array and remove any empty strings

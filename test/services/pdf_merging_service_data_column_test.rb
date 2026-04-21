@@ -147,7 +147,11 @@ class PdfMergingServiceDataColumnTest < ActiveSupport::TestCase
     photo1 = mock_photo_attachment('inspection_123_test_section__test_field_abc123.jpg')
     photo2 = mock_photo_attachment('inspection_123_test_section__another_field_def456.jpg')
 
-    images = [photo1, photo2]
+    # Wrap photos in hashes as expected by add_images_to_pdf
+    images = [
+      { photo: photo1, section_name: 'test_section', label_name: 'test_field' },
+      { photo: photo2, section_name: 'test_section', label_name: 'another_field' }
+    ]
 
     # Mock the image download to return fake image data
     photo1.stubs(:download).returns('fake image data 1')
@@ -167,7 +171,7 @@ class PdfMergingServiceDataColumnTest < ActiveSupport::TestCase
     pdf_object.expects(:<<).with(mock_parsed_pdf)
 
     # Call the method
-    result = PdfMergingService.add_images_to_pdf(pdf_object, images)
+    result = PdfMergingService.add_images_to_pdf(pdf_object, images, title: 'Test Photos')
 
     # Should return the original PDF object
     assert_equal pdf_object, result
@@ -177,11 +181,11 @@ class PdfMergingServiceDataColumnTest < ActiveSupport::TestCase
     pdf_object = mock_pdf_object
 
     # Test with empty images
-    result = PdfMergingService.add_images_to_pdf(pdf_object, [])
+    result = PdfMergingService.add_images_to_pdf(pdf_object, [], title: 'Test Photos')
     assert_equal pdf_object, result
 
     # Test with nil images
-    result = PdfMergingService.add_images_to_pdf(pdf_object, nil)
+    result = PdfMergingService.add_images_to_pdf(pdf_object, nil, title: 'Test Photos')
     assert_equal pdf_object, result
   end
 

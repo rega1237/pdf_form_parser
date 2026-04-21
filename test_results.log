@@ -1,0 +1,202 @@
+≈ tailwindcss v4.1.7
+
+Done in 288ms
+Running 174 tests in parallel using 12 processes
+Run options: --seed 47762
+
+# Running:
+
+.................F
+
+Failure:
+DeficienciesControllerTest#test_should_destroy_deficiency [test/controllers/deficiencies_controller_test.rb:47]:
+Expected response to be a redirect to <http://www.example.com/deficiencies> but was a redirect to <http://www.example.com/settings>.
+Expected "http://www.example.com/deficiencies" to be === "http://www.example.com/settings".
+
+bin/rails test test/controllers/deficiencies_controller_test.rb:42
+
+F
+
+Failure:
+DeficienciesControllerTest#test_should_update_deficiency [test/controllers/deficiencies_controller_test.rb:39]:
+Expected response to be a redirect to <http://www.example.com/deficiencies/980190962> but was a redirect to <http://www.example.com/settings>.
+Expected "http://www.example.com/deficiencies/980190962" to be === "http://www.example.com/settings".
+
+bin/rails test test/controllers/deficiencies_controller_test.rb:37
+
+.E
+
+Error:
+InspectionMailerTest#test_send_inspection_pdf_uses_custom_recipient_email_when_provided:
+ActiveRecord::RecordInvalid: Validation failed: Original file can't be blank
+    test/mailers/inspection_mailer_test.rb:31:in 'block in <class:InspectionMailerTest>'
+
+bin/rails test test/mailers/inspection_mailer_test.rb:65
+
+...E
+
+Error:
+InspectionMailerTest#test_send_inspection_pdf_includes_inspection_details_in_body:
+ActiveRecord::RecordInvalid: Validation failed: Original file can't be blank
+    test/mailers/inspection_mailer_test.rb:31:in 'block in <class:InspectionMailerTest>'
+
+bin/rails test test/mailers/inspection_mailer_test.rb:72
+
+..F
+
+Failure:
+DeficienciesControllerTest#test_should_create_deficiency [test/controllers/deficiencies_controller_test.rb:20]:
+`Deficiency.count` didn't change by 1, but by 0.
+Expected: 3
+  Actual: 2
+
+bin/rails test test/controllers/deficiencies_controller_test.rb:19
+
+Test is missing assertions: `test_update` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:13
+Test is missing assertions: `test_create` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:10
+.E
+
+Test is missing assertions: `test_scope` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:4
+Error:
+InspectionMailerTest#test_send_inspection_pdf_generates_email_with_correct_recipient:
+ActiveRecord::RecordInvalid: Validation failed: Original file can't be blank
+    test/mailers/inspection_mailer_test.rb:31:in 'block in <class:InspectionMailerTest>'
+
+bin/rails test test/mailers/inspection_mailer_test.rb:56
+
+Test is missing assertions: `test_destroy` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:16
+...E
+
+Error:
+InspectionMailerTest#test_send_inspection_pdf_includes_company_name_in_from_field:
+ActiveRecord::RecordInvalid: Validation failed: Original file can't be blank
+    test/mailers/inspection_mailer_test.rb:31:in 'block in <class:InspectionMailerTest>'
+
+bin/rails test test/mailers/inspection_mailer_test.rb:88
+
+..E
+
+Error:
+FormTemplatesControllerTest#test_should_show_form_template:
+ActionView::Template::Error: undefined method 'signed_id' for nil
+    app/views/form_templates/show.html.erb:46
+    test/controllers/form_templates_controller_test.rb:28:in 'block in <class:FormTemplatesControllerTest>'
+
+bin/rails test test/controllers/form_templates_controller_test.rb:27
+
+F
+
+Failure:
+FormTemplatesControllerTest#test_should_destroy_form_template [test/controllers/form_templates_controller_test.rb:33]:
+`FormTemplate.count` didn't change by -1, but by 0.
+Expected: 1
+  Actual: 2
+
+bin/rails test test/controllers/form_templates_controller_test.rb:32
+
+F
+
+Failure:
+FormTemplatesControllerTest#test_should_create_form_template [test/controllers/form_templates_controller_test.rb:21]:
+`FormTemplate.count` didn't change by 1, but by 0.
+Expected: 3
+  Actual: 2
+
+bin/rails test test/controllers/form_templates_controller_test.rb:19
+
+.Test is missing assertions: `test_update` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:13
+Test is missing assertions: `test_create` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:10
+...Test is missing assertions: `test_scope` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:4
+.Test is missing assertions: `test_show` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:7
+.Test is missing assertions: `test_destroy` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:16
+.Test is missing assertions: `test_show` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:7
+..........E
+
+Error:
+InspectionMailerTest#test_send_inspection_pdf_generates_proper_subject_line:
+ActiveRecord::RecordInvalid: Validation failed: Original file can't be blank
+    test/mailers/inspection_mailer_test.rb:31:in 'block in <class:InspectionMailerTest>'
+
+bin/rails test test/mailers/inspection_mailer_test.rb:81
+
+.Test is missing assertions: `test_should_work_with_mock_PDF_object_for_add_images_to_pdf` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/services/pdf_merging_service_data_column_test.rb:143
+F
+
+Failure:
+PdfMergingServiceDataColumnTest#test_should_work_with_mock_PDF_object_for_add_images_to_pdf [app/services/pdf_merging_service.rb:26]:
+unexpected invocation: #<Mock:photo_attachment>.[](:photo)
+unsatisfied expectations:
+- expected exactly once, invoked never: #<Mock:pdf_object>.<<(#<Mock:parsed_pdf>)
+satisfied expectations:
+- allowed any number of times, invoked never: #<Mock:pdf_object>.<<(any_parameters)
+- allowed any number of times, invoked never: #<Mock:photo_attachment>.download(any_parameters)
+- allowed any number of times, invoked never: #<Mock:photo_attachment>.filename(any_parameters)
+- allowed any number of times, invoked never: #<Mock:filename>.base(any_parameters)
+- allowed any number of times, invoked never: #<Mock:photo_attachment>.download(any_parameters)
+- allowed any number of times, invoked never: #<Mock:photo_attachment>.filename(any_parameters)
+- allowed any number of times, invoked never: #<Mock:filename>.base(any_parameters)
+- allowed any number of times, invoked never: #<Mock:prawn_document>.render(any_parameters)
+- allowed any number of times, invoked never: Prawn::Document.new(any_parameters)
+- allowed any number of times, invoked never: CombinePDF.parse("rendered pdf data")
+
+
+bin/rails test test/services/pdf_merging_service_data_column_test.rb:143
+
+....Test is missing assertions: `test_update` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:13
+.Test is missing assertions: `test_create` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:10
+.Test is missing assertions: `test_scope` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:4
+.Test is missing assertions: `test_show` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:7
+.Test is missing assertions: `test_destroy` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:16
+..../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+[DEBUG] Generated suffix: 8247ecf0
+[DEBUG] Saving ids: ["inspection_980190962_test_section_8247ecf0"]
+[DEBUG] Generated suffix: fb172cc1
+[DEBUG] Saving ids: ["inspection_980190962_non_existent_field_fb172cc1"]
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+[DEBUG] Generated suffix: 0c1ef909
+[DEBUG] Saving ids: ["inspection_980190962_test_section_0c1ef909"]
+[DEBUG] Generated suffix: d03138bf
+[DEBUG] Saving ids: ["inspection_980190962_test_section_0c1ef909", "inspection_980190962_test_section_d03138bf"]
+../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+..../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+....../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+......F
+
+Failure:
+DeficiencyProcessorServiceDataColumnTest#test_should_maintain_compatibility_with_existing_deficiency_processing_logic [test/services/deficiency_processor_service_data_column_test.rb:331]:
+--- expected
++++ actual
+@@ -1 +1 @@
+-"Critical"
++"Critical  Immediate repair needed"
+
+
+bin/rails test test/services/deficiency_processor_service_data_column_test.rb:254
+
+..../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+..../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+.....Test is missing assertions: `test_update` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:13
+.Test is missing assertions: `test_scope` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:4
+Test is missing assertions: `test_create` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:10
+..Test is missing assertions: `test_destroy` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:16
+Test is missing assertions: `test_show` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:7
+.................................................[DEBUG] Generated suffix: b0d1a955
+[DEBUG] Saving ids: ["inspection_980190962_test_section_b0d1a955"]
+[DEBUG] Saving ids: ["test_attachment_123"]
+....[DEBUG] Generated suffix: 69513026
+[DEBUG] Saving ids: ["inspection_980190962_test_section_69513026"]
+....
+
+Finished in 3.918532s, 44.4044 runs/s, 106.1622 assertions/s.
+174 runs, 416 assertions, 7 failures, 6 errors, 0 skips

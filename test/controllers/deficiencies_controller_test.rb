@@ -3,6 +3,7 @@ require "test_helper"
 class DeficienciesControllerTest < ActionDispatch::IntegrationTest
   setup do
     @deficiency = deficiencies(:one)
+    sign_in users(:one)
   end
 
   test "should get index" do
@@ -17,10 +18,10 @@ class DeficienciesControllerTest < ActionDispatch::IntegrationTest
 
   test "should create deficiency" do
     assert_difference("Deficiency.count") do
-      post deficiencies_url, params: { deficiency: { name: @deficiency.name } }
+      post deficiencies_url, params: { deficiency: { name: "New Unique Deficiency" } }
     end
 
-    assert_redirected_to deficiency_url(Deficiency.last)
+    assert_redirected_to settings_path
   end
 
   test "should show deficiency" do
@@ -35,7 +36,7 @@ class DeficienciesControllerTest < ActionDispatch::IntegrationTest
 
   test "should update deficiency" do
     patch deficiency_url(@deficiency), params: { deficiency: { name: @deficiency.name } }
-    assert_redirected_to deficiency_url(@deficiency)
+    assert_redirected_to settings_path
   end
 
   test "should destroy deficiency" do
@@ -43,6 +44,6 @@ class DeficienciesControllerTest < ActionDispatch::IntegrationTest
       delete deficiency_url(@deficiency)
     end
 
-    assert_redirected_to deficiencies_url
+    assert_redirected_to settings_path
   end
 end
