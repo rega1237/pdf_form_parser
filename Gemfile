@@ -53,22 +53,22 @@ gem "hexapdf", "~> 0.36" # For detecting and signing digital signature fields (P
 gem "combine_pdf"
 
 # Agregar pagina con fotos
-gem 'prawn'
+gem "prawn"
 
 # Gem para authorization
-gem 'pundit'
+gem "pundit"
 
 # File upload and validation
 gem "marcel" # MIME type detection
 
-gem 'kaminari' # Pagination
+gem "kaminari" # Pagination
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[mri windows], require: "debug/prelude"
 
   # Load environment variables from .env file
-  gem 'dotenv-rails'
+  gem "dotenv-rails"
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
@@ -82,15 +82,16 @@ group :development do
   gem "web-console"
 
   # htmlbeautifier
-  gem 'htmlbeautifier', require: false
-  gem 'erb_lint', require: false
-  gem 'rubocop', require: false # erb-lint lo usa
+  gem "htmlbeautifier", require: false
+  gem "erb_lint", require: false
+  gem "rubocop", require: false # erb-lint lo usa
 end
 
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+  gem "mocha"
 end
 
 gem "devise", "~> 4.9"

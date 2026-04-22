@@ -1,0 +1,43 @@
+≈ tailwindcss v4.1.7
+
+Done in 274ms
+Running 177 tests in parallel using 12 processes
+Run options: --seed 64057
+
+# Running:
+
+......../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+...................................../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+..../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+.../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+.[DEBUG] Generated suffix: d1cde344
+[DEBUG] Saving ids: ["inspection_980190962_non_existent_field_d1cde344"]
+......./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+.../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+..........................................................................................................[DEBUG] Generated suffix: 762df08b
+[DEBUG] Saving ids: ["inspection_980190962_test_section_762df08b"]
+[DEBUG] Generated suffix: e377e643
+[DEBUG] Saving ids: ["inspection_980190962_test_section_e377e643"]
+[DEBUG] Saving ids: ["test_attachment_123"]
+[DEBUG] Generated suffix: c4fd6474
+[DEBUG] Saving ids: ["inspection_980190962_test_section_c4fd6474"]
+[DEBUG] Generated suffix: b2b0d097
+[DEBUG] Saving ids: ["inspection_980190962_test_section_b2b0d097"]
+[DEBUG] Generated suffix: 2f5c8e47
+[DEBUG] Saving ids: ["inspection_980190962_test_section_b2b0d097", "inspection_980190962_test_section_2f5c8e47"]
+..
+
+Finished in 3.006959s, 58.8635 runs/s, 168.6089 assertions/s.
+177 runs, 507 assertions, 0 failures, 0 errors, 0 skips

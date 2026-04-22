@@ -5,7 +5,7 @@ class InspectionMailer < ApplicationMailer
     @property = @inspection.property
     @customer = @property.customer
     @inspector = @inspection.user
-    @company_name = "Firemex Solutions"
+    @company_name = ENV.fetch("COMPANY_NAME", "Firemex Solutions")
     @custom_body = body
 
     # Ensure recipients is an array and remove any empty strings
@@ -65,7 +65,7 @@ class InspectionMailer < ApplicationMailer
 
         # Find the image tag within the figure
         img = node.at_css("img")
-        
+
         if img
           # Attach the file inline and update src
           unique_filename = "#{blob.id}-#{blob.filename}"
@@ -88,7 +88,7 @@ class InspectionMailer < ApplicationMailer
   def replace_node_with_inline_image(doc, node, blob)
     # Create a unique filename to avoid collisions
     unique_filename = "#{blob.id}-#{blob.filename}"
-    
+
     # Attach the file inline
     attachments.inline[unique_filename] = blob.download
 
@@ -97,7 +97,7 @@ class InspectionMailer < ApplicationMailer
     img["src"] = attachments.inline[unique_filename].url
     img["alt"] = blob.filename.to_s
     img["style"] = "max-width: 100%; height: auto;"
-    
+
     # Replace the node with the image
     node.replace(img)
   end

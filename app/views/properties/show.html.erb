@@ -179,10 +179,17 @@
               <label class="block text-slate-400 text-xs font-medium uppercase tracking-wide">Customer Name</label>
               <p class="text-white font-semibold"><%= @property.customer.name %></p>
             </div>
-            <% if @property.customer.email.present? %>
+            <% primary_emails = @property.customer.customer_emails.where(primary: true) %>
+            <% if primary_emails.any? || @property.customer.email.present? %>
               <div>
                 <label class="block text-slate-400 text-xs font-medium uppercase tracking-wide">Email</label>
-                <p class="text-slate-300 text-sm"><%= @property.customer.email %></p>
+                <% if primary_emails.any? %>
+                  <% primary_emails.each do |email| %>
+                    <p class="text-slate-300 text-sm"><%= email.address %></p>
+                  <% end %>
+                <% else %>
+                  <p class="text-slate-300 text-sm"><%= @property.customer.email %></p>
+                <% end %>
               </div>
             <% end %>
             <% if @property.customer.phone_1.present? %>

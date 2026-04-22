@@ -1,6 +1,6 @@
 class Api::V1::InspectionsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_inspection, only: [:offline_data]
+  before_action :set_inspection, only: [ :offline_data ]
 
   # GET /api/v1/inspections/:id/offline_data
   # Endpoint para obtener todos los datos necesarios de una inspección para uso offline
@@ -79,13 +79,13 @@ class Api::V1::InspectionsController < ApplicationController
       render json: {
         success: true,
         data: inspection_data,
-        message: 'Datos de inspección obtenidos exitosamente'
+        message: "Datos de inspección obtenidos exitosamente"
       }, status: :ok
     rescue => e
       Rails.logger.error "Error obteniendo datos offline para inspección #{params[:id]}: #{e.message}"
       render json: {
         success: false,
-        error: 'Error interno del servidor',
+        error: "Error interno del servidor",
         message: e.message
       }, status: :internal_server_error
     end
@@ -98,8 +98,8 @@ class Api::V1::InspectionsController < ApplicationController
   rescue ActiveRecord::RecordNotFound
     render json: {
       success: false,
-      error: 'InspectionNotFound',
-      message: 'The requested inspection does not exist or you do not have permission to access it'
+      error: "InspectionNotFound",
+      message: "The requested inspection does not exist or you do not have permission to access it"
     }, status: :not_found
   end
 

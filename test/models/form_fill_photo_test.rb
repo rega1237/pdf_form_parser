@@ -4,7 +4,7 @@ class FormFillPhotoTest < ActiveSupport::TestCase
   setup do
     @inspection = inspections(:one)
     @form_template = form_templates(:one)
-    
+
     # Create a form fill with a Photo field structure
     structure = [
       {
@@ -14,7 +14,7 @@ class FormFillPhotoTest < ActiveSupport::TestCase
         "label_name" => "Test Photo"
       }
     ]
-    
+
     @form_fill = FormFill.create!(
       name: "Photo Test Form",
       form_template: @form_template,
@@ -22,7 +22,7 @@ class FormFillPhotoTest < ActiveSupport::TestCase
       form_structure: structure.to_json,
       data: {}
     )
-    
+
     # Prepare a sample image
     @image_path = Rails.root.join("test/fixtures/files/test_image.jpg")
     # Ensure the file exists, or create a dummy one
@@ -52,8 +52,8 @@ class FormFillPhotoTest < ActiveSupport::TestCase
     # Depending on implementation, it might still attach but warn, or return success if it falls back to defaults.
     # Looking at code: it defaults field_section to field_name if not found.
     # But let's check if it actually attaches.
-    assert result[:success] # The code allows attaching even if field not in structure explicitly? 
-    # Actually code says: field_data = structure.find... 
+    assert result[:success] # The code allows attaching even if field not in structure explicitly?
+    # Actually code says: field_data = structure.find...
     # if field_data is nil, field_section becomes field_name.
     # So it is resilient.
   end
@@ -62,7 +62,7 @@ class FormFillPhotoTest < ActiveSupport::TestCase
     # First attach
     result = @form_fill.attach_photo_for_field("test_photo_field", @image_file)
     photo_id = result[:attachment_id]
-    
+
     assert_difference -> { @form_fill.photos.count }, -1 do
       result = @form_fill.remove_photo_for_field("test_photo_field", photo_id)
       assert result[:success]
@@ -81,14 +81,14 @@ class FormFillPhotoTest < ActiveSupport::TestCase
 
   test "supports multiple photos for same field" do
     @form_fill.attach_photo_for_field("test_photo_field", @image_file)
-    
+
     @form_fill.reload
-    
+
     # Create a fresh file object for the second attachment to avoid IntegrityError (stream consumed)
     image_file_2 = Rack::Test::UploadedFile.new(@image_path, "image/jpeg")
     result = @form_fill.attach_photo_for_field("test_photo_field", image_file_2)
     assert result[:success], "Second attach failed: #{result[:error]}"
-    
+
     @form_fill.reload
     photos = @form_fill.get_photos_for_field("test_photo_field")
     assert_equal 2, photos.count

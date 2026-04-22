@@ -238,4 +238,35 @@ class PdfMergingService
     pdf_object << CombinePDF.parse(annex_pdf_data)
     pdf_object
   end
+
+  def self.group_and_process_photos(images)
+    return {} if images.nil? || !images.respond_to?(:each)
+
+    grouped = {}
+
+    images.each do |image|
+      next unless image.respond_to?(:filename) && image.filename.present?
+
+      filename = image.filename.base.to_s
+      # Pattern: inspection_[id]_[section]__[field]_[random]
+      if filename =~ /inspection_\d+_(.+)__(.+)/
+        section_part = $1
+        field_part = $2
+
+        # Clean up section name (replace underscores with spaces and capitalize)
+        section_name = section_part.gsub("_", " ").strip.capitalize
+        # Clean up field name (remove random suffix if present, replace underscores with spaces and capitalize)
+        # Random suffix is usually the last part after the last underscore
+        field_name = field_part.gsub(/_[^_]+$/, "").gsub("_", " ").strip.capitalize
+
+        grouped[section_name] ||= []
+        grouped[section_name] << { image: image, clean_name: field_name }
+      else
+        grouped["Uncategorized Photos"] ||= []
+        grouped["Uncategorized Photos"] << { image: image, clean_name: filename }
+      end
+    end
+
+    grouped
+  end
 end

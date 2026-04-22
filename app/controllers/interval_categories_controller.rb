@@ -1,16 +1,6 @@
 class IntervalCategoriesController < ApplicationController
-  before_action :set_interval_category, only: %i[show edit update destroy]
+  before_action :set_interval_category, only: %i[edit update destroy]
 
-  # GET /interval_categories or /interval_categories.json
-  def index
-    @interval_categories = IntervalCategory.all
-    authorize @interval_categories
-  end
-
-  # GET /interval_categories/1 or /interval_categories/1.json
-  def show
-    authorize @interval_category
-  end
 
   # GET /interval_categories/new
   def new
@@ -31,7 +21,7 @@ class IntervalCategoriesController < ApplicationController
     respond_to do |format|
       if @interval_category.save
         format.html do
-          redirect_to settings_path, notice: 'Interval category was successfully created.'
+          redirect_to settings_path, notice: "Interval category was successfully created."
         end
         format.json { render :show, status: :created, location: @interval_category }
       else
@@ -47,7 +37,7 @@ class IntervalCategoriesController < ApplicationController
     respond_to do |format|
       if @interval_category.update(interval_category_params)
         format.html do
-          redirect_to settings_path, notice: 'Interval category was successfully updated.'
+          redirect_to settings_path, notice: "Interval category was successfully updated."
         end
         format.json { render :show, status: :ok, location: @interval_category }
       else
@@ -62,7 +52,7 @@ class IntervalCategoriesController < ApplicationController
     @interval_category.destroy
 
     respond_to do |format|
-      format.html { redirect_to settings_path, notice: 'Interval category was successfully deleted.' }
+      format.html { redirect_to settings_path, notice: "Interval category was successfully deleted." }
       format.json { head :no_content }
     end
   end

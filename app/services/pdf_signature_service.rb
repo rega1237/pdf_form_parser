@@ -11,8 +11,8 @@
 # - La firma se hace sobre un PDF ya rellenado (si procede), para mantener la compatibilidad
 #   con el flujo actual de PdfFormsParserService.
 
-require 'hexapdf'
-require 'hexapdf/image_loader'
+require "hexapdf"
+require "hexapdf/image_loader"
 
 class PdfSignatureService
   SignatureInfo = Struct.new(
@@ -84,12 +84,12 @@ class PdfSignatureService
                        type: :image,
                        image: signature_image_path
                      }
-                   else
+      else
                      {
                        type: :text, # apariencia simple compatible con Adobe
                        text: build_appearance_text(name: name, reason: reason, location: location)
                      }
-                   end
+      end
 
       doc.sign(
         output_path,
@@ -99,11 +99,11 @@ class PdfSignatureService
         location: location,
         contact_info: contact_info,
         name: name,
-        sub_filter: 'adbe.pkcs7.detached', # PAdES básico compatible con Adobe
+        sub_filter: "adbe.pkcs7.detached", # PAdES básico compatible con Adobe
         appearance: appearance
       )
 
-      return output_path
+      output_path
     rescue StandardError => e
       Rails.logger.warn "Ruby API sign failed, trying CLI: #{e.message}"
       sign_with_cli(
@@ -163,10 +163,10 @@ class PdfSignatureService
   end
 
   def self.build_signer(certificate_path, certificate_password, key_path)
-    if File.extname(certificate_path).downcase == '.p12' || File.extname(certificate_path).downcase == '.pfx'
+    if File.extname(certificate_path).downcase == ".p12" || File.extname(certificate_path).downcase == ".pfx"
       HexaPDF::DigitalSignature::Signer.for_pkcs12(certificate_path, certificate_password)
     else
-      raise 'Se requiere key_path para certificado PEM' unless key_path
+      raise "Se requiere key_path para certificado PEM" unless key_path
 
       HexaPDF::DigitalSignature::Signer.for_certificate_and_key(certificate_path, key_path)
     end
@@ -177,23 +177,23 @@ class PdfSignatureService
     parts << "Firmado por: #{name}" if name
     parts << "Razón: #{reason}" if reason
     parts << "Ubicación: #{location}" if location
-    parts.empty? ? 'Documento firmado' : parts.join("\n")
+    parts.empty? ? "Documento firmado" : parts.join("\n")
   end
 
   def self.sign_with_cli(file_path, output_path, field_name, certificate_path:, certificate_password:, key_path:,
                          reason:, location:, contact_info:, name:, signature_image_path: nil)
     cmd = %w[bundle exec hexapdf sign]
-    cmd += [file_path, output_path, '--field', field_name]
-    if File.extname(certificate_path).downcase == '.p12' || File.extname(certificate_path).downcase == '.pfx'
-      cmd += ['--certificate', certificate_path]
-      cmd += ['--password', certificate_password.to_s] if certificate_password
+    cmd += [ file_path, output_path, "--field", field_name ]
+    if File.extname(certificate_path).downcase == ".p12" || File.extname(certificate_path).downcase == ".pfx"
+      cmd += [ "--certificate", certificate_path ]
+      cmd += [ "--password", certificate_password.to_s ] if certificate_password
     else
-      cmd += ['--certificate', certificate_path, '--key', key_path.to_s]
+      cmd += [ "--certificate", certificate_path, "--key", key_path.to_s ]
     end
-    cmd += ['--reason', reason.to_s] if reason
-    cmd += ['--location', location.to_s] if location
-    cmd += ['--contact-info', contact_info.to_s] if contact_info
-    cmd += ['--name', name.to_s] if name
+    cmd += [ "--reason", reason.to_s ] if reason
+    cmd += [ "--location", location.to_s ] if location
+    cmd += [ "--contact-info", contact_info.to_s ] if contact_info
+    cmd += [ "--name", name.to_s ] if name
     # HexaPDF CLI podría no soportar imagen directamente para apariencia.
     # Si se requiere imagen y el CLI no lo soporta, se mantendrá apariencia por defecto.
 
@@ -215,7 +215,7 @@ class PdfSignatureService
     raise "Imagen de firma no encontrada: #{image_path}" unless image_path && File.exist?(image_path)
 
     doc = HexaPDF::Document.open(file_path)
-    raise 'El documento no tiene AcroForm' unless doc.acro_form
+    raise "El documento no tiene AcroForm" unless doc.acro_form
 
     field = doc.acro_form.field_by_name(field_name)
     raise "Campo de firma no encontrado: #{field_name}" unless field
@@ -273,18 +273,18 @@ class PdfSignatureService
     # HexaPDF devuelve normalmente un HexaPDF::Rectangle; admitir también Array por compatibilidad
     coords = if rect.respond_to?(:value)
                rect.value
-             elsif rect.is_a?(Array)
+    elsif rect.is_a?(Array)
                rect
-             else
+    else
                nil
-             end
+    end
     raise "Rect del widget no disponible para: #{field_name}" unless coords && coords.size == 4
 
     llx, lly, urx, ury = coords
     width  = (urx - llx).abs
     height = (ury - lly).abs
-    inner_width  = [width - 2 * margin, 0].max
-    inner_height = [height - 2 * margin, 0].max
+    inner_width  = [ width - 2 * margin, 0 ].max
+    inner_height = [ height - 2 * margin, 0 ].max
 
     # Cargar la imagen con la API pública de HexaPDF
     image = doc.images.add(image_path)
@@ -296,19 +296,19 @@ class PdfSignatureService
       # Mantener proporción dentro del área
       img_w = image.width
       img_h = image.height
-      scale = [inner_width / img_w.to_f, inner_height / img_h.to_f].min
+      scale = [ inner_width / img_w.to_f, inner_height / img_h.to_f ].min
       # Para evitar borrosidad, no reescalar hacia arriba salvo que se indique
-      scale = [scale, 1.0].min unless allow_upscale
+      scale = [ scale, 1.0 ].min unless allow_upscale
       draw_w = (img_w * scale)
       draw_h = (img_h * scale)
       # Centrar dentro del área
       x = llx + margin + (inner_width - draw_w) / 2.0
       y = lly + margin + (inner_height - draw_h) / 2.0
-      canvas.image(image, at: [x, y], width: draw_w, height: draw_h)
+      canvas.image(image, at: [ x, y ], width: draw_w, height: draw_h)
     else
       x = llx + margin
       y = lly + margin
-      canvas.image(image, at: [x, y], width: inner_width, height: inner_height)
+      canvas.image(image, at: [ x, y ], width: inner_width, height: inner_height)
     end
 
     # Intento de escritura con validación. Si falla por validación de anotaciones

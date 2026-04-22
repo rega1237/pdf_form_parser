@@ -302,19 +302,20 @@
                       </div>
                       <div class="grid grid-cols-1 md:grid-cols-9 gap-6 items-end">
                           <%
-                            always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency']
+                            always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency', 'Radio']
                             always_visible_sections = ['Signature', 'Property Information', 'License', 'Corrective Action Performed']
+                            always_visible_labels = ['PSI', 'Sec', 'Psi', 'SEC']
                             visible_fields = fields_in_section.select { |field| 
                               always_visible_types.include?(field['type']) || 
                               field['required'] == true || 
                               always_visible_sections.any? { |s| field['section_name'].to_s.include?(s) } ||
-                              field['value'].present?
+                              always_visible_labels.any? { |label| field['name'].to_s.include?(label) || field['label_name'].to_s.include?(label) }
                             }
                             hidden_fields = fields_in_section.reject { |field| 
                               always_visible_types.include?(field['type']) || 
                               field['required'] == true || 
                               always_visible_sections.any? { |s| field['section_name'].to_s.include?(s) } ||
-                              field['value'].present?
+                              always_visible_labels.any? { |label| field['name'].to_s.include?(label) || field['label_name'].to_s.include?(label) }
                             }
                           %>
                         <% visible_fields.each_with_index do |field, index| %>
@@ -492,7 +493,7 @@
 
               <% if email_enabled %>
                 <div data-controller="email-sender"
-                     data-email-sender-recipient-email-value="<%= @form_fill.inspection.property.customer.email %>"
+                     data-email-sender-recipient-email-value="<%= @form_fill.inspection.property.customer.customer_emails.pluck(:address).join(', ') %>"
                      data-email-sender-form-fill-id-value="<%= @form_fill.id %>"
                      data-email-sender-csrf-token-value="<%= form_authenticity_token %>">
                   
@@ -535,7 +536,7 @@
                                   <input type="text" 
                                          name="recipient_email" 
                                          class="block w-full rounded-lg p-2 bg-slate-700/50 border-white/10 text-white placeholder-slate-400 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                                         value="<%= @form_fill.inspection.property.customer.email %>"
+                                         value="<%= @form_fill.inspection.property.customer.customer_emails.pluck(:address).join(', ') %>"
                                          placeholder="email1@example.com, email2@example.com">
                                   <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                     <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

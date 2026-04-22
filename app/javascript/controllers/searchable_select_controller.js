@@ -74,7 +74,8 @@ export default class extends Controller {
   select(event) {
     const selectedOption = event.currentTarget
     const newValue = selectedOption.dataset.value
-    const label = selectedOption.textContent.trim()
+    // Prefer an explicit data-label; fall back to full visible text
+    const label = selectedOption.dataset.label || selectedOption.textContent.trim()
 
     // Actualiza el valor del input oculto y el texto del botón.
     this.hiddenInputTarget.value = newValue

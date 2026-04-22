@@ -1,0 +1,72 @@
+≈ tailwindcss v4.1.7
+
+Done in 292ms
+Running 174 tests in parallel using 12 processes
+Test is missing assertions: `test_scope` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:4
+Test is missing assertions: `test_destroy` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:16
+Run options: --seed 43849
+
+# Running:
+
+.Test is missing assertions: `test_update` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:13
+..Test is missing assertions: `test_show` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:7
+.Test is missing assertions: `test_scope` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:4
+Test is missing assertions: `test_create` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:10
+..Test is missing assertions: `test_create` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:10
+.Test is missing assertions: `test_show` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/inspection_policy_test.rb:7
+.Test is missing assertions: `test_update` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:13
+.Test is missing assertions: `test_destroy` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/company_settings_policy_test.rb:16
+.................Test is missing assertions: `test_update` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:13
+.Test is missing assertions: `test_destroy` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:16
+.Test is missing assertions: `test_show` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:7
+.Test is missing assertions: `test_scope` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:4
+.Test is missing assertions: `test_create` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/form_template_policy_test.rb:10
+./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+....Test is missing assertions: `test_update` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:13
+Test is missing assertions: `test_destroy` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:16
+...Test is missing assertions: `test_show` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:7
+.Test is missing assertions: `test_scope` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:4
+Test is missing assertions: `test_create` /Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/test/policies/customer_policy_test.rb:10
+................/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+...../Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+/Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+......./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+./Users/rafaelguzman/Desktop/proyectos/pdf_form_parser/vendor/bundle/ruby/3.4.0/gems/marcel-1.0.4/lib/marcel/magic.rb:120: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)
+..............................................F
+
+Failure:
+DeficiencyProcessorServiceDataColumnTest#test_should_maintain_compatibility_with_existing_deficiency_processing_logic [test/services/deficiency_processor_service_data_column_test.rb:334]:
+Expected: "2026-04-21"
+  Actual: "04/21/26"
+
+bin/rails test test/services/deficiency_processor_service_data_column_test.rb:254
+
+.......................................................[DEBUG] Generated suffix: 5c8f7efc
+[DEBUG] Saving ids: ["inspection_980190962_test_section_5c8f7efc"]
+[DEBUG] Generated suffix: 18594acc
+[DEBUG] Saving ids: ["inspection_980190962_test_section_5c8f7efc", "inspection_980190962_test_section_18594acc"]
+[DEBUG] Generated suffix: a7d3db99
+[DEBUG] Saving ids: ["inspection_980190962_test_section_a7d3db99"]
+[DEBUG] Saving ids: ["test_attachment_123"]
+[DEBUG] Generated suffix: ae9522d4
+[DEBUG] Saving ids: ["inspection_980190962_test_section_ae9522d4"]
+[DEBUG] Generated suffix: 97012aed
+[DEBUG] Saving ids: ["inspection_980190962_non_existent_field_97012aed"]
+[DEBUG] Generated suffix: e8f4ebce
+[DEBUG] Saving ids: ["inspection_980190962_test_section_e8f4ebce"]
+
+
+Finished in 3.782028s, 46.0071 runs/s, 116.8685 assertions/s.
+174 runs, 442 assertions, 1 failures, 0 errors, 0 skips

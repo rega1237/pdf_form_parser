@@ -57,16 +57,15 @@ Rails.application.routes.draw do
 
     collection do
       get :calendar
-      get :dashboard
       get :properties_by_customer
     end
   end
 
 
   resources :deficiencies
-  resources :interval_categories
+  resources :interval_categories, except: [ :index, :show ]
   resources :system_categories
-  resources :roles
+  resources :roles, except: [ :index, :show ]
   resources :contractor_infos, only: [ :new, :create, :edit, :update, :destroy ]
   resources :license_infos, only: [ :new, :create, :edit, :update, :destroy ]
 

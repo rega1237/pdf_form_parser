@@ -5,3 +5,9 @@ one:
 
 two:
   level: User
+
+developer:
+  level: Developer
+
+admin:
+  level: Admin

@@ -92,9 +92,22 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
               </div>
-              <h3 class="text-white font-semibold text-sm lg:text-base">Email</h3>
+              <h3 class="text-white font-semibold text-sm lg:text-base">Email Addresses</h3>
             </div>
-            <p class="text-slate-300 text-sm lg:text-base pl-11"><%= @customer.email %></p>
+            <div class="pl-11 space-y-1">
+              <% if @customer.customer_emails.any? %>
+                <% @customer.customer_emails.each do |email_record| %>
+                  <p class="text-slate-300 text-sm lg:text-base flex items-center">
+                    <%= email_record.address %>
+                    <% if email_record.primary? %>
+                      <span class="ml-2 text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">Primary</span>
+                    <% end %>
+                  </p>
+                <% end %>
+              <% else %>
+                <p class="text-slate-500 text-sm lg:text-base italic">No email addresses added</p>
+              <% end %>
+            </div>
           </div>
 
           <!-- Phone Numbers -->

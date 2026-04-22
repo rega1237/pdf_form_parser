@@ -1,4 +1,4 @@
-require_dependency Rails.root.join('app/services/pdf_forms_parser_service.rb').to_s
+require_dependency Rails.root.join("app/services/pdf_forms_parser_service.rb").to_s
 
 class FormTemplatesController < ApplicationController
   before_action :set_form_template, only: %i[show update destroy form_builder edit form_builder_update]
@@ -34,7 +34,7 @@ class FormTemplatesController < ApplicationController
     # 1. Validar que se haya subido un archivo
     unless uploaded_file
       @form_template = FormTemplate.new(form_template_params.except(:original_file))
-      flash[:alert] = 'File upload is required.'
+      flash[:alert] = "File upload is required."
       # Asegúrate de cargar las categorías para que el formulario de 'new' se renderice correctamente
       set_interval_categories
       set_system_categories
@@ -66,7 +66,7 @@ class FormTemplatesController < ApplicationController
 
       # Redirigir inmediatamente al usuario con un mensaje informativo
       redirect_to @form_template,
-                  notice: 'Form template created successfully. The file is being processed and the structure will appear shortly.'
+                  notice: "Form template created successfully. The file is being processed and the structure will appear shortly."
     else
       # Si falla el guardado, volver a renderizar el formulario con los errores
       set_interval_categories
@@ -96,8 +96,8 @@ class FormTemplatesController < ApplicationController
 
       if @form_template.original_file.attached?
         # Descargar el archivo temporalmente para analizarlo
-        temp_file = Tempfile.new([uploaded_file.original_filename.parameterize.truncate(50, omission: ''), '.pdf'],
-                                 Rails.root.join('tmp'))
+        temp_file = Tempfile.new([ uploaded_file.original_filename.parameterize.truncate(50, omission: ""), ".pdf" ],
+                                 Rails.root.join("tmp"))
         temp_file_path = temp_file.path
 
         # Guardar el archivo temporalmente
@@ -107,15 +107,15 @@ class FormTemplatesController < ApplicationController
 
         determined_file_type = uploaded_file.content_type
 
-        if determined_file_type == 'application/pdf'
+        if determined_file_type == "application/pdf"
           parser = PdfFormsParserService.new(temp_file_path)
           form_structure = parser.parse
-        elsif ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-               'application/msword'].include?(determined_file_type)
-          Rails.logger.info 'DOCX/DOC parsing not yet implemented.'
-        elsif ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-               'application/vnd.ms-excel'].include?(determined_file_type)
-          Rails.logger.info 'XLS/XLSX parsing not yet implemented.'
+        elsif [ "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+               "application/msword" ].include?(determined_file_type)
+          Rails.logger.info "DOCX/DOC parsing not yet implemented."
+        elsif [ "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+               "application/vnd.ms-excel" ].include?(determined_file_type)
+          Rails.logger.info "XLS/XLSX parsing not yet implemented."
         else
           Rails.logger.warn "Unsupported file type: #{determined_file_type}"
         end
@@ -127,7 +127,7 @@ class FormTemplatesController < ApplicationController
         # Actualizar la estructura del formulario solo si se parseó correctamente
         @form_template.form_structure = form_structure.to_json if form_structure.present?
       else
-        flash[:alert] = 'Failed to attach file.'
+        flash[:alert] = "Failed to attach file."
         render :edit, status: :unprocessable_entity
         return
       end
@@ -145,7 +145,7 @@ class FormTemplatesController < ApplicationController
     @form_template.assign_attributes(update_params)
 
     if @form_template.save
-      redirect_to @form_template, notice: 'Form template was successfully updated.'
+      redirect_to @form_template, notice: "Form template was successfully updated."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -161,32 +161,32 @@ class FormTemplatesController < ApplicationController
         if new_order.is_a?(Array)
           # Actualizar la estructura del formulario directamente
           if @form_template.update(form_structure: new_order.to_json)
-            Rails.logger.info 'Form structure updated successfully'
+            Rails.logger.info "Form structure updated successfully"
             redirect_to form_builder_form_template_path(@form_template),
-                        notice: 'Form structure updated successfully.'
+                        notice: "Form structure updated successfully."
           else
             Rails.logger.error "Failed to update form template: #{@form_template.errors.full_messages}"
-            flash[:alert] = 'Failed to update form structure.'
+            flash[:alert] = "Failed to update form structure."
             render :form_builder, status: :unprocessable_entity
           end
         else
           Rails.logger.error "Invalid form structure format: #{new_order.class}"
-          flash[:alert] = 'Invalid form structure format.'
+          flash[:alert] = "Invalid form structure format."
           render :form_builder, status: :unprocessable_entity
         end
       rescue JSON::ParserError => e
         Rails.logger.error "JSON parsing error in form_builder_update: #{e.message}"
-        flash[:alert] = 'Invalid JSON format received. Please try again.'
+        flash[:alert] = "Invalid JSON format received. Please try again."
         render :form_builder, status: :unprocessable_entity
       rescue StandardError => e
         Rails.logger.error "Error in form_builder_update: #{e.message}"
         Rails.logger.error e.backtrace.join("\n")
-        flash[:alert] = 'An error occurred while updating the form structure.'
+        flash[:alert] = "An error occurred while updating the form structure."
         render :form_builder, status: :unprocessable_entity
       end
     else
-      Rails.logger.error 'No form_structure_order received in params'
-      flash[:alert] = 'No form structure data received.'
+      Rails.logger.error "No form_structure_order received in params"
+      flash[:alert] = "No form structure data received."
       render :form_builder, status: :unprocessable_entity
     end
   end
@@ -196,7 +196,7 @@ class FormTemplatesController < ApplicationController
     authorize @form_template
     # Active Storage se encargará de eliminar los archivos adjuntos
     if @form_template.destroy
-      redirect_to form_templates_path, notice: 'Form template deleted successfully.', status: :see_other
+      redirect_to form_templates_path, notice: "Form template deleted successfully.", status: :see_other
     else
       redirect_to form_templates_path, alert: "Cannot delete form template: #{@form_template.errors.full_messages.join(', ')}", status: :see_other
     end

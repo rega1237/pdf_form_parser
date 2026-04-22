@@ -3,9 +3,7 @@ class InspectionsController < ApplicationController
   before_action :set_inspection, only: %i[show edit update destroy update_status]
   before_action :load_form_data, only: %i[new create edit update]
   before_action :set_intervals, only: %i[new create edit update]
-  before_action :load_form_data, only: %i[new create edit update]
   before_action :load_technicians, only: %i[new create edit update]
-  before_action :set_intervals, only: %i[new create edit update]
   before_action :set_system_categories, only: %i[new create edit update]
 
   # GET /inspections
@@ -16,6 +14,7 @@ class InspectionsController < ApplicationController
 
     # Filtros opcionales
     @inspections = @inspections.where(status: params[:status]) if params[:status].present?
+    @inspections = @inspections.where(system_category: params[:system_category]) if params[:system_category].present?
     if params[:customer_id].present?
       @inspections = @inspections.joins(:property).where(properties: { customer_id: params[:customer_id] })
     end
@@ -25,9 +24,16 @@ class InspectionsController < ApplicationController
 
     @inspections = @inspections.page(params[:page]).per(20) if defined?(Kaminari)
 
-    # Para los filtros en la vista
-    @customers = Customer.order(:name)
+    # Para los filtros en la vista — solo customers con inspections visibles al usuario actual
+    scoped_inspection_ids = policy_scope(Inspection).select(:id)
+    @customers = Customer
+                   .joins(properties: :inspections)
+                   .where(inspections: { id: scoped_inspection_ids })
+                   .includes(:properties)
+                   .distinct
+                   .order(:name)
     @statuses = Inspection.distinct.pluck(:status).compact
+    @system_categories = SystemCategory.order(:name)
   end
 
   def show
@@ -155,7 +161,7 @@ class InspectionsController < ApplicationController
     redirect_to @inspection, notice: "Inspection created successfully."
   rescue ActiveRecord::RecordInvalid => e
     @selected_customer = @inspection.property&.customer
-    @inspection.errors.add(:base, "Error al crear la inspección o sus formularios: #{e.message}")
+    @inspection.errors.add(:base, "Error to create inspection or its forms: #{e.message}")
     render :new, status: :unprocessable_entity
   end
 
@@ -247,23 +253,6 @@ class InspectionsController < ApplicationController
     end
   end
 
-  # GET /inspections/dashboard
-  def dashboard
-    @total_inspections = Inspection.count
-    @pending_inspections = Inspection.where(status: "pending").count
-    @completed_inspections = Inspection.where(status: "completed").count
-    @this_month_inspections = Inspection.where(date: Date.current.beginning_of_month..Date.current.end_of_month).count
-
-    @upcoming_inspections = Inspection.includes(:property, property: :customer)
-                                      .where(date: Date.current..1.week.from_now)
-                                      .where(status: %w[pending in_progress])
-                                      .order(:date)
-                                      .limit(10)
-
-    @recent_inspections = Inspection.includes(:property, property: :customer)
-                                    .order(created_at: :desc)
-                                    .limit(10)
-  end
 
   # GET /properties/:property_id/inspections
   # GET /properties/:property_id/inspections

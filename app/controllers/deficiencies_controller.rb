@@ -67,6 +67,6 @@ class DeficienciesController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def deficiency_params
-    params.expect(deficiency: [:name])
+    params.expect(deficiency: [ :name ])
   end
 end
