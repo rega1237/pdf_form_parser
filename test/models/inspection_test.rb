@@ -43,8 +43,8 @@ class InspectionTest < ActiveSupport::TestCase
   test "completing inspection should enqueue deficiency transfer job" do
     @inspection.status = "in_progress"
     @inspection.save!
-    
-    assert_enqueued_with(job: TransferDeficienciesJob, args: [@inspection.id]) do
+
+    assert_enqueued_with(job: TransferDeficienciesJob, args: [ @inspection.id ]) do
       @inspection.update!(status: "completed")
     end
   end

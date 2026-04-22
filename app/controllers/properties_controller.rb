@@ -12,7 +12,7 @@ class PropertiesController < ApplicationController
     @property = @customer.properties.build(property_params)
 
     if @property.save
-      redirect_to edit_customer_path(@customer), notice: '✅ Property added successfully'
+      redirect_to edit_customer_path(@customer), notice: "✅ Property added successfully"
     else
       render :new, status: :unprocessable_entity
     end
@@ -30,7 +30,7 @@ class PropertiesController < ApplicationController
     @customer = @property.customer
 
     if @property.update(property_params)
-      redirect_to edit_customer_path(@customer), notice: '✅ Property updated successfully'
+      redirect_to edit_customer_path(@customer), notice: "✅ Property updated successfully"
     else
       render :edit, status: :unprocessable_entity
     end
@@ -41,9 +41,9 @@ class PropertiesController < ApplicationController
     authorize @property
 
     if @property.destroy
-      redirect_to edit_customer_path(@customer), notice: '✅ Property deleted successfully'
+      redirect_to edit_customer_path(@customer), notice: "✅ Property deleted successfully"
     else
-      redirect_to edit_customer_path(@customer), alert: '❌ Failed to delete property'
+      redirect_to edit_customer_path(@customer), alert: "❌ Failed to delete property"
     end
   end
 

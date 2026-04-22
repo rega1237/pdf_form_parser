@@ -4,9 +4,9 @@ class FormTemplatesControllerTest < ActionDispatch::IntegrationTest
   setup do
     @form_template = form_templates(:one)
     @form_template.original_file.attach(
-      io: File.open(Rails.root.join('test', 'fixtures', 'files', 'test.pdf')),
-      filename: 'test.pdf',
-      content_type: 'application/pdf'
+      io: File.open(Rails.root.join("test", "fixtures", "files", "test.pdf")),
+      filename: "test.pdf",
+      content_type: "application/pdf"
     )
     sign_in users(:one)
   end
@@ -24,11 +24,11 @@ class FormTemplatesControllerTest < ActionDispatch::IntegrationTest
   test "should create form_template" do
     # Assuming there's a POST create route
     assert_difference("FormTemplate.count") do
-      post form_templates_url, params: { 
-        form_template: { 
+      post form_templates_url, params: {
+        form_template: {
           name: "New Template",
           original_file: fixture_file_upload("test.pdf", "application/pdf")
-        } 
+        }
       }
     end
     assert_redirected_to form_template_url(FormTemplate.last)

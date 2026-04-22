@@ -21,7 +21,7 @@ class IntervalCategoriesController < ApplicationController
     respond_to do |format|
       if @interval_category.save
         format.html do
-          redirect_to settings_path, notice: 'Interval category was successfully created.'
+          redirect_to settings_path, notice: "Interval category was successfully created."
         end
         format.json { render :show, status: :created, location: @interval_category }
       else
@@ -37,7 +37,7 @@ class IntervalCategoriesController < ApplicationController
     respond_to do |format|
       if @interval_category.update(interval_category_params)
         format.html do
-          redirect_to settings_path, notice: 'Interval category was successfully updated.'
+          redirect_to settings_path, notice: "Interval category was successfully updated."
         end
         format.json { render :show, status: :ok, location: @interval_category }
       else
@@ -52,7 +52,7 @@ class IntervalCategoriesController < ApplicationController
     @interval_category.destroy
 
     respond_to do |format|
-      format.html { redirect_to settings_path, notice: 'Interval category was successfully deleted.' }
+      format.html { redirect_to settings_path, notice: "Interval category was successfully deleted." }
       format.json { head :no_content }
     end
   end

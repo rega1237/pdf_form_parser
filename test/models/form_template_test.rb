@@ -32,10 +32,10 @@ class FormTemplateTest < ActiveSupport::TestCase
     form_fill = form_fills(:one)
     # Ensure form_fill is associated with this template
     form_fill.update!(form_template: @template)
-    
+
     new_structure = { "new_field" => "value" }.to_json
     @template.update!(form_structure: new_structure)
-    
+
     form_fill.reload
     assert_equal new_structure, form_fill.form_structure
   end

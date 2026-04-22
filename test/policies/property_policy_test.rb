@@ -1,14 +1,14 @@
-require 'test_helper'
+require "test_helper"
 
 class PropertyPolicyTest < ActiveSupport::TestCase
   setup do
-    @admin_role = Role.find_or_create_by!(level: 'Admin')
-    @dev_role = Role.find_or_create_by!(level: 'Developer')
-    @tech_role = Role.find_or_create_by!(level: 'Technician')
+    @admin_role = Role.find_or_create_by!(level: "Admin")
+    @dev_role = Role.find_or_create_by!(level: "Developer")
+    @tech_role = Role.find_or_create_by!(level: "Technician")
 
-    @admin = User.create!(email: 'admin_prop_policy@test.com', password: 'password', role: @admin_role)
-    @developer = User.create!(email: 'dev_prop_policy@test.com', password: 'password', role: @dev_role)
-    @technician = User.create!(email: 'tech_prop_policy@test.com', password: 'password', role: @tech_role)
+    @admin = User.create!(email: "admin_prop_policy@test.com", password: "password", role: @admin_role)
+    @developer = User.create!(email: "dev_prop_policy@test.com", password: "password", role: @dev_role)
+    @technician = User.create!(email: "tech_prop_policy@test.com", password: "password", role: @tech_role)
 
     @property = properties(:one)
   end
@@ -47,7 +47,7 @@ class PropertyPolicyTest < ActiveSupport::TestCase
     # Admin/Developer should see all
     assert_includes PropertyPolicy::Scope.new(@admin, Property.all).resolve, @property
     assert_includes PropertyPolicy::Scope.new(@developer, Property.all).resolve, @property
-    
+
     # Technician should see none
     refute_includes PropertyPolicy::Scope.new(@technician, Property.all).resolve, @property
   end

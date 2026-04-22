@@ -1,5 +1,5 @@
 class LicenseInfosController < ApplicationController
-  before_action :set_license_info, only: [:edit, :update, :destroy]
+  before_action :set_license_info, only: [ :edit, :update, :destroy ]
 
   def new
     @license_info = LicenseInfo.new
@@ -10,7 +10,7 @@ class LicenseInfosController < ApplicationController
     @license_info = LicenseInfo.new(license_info_params)
     authorize @license_info
     if @license_info.save
-      redirect_to settings_path, notice: 'License info was successfully created.'
+      redirect_to settings_path, notice: "License info was successfully created."
     else
       render :new, status: :unprocessable_entity
     end
@@ -23,7 +23,7 @@ class LicenseInfosController < ApplicationController
   def update
     authorize @license_info
     if @license_info.update(license_info_params)
-      redirect_to settings_path, notice: 'License info was successfully updated.'
+      redirect_to settings_path, notice: "License info was successfully updated."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -32,7 +32,7 @@ class LicenseInfosController < ApplicationController
   def destroy
     authorize @license_info
     @license_info.destroy
-    redirect_to settings_path, notice: 'License info was successfully destroyed.'
+    redirect_to settings_path, notice: "License info was successfully destroyed."
   end
 
   private

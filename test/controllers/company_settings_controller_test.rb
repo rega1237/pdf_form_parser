@@ -6,9 +6,9 @@ class CompanySettingsControllerTest < ActionDispatch::IntegrationTest
   setup do
     @user = users(:one)
     sign_in @user
-    
+
     # Ensure role is Developer for Pundit
-    @dev_role = Role.find_or_create_by!(level: 'Developer')
+    @dev_role = Role.find_or_create_by!(level: "Developer")
     @user.update!(role: @dev_role)
   end
 

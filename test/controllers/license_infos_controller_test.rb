@@ -7,9 +7,9 @@ class LicenseInfosControllerTest < ActionDispatch::IntegrationTest
     @license_info = license_infos(:one)
     @user = users(:one)
     sign_in @user
-    
+
     # Ensure role is Developer for Pundit
-    @dev_role = Role.find_or_create_by!(level: 'Developer')
+    @dev_role = Role.find_or_create_by!(level: "Developer")
     @user.update!(role: @dev_role)
   end
 
@@ -20,12 +20,12 @@ class LicenseInfosControllerTest < ActionDispatch::IntegrationTest
 
   test "should create license_info" do
     assert_difference("LicenseInfo.count") do
-      post license_infos_url, params: { 
-        license_info: { 
-          license_number: "LIC123", 
-          sfm: true, 
-          cslb: false 
-        } 
+      post license_infos_url, params: {
+        license_info: {
+          license_number: "LIC123",
+          sfm: true,
+          cslb: false
+        }
       }
     end
 
@@ -38,10 +38,10 @@ class LicenseInfosControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should update license_info" do
-    patch license_info_url(@license_info), params: { 
-      license_info: { 
-        license_number: "UPDATED123" 
-      } 
+    patch license_info_url(@license_info), params: {
+      license_info: {
+        license_number: "UPDATED123"
+      }
     }
     assert_redirected_to settings_url
     @license_info.reload

@@ -1,19 +1,19 @@
-require 'test_helper'
+require "test_helper"
 
 class FormFillPolicyTest < ActiveSupport::TestCase
   setup do
-    @admin_role = Role.find_or_create_by!(level: 'Admin')
-    @dev_role = Role.find_or_create_by!(level: 'Developer')
-    @tech_role = Role.find_or_create_by!(level: 'Technician')
+    @admin_role = Role.find_or_create_by!(level: "Admin")
+    @dev_role = Role.find_or_create_by!(level: "Developer")
+    @tech_role = Role.find_or_create_by!(level: "Technician")
 
-    @admin = User.create!(email: 'admin_ff_policy@test.com', password: 'password', role: @admin_role)
-    @developer = User.create!(email: 'dev_ff_policy@test.com', password: 'password', role: @dev_role)
-    @technician = User.create!(email: 'tech_ff_policy@test.com', password: 'password', role: @tech_role)
-    @other_tech = User.create!(email: 'other_ff_policy@test.com', password: 'password', role: @tech_role)
+    @admin = User.create!(email: "admin_ff_policy@test.com", password: "password", role: @admin_role)
+    @developer = User.create!(email: "dev_ff_policy@test.com", password: "password", role: @dev_role)
+    @technician = User.create!(email: "tech_ff_policy@test.com", password: "password", role: @tech_role)
+    @other_tech = User.create!(email: "other_ff_policy@test.com", password: "password", role: @tech_role)
 
     @inspection = inspections(:one)
     @inspection.update!(user: @technician)
-    
+
     @form_fill = form_fills(:one)
     @form_fill.update!(inspection: @inspection)
   end
@@ -22,10 +22,10 @@ class FormFillPolicyTest < ActiveSupport::TestCase
     # Admin/Developer should see all
     assert_includes FormFillPolicy::Scope.new(@admin, FormFill.all).resolve, @form_fill
     assert_includes FormFillPolicy::Scope.new(@developer, FormFill.all).resolve, @form_fill
-    
+
     # Technician should see their own
     assert_includes FormFillPolicy::Scope.new(@technician, FormFill.all).resolve, @form_fill
-    
+
     # Other tech should see none (of this one)
     refute_includes FormFillPolicy::Scope.new(@other_tech, FormFill.all).resolve, @form_fill
   end

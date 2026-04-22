@@ -16,13 +16,13 @@ class ContractorInfosControllerTest < ActionDispatch::IntegrationTest
 
   test "should create contractor_info" do
     assert_difference("ContractorInfo.count") do
-      post contractor_infos_url, params: { contractor_info: { 
-        name: "Acme Corp", 
-        address: "123 Main St", 
-        city: "Springfield", 
-        state: "IL", 
-        zip: "62704", 
-        phone: "555-0199" 
+      post contractor_infos_url, params: { contractor_info: {
+        name: "Acme Corp",
+        address: "123 Main St",
+        city: "Springfield",
+        state: "IL",
+        zip: "62704",
+        phone: "555-0199"
       } }
     end
 

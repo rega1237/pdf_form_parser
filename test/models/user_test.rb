@@ -17,7 +17,7 @@ class UserTest < ActiveSupport::TestCase
   test "active scope should return only active users" do
     active_users = User.active
     assert active_users.include?(users(:one))
-    
+
     users(:two).update(is_active: false)
     active_users = User.active
     assert_not active_users.include?(users(:two))

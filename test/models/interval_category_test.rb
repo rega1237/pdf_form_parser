@@ -27,19 +27,19 @@ class IntervalCategoryTest < ActiveSupport::TestCase
 
   test "effective_duration should infer from name if duration_in_months is blank" do
     @category.duration_in_months = nil
-    
+
     @category.name = "Weekly"
     assert_equal 0, @category.effective_duration
-    
+
     @category.name = "Monthly"
     assert_equal 1, @category.effective_duration
-    
+
     @category.name = "Quarterly"
     assert_equal 3, @category.effective_duration
-    
+
     @category.name = "Annual"
     assert_equal 12, @category.effective_duration
-    
+
     @category.name = "5 Year"
     assert_equal 60, @category.effective_duration
   end

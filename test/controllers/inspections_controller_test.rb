@@ -8,39 +8,39 @@ class InspectionsControllerTest < ActionDispatch::IntegrationTest
     sign_in @user
     @inspection = inspections(:one)
     @property = properties(:one)
-    
+
     # Ensure role levels are correct for policies
-    @dev_role = Role.find_or_create_by!(level: 'Developer')
+    @dev_role = Role.find_or_create_by!(level: "Developer")
     @user.update!(role: @dev_role)
-    
+
     # Required templates for creation
-    pdf_path = Rails.root.join('test', 'fixtures', 'files', 'test.pdf')
-    
+    pdf_path = Rails.root.join("test", "fixtures", "files", "test.pdf")
+
     # Create Interval Category and System Category for the main template
     @annual = interval_categories(:two)
-    
+
     # Create a template that matches the creation criteria
     @main_template = FormTemplate.find_or_create_by!(name: "Main Template") do |t|
-      t.form_structure = '[]'
+      t.form_structure = "[]"
       t.system_category = "Fire Alarm"
-      t.original_file.attach(io: File.open(pdf_path), filename: 'test.pdf', content_type: 'application/pdf')
+      t.original_file.attach(io: File.open(pdf_path), filename: "test.pdf", content_type: "application/pdf")
     end
     @main_template.interval_categories << @annual unless @main_template.interval_categories.include?(@annual)
 
     FormTemplate.find_or_create_by!(name: "Deficiencies") do |t|
-      t.form_structure = '[]'
+      t.form_structure = "[]"
       t.system_category = "Fire Alarm"
-      t.original_file.attach(io: File.open(pdf_path), filename: 'test.pdf', content_type: 'application/pdf')
+      t.original_file.attach(io: File.open(pdf_path), filename: "test.pdf", content_type: "application/pdf")
     end
     FormTemplate.find_or_create_by!(name: "Additional Risers") do |t|
-      t.form_structure = '[]'
+      t.form_structure = "[]"
       t.system_category = "Fire Sprinkler"
-      t.original_file.attach(io: File.open(pdf_path), filename: 'test.pdf', content_type: 'application/pdf')
+      t.original_file.attach(io: File.open(pdf_path), filename: "test.pdf", content_type: "application/pdf")
     end
     FormTemplate.find_or_create_by!(name: "Corrected Deficiencies") do |t|
-      t.form_structure = '[]'
+      t.form_structure = "[]"
       t.system_category = "Fire Sprinkler"
-      t.original_file.attach(io: File.open(pdf_path), filename: 'test.pdf', content_type: 'application/pdf')
+      t.original_file.attach(io: File.open(pdf_path), filename: "test.pdf", content_type: "application/pdf")
     end
   end
 
@@ -66,15 +66,15 @@ class InspectionsControllerTest < ActionDispatch::IntegrationTest
 
   test "should create inspection" do
     assert_difference("Inspection.count") do
-      post inspections_url, params: { 
-        inspection: { 
-          date: Date.current, 
-          property_id: @property.id, 
+      post inspections_url, params: {
+        inspection: {
+          date: Date.current,
+          property_id: @property.id,
           status: "pending",
           system_category: "Fire Alarm",
           interval_category: "Annual",
           user_id: @user.id
-        } 
+        }
       }
     end
     assert_redirected_to inspection_url(Inspection.last)
@@ -106,7 +106,7 @@ class InspectionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  
+
   test "should get by_property" do
     get property_inspections_url(@property)
     assert_response :success

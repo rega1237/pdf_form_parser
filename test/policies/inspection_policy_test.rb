@@ -1,15 +1,15 @@
-require 'test_helper'
+require "test_helper"
 
 class InspectionPolicyTest < ActiveSupport::TestCase
   setup do
     @admin_role = roles(:admin)
     @dev_role = roles(:developer)
-    @tech_role = Role.find_or_create_by!(level: 'Technician')
+    @tech_role = Role.find_or_create_by!(level: "Technician")
 
-    @admin = User.create!(email: 'admin_policy@test.com', password: 'password', role: @admin_role)
-    @developer = User.create!(email: 'dev_policy@test.com', password: 'password', role: @dev_role)
-    @technician = User.create!(email: 'tech_policy@test.com', password: 'password', role: @tech_role)
-    @other_tech = User.create!(email: 'other_policy@test.com', password: 'password', role: @tech_role)
+    @admin = User.create!(email: "admin_policy@test.com", password: "password", role: @admin_role)
+    @developer = User.create!(email: "dev_policy@test.com", password: "password", role: @dev_role)
+    @technician = User.create!(email: "tech_policy@test.com", password: "password", role: @tech_role)
+    @other_tech = User.create!(email: "other_policy@test.com", password: "password", role: @tech_role)
 
     @inspection = inspections(:one)
     @inspection.update!(user: @technician)
@@ -18,14 +18,14 @@ class InspectionPolicyTest < ActiveSupport::TestCase
   def test_scope
     # Admin should see all
     assert_includes InspectionPolicy::Scope.new(@admin, Inspection.all).resolve, @inspection
-    
+
     # Developer should see all
     assert_includes InspectionPolicy::Scope.new(@developer, Inspection.all).resolve, @inspection
-    
+
     # Technician should only see their own
     scope = InspectionPolicy::Scope.new(@technician, Inspection.all).resolve
     assert_includes scope, @inspection
-    
+
     # Other technician should not see it
     scope = InspectionPolicy::Scope.new(@other_tech, Inspection.all).resolve
     refute_includes scope, @inspection

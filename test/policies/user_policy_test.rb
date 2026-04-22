@@ -1,15 +1,15 @@
-require 'test_helper'
+require "test_helper"
 
 class UserPolicyTest < ActiveSupport::TestCase
   setup do
-    @admin_role = Role.find_or_create_by!(level: 'Admin')
-    @dev_role = Role.find_or_create_by!(level: 'Developer')
-    @tech_role = Role.find_or_create_by!(level: 'Technician')
+    @admin_role = Role.find_or_create_by!(level: "Admin")
+    @dev_role = Role.find_or_create_by!(level: "Developer")
+    @tech_role = Role.find_or_create_by!(level: "Technician")
 
-    @admin = User.create!(email: 'admin_user_policy@test.com', password: 'password', role: @admin_role)
-    @developer = User.create!(email: 'dev_user_policy@test.com', password: 'password', role: @dev_role)
-    @technician = User.create!(email: 'tech_user_policy@test.com', password: 'password', role: @tech_role)
-    @other_user = User.create!(email: 'other_user_policy@test.com', password: 'password', role: @tech_role)
+    @admin = User.create!(email: "admin_user_policy@test.com", password: "password", role: @admin_role)
+    @developer = User.create!(email: "dev_user_policy@test.com", password: "password", role: @dev_role)
+    @technician = User.create!(email: "tech_user_policy@test.com", password: "password", role: @tech_role)
+    @other_user = User.create!(email: "other_user_policy@test.com", password: "password", role: @tech_role)
   end
 
   def test_index
@@ -55,7 +55,7 @@ class UserPolicyTest < ActiveSupport::TestCase
     # Admin/Developer should see all
     assert_equal User.all.count, UserPolicy::Scope.new(@admin, User.all).resolve.count
     assert_equal User.all.count, UserPolicy::Scope.new(@developer, User.all).resolve.count
-    
+
     # Technician should see none
     assert_equal 0, UserPolicy::Scope.new(@technician, User.all).resolve.count
   end

@@ -1,14 +1,14 @@
-require 'test_helper'
+require "test_helper"
 
 class DeficiencyPolicyTest < ActiveSupport::TestCase
   setup do
-    @admin_role = Role.find_or_create_by!(level: 'Admin')
-    @dev_role = Role.find_or_create_by!(level: 'Developer')
-    @tech_role = Role.find_or_create_by!(level: 'Technician')
+    @admin_role = Role.find_or_create_by!(level: "Admin")
+    @dev_role = Role.find_or_create_by!(level: "Developer")
+    @tech_role = Role.find_or_create_by!(level: "Technician")
 
-    @admin = User.create!(email: 'admin_def_policy@test.com', password: 'password', role: @admin_role)
-    @developer = User.create!(email: 'dev_def_policy@test.com', password: 'password', role: @dev_role)
-    @technician = User.create!(email: 'tech_def_policy@test.com', password: 'password', role: @tech_role)
+    @admin = User.create!(email: "admin_def_policy@test.com", password: "password", role: @admin_role)
+    @developer = User.create!(email: "dev_def_policy@test.com", password: "password", role: @dev_role)
+    @technician = User.create!(email: "tech_def_policy@test.com", password: "password", role: @tech_role)
 
     @deficiency = deficiencies(:one)
   end

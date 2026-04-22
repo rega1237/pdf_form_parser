@@ -6,14 +6,14 @@ module FormFillsHelper
     return [] if form_fields.blank?
 
     # Excluimos las secciones que son solo para deficiencias o fotos.
-    filtered_fields = form_fields.reject { |f| %w[Deficiency Photo Deficiency_field].include?(f['type']) }
+    filtered_fields = form_fields.reject { |f| %w[Deficiency Photo Deficiency_field].include?(f["type"]) }
 
     # Agrupamos los campos por su nombre de sección.
-    grouped_fields = filtered_fields.group_by { |f| f['section_name'] }
+    grouped_fields = filtered_fields.group_by { |f| f["section_name"] }
 
     # Creamos un nuevo hash con el nombre y el número de página mínimo para esa sección.
     sections = grouped_fields.map do |name, fields|
-      { name: name.presence || 'General', page: fields.map { |f| f['page_number'].to_i }.min }
+      { name: name.presence || "General", page: fields.map { |f| f["page_number"].to_i }.min }
     end
 
     # Nos aseguramos de que cada sección aparezca solo una vez y ordenamos por número de página.

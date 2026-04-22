@@ -1,7 +1,7 @@
-require 'pdf-forms'
-require 'tempfile'
-require 'open3'
-require_relative 'pdf_signature_service'
+require "pdf-forms"
+require "tempfile"
+require "open3"
+require_relative "pdf_signature_service"
 
 class PdfFormsParserService
   def initialize(file_path)
@@ -34,8 +34,8 @@ class PdfFormsParserService
       {
         name: sanitize_field_name(field.name),
         original_name: field.name, # Keep original for reference
-        type: is_sig ? 'Signature_Field' : field.type,
-        value: '', # Changed: Now always empty string instead of field.value
+        type: is_sig ? "Signature_Field" : field.type,
+        value: "", # Changed: Now always empty string instead of field.value
         options: field.options,
         human_label: generate_human_label(field.name),
         label_name: field.value, # Keep original value here for reference
@@ -48,7 +48,7 @@ class PdfFormsParserService
       next false if field[:is_signature]
 
       # Para el resto, aplicar el filtro por label
-      field[:label_name].nil? || field[:label_name].to_s.empty? || field[:label_name] == 'Off'
+      field[:label_name].nil? || field[:label_name].to_s.empty? || field[:label_name] == "Off"
     end
     # Note: Changed filtering to use label_name instead of value since value is now always empty
   rescue PdfForms::PdftkError => e
@@ -73,29 +73,29 @@ class PdfFormsParserService
 
     # Apply signatures one by one on the already-filled PDF
     signature_requests.each do |sig|
-      tmp_out = Tempfile.create(['signed_', '.pdf'])
+      tmp_out = Tempfile.create([ "signed_", ".pdf" ])
       tmp_out_path = PathSanitizer.ensure_safe_path!(tmp_out.path)
       tmp_out.close
 
-      field_name = sig['original_name'].presence || sig['name']
-      if sig['certificate_path'].present?
+      field_name = sig["original_name"].presence || sig["name"]
+      if sig["certificate_path"].present?
         # Firma digital con certificado (si se proporciona)
         PdfSignatureService.sign(
           intermediate_path,
           tmp_out_path,
           field_name,
-          certificate_path: sig['certificate_path'],
-          certificate_password: sig['certificate_password'],
-          key_path: sig['key_path'],
-          reason: sig['reason'],
-          location: sig['location'],
-          contact_info: sig['contact_info'],
-          name: sig['signer_name'] || sig['name_label'],
-          signature_image_path: sig['signature_image_path']
+          certificate_path: sig["certificate_path"],
+          certificate_password: sig["certificate_password"],
+          key_path: sig["key_path"],
+          reason: sig["reason"],
+          location: sig["location"],
+          contact_info: sig["contact_info"],
+          name: sig["signer_name"] || sig["name_label"],
+          signature_image_path: sig["signature_image_path"]
         )
       else
         # Sin certificado: solo estampar imagen de firma manuscrita en el campo
-        image_path = sig['signature_image_path']
+        image_path = sig["signature_image_path"]
         if image_path.present? && File.exist?(image_path)
           PdfSignatureService.stamp_signature_image(
             intermediate_path,
@@ -135,7 +135,7 @@ class PdfFormsParserService
 
   def signature_field?(field)
     type = field.type.to_s.downcase
-    type.include?('sig') || type.include?('signature')
+    type.include?("sig") || type.include?("signature")
   rescue
     false
   end
@@ -194,7 +194,7 @@ class PdfFormsParserService
     # Create a simple object that mimics PdfForms field structure
     OpenStruct.new(
       name: field_data[:name],
-      type: field_data[:type] || 'Text',
+      type: field_data[:type] || "Text",
       value: field_data[:value],
       options: field_data[:options] || []
     )
@@ -204,7 +204,7 @@ class PdfFormsParserService
     return name unless name
 
     # Handle common problematic characters
-    name.to_s.encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
+    name.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
   end
 
   def generate_human_label(field_name)
@@ -212,9 +212,9 @@ class PdfFormsParserService
 
     # Convert field names like "Location_row_1" to "Location Row 1"
     field_name.to_s
-              .gsub('_', ' ')
+              .gsub("_", " ")
               .gsub(/([a-z])([A-Z])/, '\1 \2') # Handle camelCase
-              .split.map(&:capitalize).join(' ')
+              .split.map(&:capitalize).join(" ")
   end
 
   def prepare_field_values(field_data)
@@ -224,20 +224,20 @@ class PdfFormsParserService
       # Solo procesar campos con valores NO vacíos.
       # Pasar valores vacíos a pdftk puede degradar la estructura del AcroForm y
       # producir estados inválidos que luego HexaPDF no puede validar.
-      next unless field['name'].present?
+      next unless field["name"].present?
 
-      field_name = field['name']
-      raw_value = field['value']
+      field_name = field["name"]
+      raw_value = field["value"]
       next if raw_value.nil? || raw_value.to_s.strip.empty?
 
-      field_value = raw_value.to_s.encode('UTF-8', invalid: :replace, undef: :replace)
+      field_value = raw_value.to_s.encode("UTF-8", invalid: :replace, undef: :replace)
 
       # Asignación principal
       field_values[field_name] = field_value
 
       # También intentar con original_name si existe
-      if field['original_name'].present? && field['original_name'] != field_name
-        field_values[field['original_name']] = field_value
+      if field["original_name"].present? && field["original_name"] != field_name
+        field_values[field["original_name"]] = field_value
       end
     end
 
@@ -280,8 +280,8 @@ class PdfFormsParserService
         field_hash = {
           name: sanitize_field_name(field.name),
           original_name: field.name,
-          type: is_sig ? 'Signature_Field' : field.type,
-          value: '', # Changed: Now always empty string instead of field.value
+          type: is_sig ? "Signature_Field" : field.type,
+          value: "", # Changed: Now always empty string instead of field.value
           options: field.options,
           human_label: generate_human_label(field.name),
           label_name: field.value, # Keep original value here for reference
@@ -304,18 +304,18 @@ class PdfFormsParserService
     field_data.each do |field|
       # Only treat technical field signatures as signature requests.
       # Annex/client signatures should be handled separately in merging.
-      if field['is_signature'] || field['type'].to_s == 'Signature_Field' || field['type'].to_s == 'Signature'
+      if field["is_signature"] || field["type"].to_s == "Signature_Field" || field["type"].to_s == "Signature"
         signatures << field
       else
         normal << field
       end
     end
-    [normal, signatures]
+    [ normal, signatures ]
   end
 
   def signature_field_name?(name)
     return false unless name
 
-    name.to_s.downcase.include?('sig') || name.to_s.downcase.include?('signature')
+    name.to_s.downcase.include?("sig") || name.to_s.downcase.include?("signature")
   end
 end

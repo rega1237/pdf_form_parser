@@ -15,7 +15,7 @@ class GeneratePdfJob < ApplicationJob
 
     unless main_form_fill.main_form_fill?
       Rails.logger.error "FormFill ##{main_form_fill.id} is not the main form fill for the inspection."
-      main_form_fill.update!(pdf_generation_status: 'failed')
+      main_form_fill.update!(pdf_generation_status: "failed")
       return
     end
 
@@ -32,7 +32,7 @@ class GeneratePdfJob < ApplicationJob
         Rails.logger.info "Generating deficiencies PDF for #{@unprocessed_deficiencies.count} unprocessed deficiencies"
         deficiencies_pdf_path = generate_deficiencies_pdf_if_needed(inspection, all_deficiencies, inspection_date)
       else
-        Rails.logger.info 'No unprocessed deficiencies found. Skipping deficiencies PDF generation.'
+        Rails.logger.info "No unprocessed deficiencies found. Skipping deficiencies PDF generation."
       end
 
       # Collect individual PDFs that should be merged
@@ -51,7 +51,7 @@ class GeneratePdfJob < ApplicationJob
           Rails.logger.info "Collected #{main_form_fill.get_photos_with_context.size} photo(s) with context from main form"
 
           # Collect photos from 'Additional Risers' form fill
-          additional_risers_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
+          additional_risers_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: "Additional Risers" })
           if additional_risers_form_fill
             ar_photos = additional_risers_form_fill.get_photos_with_context
             all_photos_with_context.concat(ar_photos)
@@ -59,25 +59,25 @@ class GeneratePdfJob < ApplicationJob
           end
 
           # Partition photos into deficiency photos and pass photos
-          pass_photos = all_photos_with_context.select { |p| p[:field_type] == 'pass_photo' }
+          pass_photos = all_photos_with_context.select { |p| p[:field_type] == "pass_photo" }
           # Any photo that is not a pass_photo is considered a deficiency photo (including 'Photo', 'Deficiency', etc.)
-          deficiency_photos = all_photos_with_context.select { |p| p[:field_type] != 'pass_photo' }
+          deficiency_photos = all_photos_with_context.select { |p| p[:field_type] != "pass_photo" }
 
           # Add Deficiency Photos page if any exist
           if deficiency_photos.any?
             final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, deficiency_photos,
-                                                                   title: 'Deficiency Photos')
+                                                                   title: "Deficiency Photos")
             Rails.logger.info "Stamped #{deficiency_photos.size} deficiency photo(s) into final PDF"
           else
-            Rails.logger.info 'No deficiency photos to stamp'
+            Rails.logger.info "No deficiency photos to stamp"
           end
 
           # Add Pass Photos page if any exist
           if pass_photos.any?
-            final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, pass_photos, title: 'Pass Photos')
+            final_pdf_object = PdfMergingService.add_images_to_pdf(final_pdf_object, pass_photos, title: "Pass Photos")
             Rails.logger.info "Stamped #{pass_photos.size} pass photo(s) into final PDF"
           else
-            Rails.logger.info 'No pass photos to stamp'
+            Rails.logger.info "No pass photos to stamp"
           end
         rescue StandardError => e
           Rails.logger.error "Error adding photo pages to PDF: #{e.message}"
@@ -102,16 +102,16 @@ class GeneratePdfJob < ApplicationJob
         Rails.logger.info "Complete inspection PDF generated successfully for FormFill ##{main_form_fill.id}."
       else
         puts "DEBUG: final_pdf_object is nil, setting failed"
-        main_form_fill.update!(pdf_generation_status: 'failed')
+        main_form_fill.update!(pdf_generation_status: "failed")
         Rails.logger.error "Failed to generate complete inspection PDF for FormFill ##{main_form_fill.id}"
       end
 
       # Clean up temporary files
-      cleanup_temp_files([main_pdf_path, deficiencies_pdf_path])
+      cleanup_temp_files([ main_pdf_path, deficiencies_pdf_path ])
     rescue StandardError => e
       puts "PDF JOB ERROR: #{e.message}"
       puts e.backtrace.first(10).join("\n")
-      main_form_fill.update!(pdf_generation_status: 'failed')
+      main_form_fill.update!(pdf_generation_status: "failed")
       Rails.logger.error "Error in GeneratePdfJob for FormFill ##{main_form_fill.id}: #{e.message}\n#{e.backtrace.join("\n")}"
     end
   end
@@ -130,7 +130,7 @@ class GeneratePdfJob < ApplicationJob
     end
 
     # Get deficiencies from additional risers if it has PDF created
-    additional_risers_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
+    additional_risers_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: "Additional Risers" })
     if additional_risers_form_fill&.pdf_created?
       additional_deficiencies = additional_risers_form_fill.get_deficiencies_for_processing
       all_deficiencies.concat(additional_deficiencies)
@@ -148,14 +148,14 @@ class GeneratePdfJob < ApplicationJob
     # Merge data into fields (same logic as before)
     main_form_fields = all_fields.flat_map do |field|
       field_copy = field.dup
-      name = field_copy['name']
-      next [field_copy] unless name.present?
+      name = field_copy["name"]
+      next [ field_copy ] unless name.present?
 
-      case field_copy['type']
-      when 'Photo'
-        field_copy['photo_attachment_id'] = data["#{name}_photo_attachment_id"] || field_copy['photo_attachment_id']
-        [field_copy]
-      when 'Deficiency'
+      case field_copy["type"]
+      when "Photo"
+        field_copy["photo_attachment_id"] = data["#{name}_photo_attachment_id"] || field_copy["photo_attachment_id"]
+        [ field_copy ]
+      when "Deficiency"
         collection_json = data["#{name}_collection"]
         if collection_json.present?
           begin
@@ -163,44 +163,44 @@ class GeneratePdfJob < ApplicationJob
             if collection.is_a?(Array) && collection.any?
               collection.map do |deficiency_data|
                 new_field = field.dup
-                new_field['value'] = deficiency_data['value']
-                new_field['comment_value'] = deficiency_data['comment_value']
-                new_field['Item'] = deficiency_data['Item']
-                new_field['Riser'] = deficiency_data['Riser']
-                new_field['C'] = deficiency_data['C']
-                new_field['D'] = deficiency_data['D']
+                new_field["value"] = deficiency_data["value"]
+                new_field["comment_value"] = deficiency_data["comment_value"]
+                new_field["Item"] = deficiency_data["Item"]
+                new_field["Riser"] = deficiency_data["Riser"]
+                new_field["C"] = deficiency_data["C"]
+                new_field["D"] = deficiency_data["D"]
                 new_field
               end
             else
-              [field_copy]
+              [ field_copy ]
             end
           rescue JSON::ParserError => e
             Rails.logger.warn "Error parsing deficiency collection for #{name}: #{e.message}"
-            field_copy['value'] = data["#{name}_select"]
-            field_copy['comment_value'] = data["#{name}_comment"]
-            field_copy['Item'] = data["#{name}_item"]
-            field_copy['Riser'] = data["#{name}_riser"]
-            field_copy['C'] = data["#{name}_c"]
-            field_copy['D'] = data["#{name}_d"]
-            [field_copy]
+            field_copy["value"] = data["#{name}_select"]
+            field_copy["comment_value"] = data["#{name}_comment"]
+            field_copy["Item"] = data["#{name}_item"]
+            field_copy["Riser"] = data["#{name}_riser"]
+            field_copy["C"] = data["#{name}_c"]
+            field_copy["D"] = data["#{name}_d"]
+            [ field_copy ]
           end
         else
-          field_copy['value'] = data["#{name}_select"] || field_copy['value']
-          field_copy['comment_value'] = data["#{name}_comment"] || field_copy['comment_value']
-          field_copy['Item'] = data["#{name}_item"] || field_copy['Item']
-          field_copy['Riser'] = data["#{name}_riser"] || field_copy['Riser']
-          field_copy['C'] = data["#{name}_c"] || field_copy['C']
-          field_copy['D'] = data["#{name}_d"] || field_copy['D']
-          [field_copy]
+          field_copy["value"] = data["#{name}_select"] || field_copy["value"]
+          field_copy["comment_value"] = data["#{name}_comment"] || field_copy["comment_value"]
+          field_copy["Item"] = data["#{name}_item"] || field_copy["Item"]
+          field_copy["Riser"] = data["#{name}_riser"] || field_copy["Riser"]
+          field_copy["C"] = data["#{name}_c"] || field_copy["C"]
+          field_copy["D"] = data["#{name}_d"] || field_copy["D"]
+          [ field_copy ]
         end
       else
-        field_copy['value'] = data[name] || field_copy['value']
-        [field_copy]
+        field_copy["value"] = data[name] || field_copy["value"]
+        [ field_copy ]
       end
     end
 
     # Process deficiencies using all collected deficiencies
-    target_fields = main_form_fields.select { |f| f['type'] == 'Deficiency_field' }
+    target_fields = main_form_fields.select { |f| f["type"] == "Deficiency_field" }
     main_processor = DeficiencyProcessorService.new(
       deficiencies_data: all_deficiencies,
       target_fields: target_fields,
@@ -221,7 +221,7 @@ class GeneratePdfJob < ApplicationJob
   def generate_deficiencies_pdf_if_needed(inspection, all_deficiencies, inspection_date)
     return nil unless @unprocessed_deficiencies&.any?
 
-    deficiencies_template = FormTemplate.find_by(name: 'Deficiencies')
+    deficiencies_template = FormTemplate.find_by(name: "Deficiencies")
     return nil unless deficiencies_template&.original_file&.attached?
 
     deficiencies_form_fill = inspection.form_fills.find_or_create_by(form_template: deficiencies_template) do |ff|
@@ -237,14 +237,14 @@ class GeneratePdfJob < ApplicationJob
     # This ensures headers like "Building Name", "Address", etc. are populated
     data = deficiencies_form_fill.data || {}
     deficiencies_form_fields.each do |field|
-      name = field['name']
+      name = field["name"]
       next unless name.present?
-      next if field['type'] == 'Deficiency_field' # These are handled by the processor
+      next if field["type"] == "Deficiency_field" # These are handled by the processor
 
-      field['value'] = data[name] if data[name].present?
+      field["value"] = data[name] if data[name].present?
     end
 
-    target_deficiency_fields = deficiencies_form_fields.select { |f| f['type'] == 'Deficiency_field' }
+    target_deficiency_fields = deficiencies_form_fields.select { |f| f["type"] == "Deficiency_field" }
 
     deficiencies_processor = DeficiencyProcessorService.new(
       deficiencies_data: @unprocessed_deficiencies,
@@ -263,7 +263,7 @@ class GeneratePdfJob < ApplicationJob
       signature_tempfiles = []
       # 1) Identificar campos de firma en el formulario de Deficiencies
       deficiencies_signature_fields = deficiencies_form_fields.select do |f|
-        %w[Signature Signature_Field].include?(f['type'].to_s)
+        %w[Signature Signature_Field].include?(f["type"].to_s)
       end
       if deficiencies_signature_fields.any?
         # 2) Obtener el formulario principal para encontrar su firma del técnico
@@ -272,24 +272,24 @@ class GeneratePdfJob < ApplicationJob
           main_fields = JSON.parse(main_form_fill.form_structure)
           # Preferir el campo etiquetado como "Technician Signature"; si no existe, tomar el primer Signature_Field
           tech_sig_field = main_fields.find do |f|
-            f['type'].to_s == 'Signature_Field' && f['label_name'].to_s.strip == 'Technician Signature'
+            f["type"].to_s == "Signature_Field" && f["label_name"].to_s.strip == "Technician Signature"
           end
-          tech_sig_field ||= main_fields.find { |f| f['type'].to_s == 'Signature_Field' }
+          tech_sig_field ||= main_fields.find { |f| f["type"].to_s == "Signature_Field" }
 
           if tech_sig_field.present?
-            source_field_name = tech_sig_field['name']
+            source_field_name = tech_sig_field["name"]
             source_attachment = main_form_fill.get_signature_for_field(source_field_name)
             if source_attachment.present?
               source_attachment.blob.open do |blob_tempfile|
-                ext = File.extname(source_attachment.filename.to_s).presence || '.png'
-                tf = Tempfile.create(["deficiencies_signature_#{source_field_name}", ext])
+                ext = File.extname(source_attachment.filename.to_s).presence || ".png"
+                tf = Tempfile.create([ "deficiencies_signature_#{source_field_name}", ext ])
                 tf.binmode
                 FileUtils.cp(blob_tempfile.path, tf.path)
                 tf.flush
                 signature_tempfiles << tf
                 # Asignar la ruta de imagen de firma a TODOS los campos de firma del PDF de Deficiencies
                 deficiencies_signature_fields.each do |sig_field|
-                  sig_field['signature_image_path'] = tf.path
+                  sig_field["signature_image_path"] = tf.path
                   Rails.logger.info "Asignada firma del main form ('#{source_field_name}') al campo de Deficiencies '#{sig_field['name']}'"
                 end
               end
@@ -297,13 +297,13 @@ class GeneratePdfJob < ApplicationJob
               Rails.logger.warn "No se encontró firma del técnico en el main form para estampar en Deficiencies (campo: #{source_field_name})."
             end
           else
-            Rails.logger.warn 'No se encontró un campo Signature_Field en el main form para usar como firma del técnico.'
+            Rails.logger.warn "No se encontró un campo Signature_Field en el main form para usar como firma del técnico."
           end
         else
-          Rails.logger.warn 'No se encontró el FormFill principal de la inspección para copiar la firma al PDF de Deficiencies.'
+          Rails.logger.warn "No se encontró el FormFill principal de la inspección para copiar la firma al PDF de Deficiencies."
         end
       else
-        Rails.logger.info 'El formulario de Deficiencies no contiene campos de firma en su JSON o no fueron detectados.'
+        Rails.logger.info "El formulario de Deficiencies no contiene campos de firma en su JSON o no fueron detectados."
       end
       # Generar el PDF de Deficiencies (con firma ya asignada si corresponde)
       pdf_output_path = generate_pdf_for(deficiencies_form_fill, deficiencies_form_fields)
@@ -324,17 +324,17 @@ class GeneratePdfJob < ApplicationJob
     individual_pdfs = []
 
     # Check for Additional Risers PDF
-    additional_risers_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Additional Risers' })
+    additional_risers_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: "Additional Risers" })
     if additional_risers_form_fill&.should_include_in_main_merge?
       individual_pdfs << additional_risers_form_fill.filled_pdf
-      Rails.logger.info 'Including Additional Risers PDF in merge'
+      Rails.logger.info "Including Additional Risers PDF in merge"
     end
 
     # Check for Corrected Deficiencies PDF (updated name)
-    corrections_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: 'Corrected Deficiencies' })
+    corrections_form_fill = inspection.form_fills.joins(:form_template).find_by(form_templates: { name: "Corrected Deficiencies" })
     if corrections_form_fill&.should_include_in_main_merge?
       individual_pdfs << corrections_form_fill.filled_pdf
-      Rails.logger.info 'Including Corrected Deficiencies PDF in merge'
+      Rails.logger.info "Including Corrected Deficiencies PDF in merge"
     end
 
     individual_pdfs
@@ -359,16 +359,16 @@ class GeneratePdfJob < ApplicationJob
   end
 
   def save_final_pdf(main_form_fill, final_pdf_object, inspection)
-    final_pdf_path = Rails.root.join('tmp', "complete_inspection_#{inspection.id}_#{Time.now.to_i}.pdf")
+    final_pdf_path = Rails.root.join("tmp", "complete_inspection_#{inspection.id}_#{Time.now.to_i}.pdf")
     final_pdf_object.save(final_pdf_path)
 
     if File.exist?(final_pdf_path) && File.size(final_pdf_path) > 0
       main_form_fill.filled_pdf.purge if main_form_fill.filled_pdf.attached?
-      File.open(final_pdf_path, 'rb') do |file|
+      File.open(final_pdf_path, "rb") do |file|
         main_form_fill.filled_pdf.attach(
           io: file,
           filename: "complete_inspection_#{inspection.property['property_name']}_#{inspection.id}_#{Time.now.to_i}.pdf",
-          content_type: 'application/pdf'
+          content_type: "application/pdf"
         )
       end
       FileUtils.rm_f(final_pdf_path)
@@ -391,24 +391,24 @@ class GeneratePdfJob < ApplicationJob
     processed_fields.each do |field|
       next unless field.is_a?(Hash)
 
-      type = field['type'].to_s
+      type = field["type"].to_s
       next unless %w[Signature Signature_Field].include?(type)
 
-      field_name = field['name']
+      field_name = field["name"]
 
       # Check if this field should have a signature based on field characteristics
       # Get field info directly from the field hash since we're already processing the fields
-      is_client_field = type == 'Signature_Annex' ||
-                        field_name.to_s.downcase.include?('client') ||
-                        field['label_name'].to_s.downcase.include?('client') ||
-                        field['original_name'].to_s.downcase.include?('client')
+      is_client_field = type == "Signature_Annex" ||
+                        field_name.to_s.downcase.include?("client") ||
+                        field["label_name"].to_s.downcase.include?("client") ||
+                        field["original_name"].to_s.downcase.include?("client")
 
       # For client signature fields, only process if there are actual client signatures available
       if is_client_field
         client_signatures_available = form_fill.photos.attached? &&
                                       form_fill.photos.any? do |p|
                                         filename = p.filename.to_s.downcase
-                                        filename.include?('client') || filename.include?('annex')
+                                        filename.include?("client") || filename.include?("annex")
                                       end
         unless client_signatures_available
           Rails.logger.info "Skipping client signature field '#{field_name}' - no client signatures available"
@@ -420,13 +420,13 @@ class GeneratePdfJob < ApplicationJob
         signature_attachment = form_fill.get_signature_for_field(field_name)
         if signature_attachment.present?
           signature_attachment.blob.open do |blob_tempfile|
-            ext = File.extname(signature_attachment.filename.to_s).presence || '.png'
-            tf = Tempfile.create(["signature_#{field_name}", ext])
+            ext = File.extname(signature_attachment.filename.to_s).presence || ".png"
+            tf = Tempfile.create([ "signature_#{field_name}", ext ])
             tf.binmode
             FileUtils.cp(blob_tempfile.path, tf.path)
             tf.flush
             signature_image_tempfiles << tf
-            field['signature_image_path'] = tf.path
+            field["signature_image_path"] = tf.path
             Rails.logger.info "Asignada imagen de firma para campo '#{field_name}': #{tf.path}"
           end
         else
@@ -440,9 +440,9 @@ class GeneratePdfJob < ApplicationJob
     begin
       form_fill.form_template.original_file.blob.open do |template_tempfile|
         pdf_service = PdfFormsParserService.new(template_tempfile.path)
-        safe_name = form_fill.name.presence || form_fill.form_template&.name.presence || 'form'
+        safe_name = form_fill.name.presence || form_fill.form_template&.name.presence || "form"
         output_filename = "#{safe_name.parameterize}_#{Time.now.to_i}.pdf"
-        output_path = Rails.root.join('tmp', output_filename)
+        output_path = Rails.root.join("tmp", output_filename)
         pdf_service.fill_form(output_path, processed_fields)
       end
       output_path
@@ -462,10 +462,10 @@ class GeneratePdfJob < ApplicationJob
     fields = JSON.parse(form_fill.form_structure)
     # Only collect signatures for fields that are clearly client signatures
     annex_fields = fields.select do |f|
-      f['type'].to_s == 'Signature_Annex' &&
-        (f['label_name'].to_s.downcase.include?('client') ||
-         f['original_name'].to_s.downcase.include?('client') ||
-         f['name'].to_s.downcase.include?('client'))
+      f["type"].to_s == "Signature_Annex" &&
+        (f["label_name"].to_s.downcase.include?("client") ||
+         f["original_name"].to_s.downcase.include?("client") ||
+         f["name"].to_s.downcase.include?("client"))
     end
 
     Rails.logger.info "Found #{annex_fields.count} client Signature_Annex fields: #{annex_fields.map do |f|
@@ -473,7 +473,7 @@ class GeneratePdfJob < ApplicationJob
     end.join(', ')}"
 
     signatures = annex_fields.filter_map do |f|
-      att = form_fill.get_signature_for_field(f['name'])
+      att = form_fill.get_signature_for_field(f["name"])
       if att.present?
         Rails.logger.info "Found signature for client annex field '#{f['name']}': #{att.filename}"
         att
@@ -491,9 +491,9 @@ class GeneratePdfJob < ApplicationJob
   end
 
   def update_form_fields(original_fields, processed_fields)
-    processed_map = processed_fields.index_by { |f| f['name'] }
+    processed_map = processed_fields.index_by { |f| f["name"] }
     original_fields.each do |field|
-      field['value'] = processed_map[field['name']]['value'] if processed_map.key?(field['name'])
+      field["value"] = processed_map[field["name"]]["value"] if processed_map.key?(field["name"])
     end
   end
 end

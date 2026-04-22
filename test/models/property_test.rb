@@ -16,7 +16,7 @@ class PropertyTest < ActiveSupport::TestCase
   test "destroying property should destroy associated inspections" do
     # inspections(:one) already belongs to properties(:one) via fixtures
     assert @property.inspections.include?(inspections(:one))
-    
+
     assert_difference("Inspection.count", -1) do
       @property.destroy
     end

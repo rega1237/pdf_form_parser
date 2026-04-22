@@ -18,17 +18,17 @@ class Api::V1::SyncController < ApplicationController
 
     sync_items.each do |item|
       result = case item[:type]
-               when 'form_fill', 'form_fill_update'
+      when "form_fill", "form_fill_update"
                  sync_form_fill(item)
-               when 'inspection'
+      when "inspection"
                  sync_inspection(item)
-               when 'photo_delete'
+      when "photo_delete"
                  sync_photo_delete(item)
-               when 'signature_delete'
+      when "signature_delete"
                  sync_signature_delete(item)
-               else
+      else
                  { success: false, error: "Tipo de sincronización no soportado: #{item[:type]}" }
-               end
+      end
 
       if result[:success]
         results[:success] << {
@@ -65,7 +65,7 @@ class Api::V1::SyncController < ApplicationController
     Rails.logger.error "Error en sincronización: #{e.message}"
     render json: {
       success: false,
-      error: 'Error interno del servidor',
+      error: "Error interno del servidor",
       message: e.message
     }, status: :internal_server_error
   end
@@ -81,7 +81,7 @@ class Api::V1::SyncController < ApplicationController
     unless form_fill_id && field_name && photo_file
       return render json: {
         success: false,
-        error: 'Parámetros requeridos: form_fill_id, field_name, photo'
+        error: "Parámetros requeridos: form_fill_id, field_name, photo"
       }, status: :bad_request
     end
 
@@ -92,7 +92,7 @@ class Api::V1::SyncController < ApplicationController
     unless policy(form_fill).update?
       return render json: {
         success: false,
-        error: 'No autorizado para actualizar este formulario'
+        error: "No autorizado para actualizar este formulario"
       }, status: :forbidden
     end
 
@@ -103,7 +103,7 @@ class Api::V1::SyncController < ApplicationController
       render json: {
         success: true,
         photo_attachment_id: result[:attachment_id],
-        message: 'Foto subida exitosamente'
+        message: "Foto subida exitosamente"
       }, status: :ok
     else
       render json: {
@@ -114,13 +114,13 @@ class Api::V1::SyncController < ApplicationController
   rescue ActiveRecord::RecordNotFound
     render json: {
       success: false,
-      error: 'FormFill no encontrado'
+      error: "FormFill no encontrado"
     }, status: :not_found
   rescue StandardError => e
     Rails.logger.error "Error subiendo foto: #{e.message}"
     render json: {
       success: false,
-      error: 'Error interno del servidor',
+      error: "Error interno del servidor",
       message: e.message
     }, status: :internal_server_error
   end
@@ -135,22 +135,22 @@ class Api::V1::SyncController < ApplicationController
       user_id: current_user.id,
       total_inspections: user_inspections.count,
       pending_inspections: user_inspections.where(status: %w[pending in_progress]).count,
-      completed_inspections: user_inspections.where(status: 'completed').count,
+      completed_inspections: user_inspections.where(status: "completed").count,
       total_form_fills: user_inspections.joins(:form_fills).count,
-      last_sync: session[:last_sync_at] || 'Nunca',
+      last_sync: session[:last_sync_at] || "Nunca",
       server_time: Time.current
     }
 
     render json: {
       success: true,
       data: status_data,
-      message: 'Estado de sincronización obtenido exitosamente'
+      message: "Estado de sincronización obtenido exitosamente"
     }, status: :ok
   rescue StandardError => e
     Rails.logger.error "Error obteniendo estado de sincronización: #{e.message}"
     render json: {
       success: false,
-      error: 'Error interno del servidor',
+      error: "Error interno del servidor",
       message: e.message
     }, status: :internal_server_error
   end
@@ -177,14 +177,14 @@ class Api::V1::SyncController < ApplicationController
           end
           if local_time && form_fill.updated_at > local_time
             # Permite resolver conflictos desde el cliente
-            if form_fill_data[:resolve_strategy] == 'use_local'
+            if form_fill_data[:resolve_strategy] == "use_local"
               # Merge local data into server data so we keep any server-only keys (e.g., photos) but let local win on overlaps
               merged = (form_fill.data || {}).merge(form_fill_data[:data] || {})
               form_fill.update!(data: merged)
               return {
                 success: true,
                 server_id: form_fill.id,
-                message: 'Conflicto resuelto conservando la versión local (merge)'
+                message: "Conflicto resuelto conservando la versión local (merge)"
               }
             end
 
@@ -200,7 +200,7 @@ class Api::V1::SyncController < ApplicationController
                 server_form_structure: form_fill.form_template&.form_structure,
                 local_data: form_fill_data[:data]
               },
-              message: 'Conflicto de versión detectado'
+              message: "Conflicto de versión detectado"
             }
           end
         end
@@ -215,8 +215,8 @@ class Api::V1::SyncController < ApplicationController
       else
         return {
           success: false,
-          error: 'Payload de form_fill incompleto',
-          message: 'Se requiere :data o :changes en el payload'
+          error: "Payload de form_fill incompleto",
+          message: "Se requiere :data o :changes en el payload"
         }
       end
 
@@ -226,12 +226,12 @@ class Api::V1::SyncController < ApplicationController
       {
         success: true,
         server_id: form_fill.id,
-        message: 'FormFill actualizado exitosamente'
+        message: "FormFill actualizado exitosamente"
       }
     else
       {
         success: false,
-        error: 'FormFill no encontrado',
+        error: "FormFill no encontrado",
         message: "No se encontró el FormFill con ID #{form_fill_id}"
       }
     end
@@ -239,7 +239,7 @@ class Api::V1::SyncController < ApplicationController
     Rails.logger.error "Error sincronizando form_fill: #{e.message}"
     {
       success: false,
-      error: 'Error sincronizando FormFill',
+      error: "Error sincronizando FormFill",
       message: e.message
     }
   end
@@ -261,7 +261,7 @@ class Api::V1::SyncController < ApplicationController
             server_version: inspection.updated_at,
             local_version: inspection_data[:updated_at]
           },
-          message: 'Conflicto de versión detectado en inspección'
+          message: "Conflicto de versión detectado en inspección"
         }
       end
 
@@ -274,12 +274,12 @@ class Api::V1::SyncController < ApplicationController
       {
         success: true,
         server_id: inspection.id,
-        message: 'Inspection updated successfully'
+        message: "Inspection updated successfully"
       }
     else
       {
         success: false,
-        error: 'Inspection not found',
+        error: "Inspection not found",
         message: "No inspection found with ID #{inspection_data[:id]}"
       }
     end
@@ -287,20 +287,20 @@ class Api::V1::SyncController < ApplicationController
     Rails.logger.error "Error synchronizing inspection: #{e.message}"
     {
       success: false,
-      error: 'Error synchronizing inspection',
+      error: "Error synchronizing inspection",
       message: e.message
     }
   end
 
   def process_photo_upload(form_fill, field_name, photo_file)
     # Validar que sea una imagen
-    unless photo_file.content_type&.start_with?('image/')
-      return { success: false, error: 'The file must be an image' }
+    unless photo_file.content_type&.start_with?("image/")
+      return { success: false, error: "The file must be an image" }
     end
 
     # Validar tamaño (máximo 10MB)
     max_size = 10.megabytes
-    return { success: false, error: 'The file is too large (max 10MB)' } if photo_file.size > max_size
+    return { success: false, error: "The file is too large (max 10MB)" } if photo_file.size > max_size
 
     # Usar la API del modelo para adjuntar de forma consistente y limpiar duplicados
     attach_result = form_fill.attach_photo_for_field(field_name, photo_file)
@@ -313,7 +313,7 @@ class Api::V1::SyncController < ApplicationController
     else
       {
         success: false,
-        error: attach_result[:error] || 'Error attaching photo'
+        error: attach_result[:error] || "Error attaching photo"
       }
     end
   rescue StandardError => e
@@ -335,7 +335,7 @@ class Api::V1::SyncController < ApplicationController
         decoded_data = Base64.decode64(photo_data[:blob_data])
 
         # Crear un archivo temporal
-        temp_file = Tempfile.new(['photo', '.jpg'])
+        temp_file = Tempfile.new([ "photo", ".jpg" ])
         temp_file.binmode
         temp_file.write(decoded_data)
         temp_file.rewind
@@ -344,7 +344,7 @@ class Api::V1::SyncController < ApplicationController
         form_fill.photos.attach(
           io: temp_file,
           filename: photo_data[:filename] || "photo_#{Time.current.to_i}.jpg",
-          content_type: photo_data[:content_type] || 'image/jpeg'
+          content_type: photo_data[:content_type] || "image/jpeg"
         )
 
         temp_file.close
@@ -357,15 +357,15 @@ class Api::V1::SyncController < ApplicationController
 
   def sync_photo_delete(item)
     data = item[:data] || item[:payload] || {}
-    form_fill_id = data[:form_fill_id] || data['form_fill_id'] || item[:form_fill_id] || item['form_fill_id']
-    field_name = data[:field_name] || data['field_name']
+    form_fill_id = data[:form_fill_id] || data["form_fill_id"] || item[:form_fill_id] || item["form_fill_id"]
+    field_name = data[:field_name] || data["field_name"]
 
     unless form_fill_id.present? && field_name.present?
-      return { success: false, message: 'Missing form_fill_id or field_name for photo_delete' }
+      return { success: false, message: "Missing form_fill_id or field_name for photo_delete" }
     end
 
     form_fill = FormFill.find_by(id: form_fill_id)
-    return { success: false, message: 'FormFill not found' } unless form_fill
+    return { success: false, message: "FormFill not found" } unless form_fill
 
     # Authorization: follow same pattern used for other sync actions if Pundit is included
     begin
@@ -377,24 +377,24 @@ class Api::V1::SyncController < ApplicationController
     removal = form_fill.remove_photo_for_field(field_name)
 
     if removal.is_a?(Hash) && removal[:success]
-      { success: true, server_id: form_fill.id, message: 'Photo deleted' }
+      { success: true, server_id: form_fill.id, message: "Photo deleted" }
     else
       { success: false, server_id: form_fill.id,
-        message: (removal.is_a?(Hash) ? removal[:message] : 'Photo delete failed') }
+        message: (removal.is_a?(Hash) ? removal[:message] : "Photo delete failed") }
     end
   end
 
   def sync_signature_delete(item)
     data = item[:data] || item[:payload] || {}
-    form_fill_id = data[:form_fill_id] || data['form_fill_id'] || item[:form_fill_id] || item['form_fill_id']
-    field_name = data[:field_name] || data['field_name']
+    form_fill_id = data[:form_fill_id] || data["form_fill_id"] || item[:form_fill_id] || item["form_fill_id"]
+    field_name = data[:field_name] || data["field_name"]
 
     unless form_fill_id.present? && field_name.present?
-      return { success: false, message: 'Missing form_fill_id or field_name for signature_delete' }
+      return { success: false, message: "Missing form_fill_id or field_name for signature_delete" }
     end
 
     form_fill = FormFill.find_by(id: form_fill_id)
-    return { success: false, message: 'FormFill not found' } unless form_fill
+    return { success: false, message: "FormFill not found" } unless form_fill
 
     # Authorization: follow same pattern used for other sync actions if Pundit is included
     begin
@@ -408,9 +408,9 @@ class Api::V1::SyncController < ApplicationController
       cleared = form_fill.clear_signature_attachment_id_in_structure(field_name)
 
       if cleared
-        { success: true, server_id: form_fill.id, message: 'Signature deleted' }
+        { success: true, server_id: form_fill.id, message: "Signature deleted" }
       else
-        { success: false, server_id: form_fill.id, message: 'Failed to clear signature attachment id in structure' }
+        { success: false, server_id: form_fill.id, message: "Failed to clear signature attachment id in structure" }
       end
     rescue StandardError => e
       { success: false, server_id: form_fill.id, message: "Signature delete failed: #{e.message}" }

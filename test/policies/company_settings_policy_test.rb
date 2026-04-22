@@ -1,14 +1,14 @@
-require 'test_helper'
+require "test_helper"
 
 class CompanySettingsPolicyTest < ActiveSupport::TestCase
   setup do
     @admin_role = roles(:admin)
     @dev_role = roles(:developer)
-    @tech_role = Role.find_or_create_by!(level: 'Technician')
+    @tech_role = Role.find_or_create_by!(level: "Technician")
 
-    @admin = User.create!(email: 'admin_cs@test.com', password: 'password', role: @admin_role)
-    @developer = User.create!(email: 'dev_cs@test.com', password: 'password', role: @dev_role)
-    @technician = User.create!(email: 'tech_cs@test.com', password: 'password', role: @tech_role)
+    @admin = User.create!(email: "admin_cs@test.com", password: "password", role: @admin_role)
+    @developer = User.create!(email: "dev_cs@test.com", password: "password", role: @dev_role)
+    @technician = User.create!(email: "tech_cs@test.com", password: "password", role: @tech_role)
 
     @record = nil # Company settings doesn't always have a record
   end

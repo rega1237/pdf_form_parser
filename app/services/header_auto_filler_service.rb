@@ -12,7 +12,7 @@ class HeaderAutoFillerService
     Rails.logger.info "[HeaderAutoFillerService] STARTING for Inspection ##{@inspection.id}"
 
     unless @contractor_info && @license_info
-      Rails.logger.warn '[HeaderAutoFillerService] ABORTING: ContractorInfo or LicenseInfo not found.'
+      Rails.logger.warn "[HeaderAutoFillerService] ABORTING: ContractorInfo or LicenseInfo not found."
       return
     end
 
@@ -55,8 +55,8 @@ class HeaderAutoFillerService
 
     structure.each do |field|
       # Fallback to 'name' if 'id' is missing (seen in Corrected Deficiencies form)
-      field_id = field['id'] || field['name']
-      next unless field['label_name'].present? && field_id.present?
+      field_id = field["id"] || field["name"]
+      next unless field["label_name"].present? && field_id.present?
 
       value = find_value_for_field(field)
 
@@ -70,45 +70,45 @@ class HeaderAutoFillerService
   end
 
   def find_value_for_field(field)
-    label = field['label_name'].downcase
-    section = (field['section_name'] || '').downcase
+    label = field["label_name"].downcase
+    section = (field["section_name"] || "").downcase
     raw_value = nil
 
     # --- Lógica para la sección del Contratista ---
-    if section.include?('contractor')
-      raw_value ||= @inspection.try(:job) if label.include?('job')
-      raw_value ||= @contractor_info.try(:name)    if label.include?('name')
-      raw_value ||= @contractor_info.try(:address) if label.include?('address')
-      raw_value ||= @contractor_info.try(:city)    if label.include?('city')
-      raw_value ||= @contractor_info.try(:state)   if label.include?('st')
-      raw_value ||= @contractor_info.try(:zip)     if label.include?('zip')
-      raw_value ||= @contractor_info.try(:phone)   if label.include?('phone')
+    if section.include?("contractor")
+      raw_value ||= @inspection.try(:job) if label.include?("job")
+      raw_value ||= @contractor_info.try(:name)    if label.include?("name")
+      raw_value ||= @contractor_info.try(:address) if label.include?("address")
+      raw_value ||= @contractor_info.try(:city)    if label.include?("city")
+      raw_value ||= @contractor_info.try(:state)   if label.include?("st")
+      raw_value ||= @contractor_info.try(:zip)     if label.include?("zip")
+      raw_value ||= @contractor_info.try(:phone)   if label.include?("phone")
     end
 
     # --- Lógica para la sección de la Propiedad ---
-    if section.include?('property')
-      raw_value ||= @property.customer.try(:name)    if label.include?('contact')
-      raw_value ||= @property.customer.try(:phone_1) if label.include?('phone')
+    if section.include?("property")
+      raw_value ||= @property.customer.try(:name)    if label.include?("contact")
+      raw_value ||= @property.customer.try(:phone_1) if label.include?("phone")
       # Coincidencia exacta para la dirección para no llenar "Address 2"
-      raw_value ||= @property.try(:address)       if ['property address', 'building address'].include?(label)
-      raw_value ||= @property.try(:property_name) if label.include?('name')
-      raw_value ||= @property.try(:city)          if label.include?('city')
-      raw_value ||= @property.try(:state)         if label.include?('state')
+      raw_value ||= @property.try(:address)       if [ "property address", "building address" ].include?(label)
+      raw_value ||= @property.try(:property_name) if label.include?("name")
+      raw_value ||= @property.try(:city)          if label.include?("city")
+      raw_value ||= @property.try(:state)         if label.include?("state")
     end
 
     # --- Lógica para la sección de Licencia ---
-    if section.include?('license')
-      raw_value ||= @license_info.try(:sfm)  if label == 'sfm'
-      raw_value ||= @license_info.try(:cslb) if label == 'cslb'
-      raw_value ||= @license_info.try(:license_number) if label.include?('license')
+    if section.include?("license")
+      raw_value ||= @license_info.try(:sfm)  if label == "sfm"
+      raw_value ||= @license_info.try(:cslb) if label == "cslb"
+      raw_value ||= @license_info.try(:license_number) if label.include?("license")
     end
 
     # --- Procesar el valor encontrado ---
     if raw_value == true
-      options = field['options']
+      options = field["options"]
       return options.first if options.is_a?(Array) && options.first.present?
 
-      return 'Yes'
+      return "Yes"
     end
 
     raw_value
