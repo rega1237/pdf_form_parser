@@ -3,9 +3,7 @@ class InspectionsController < ApplicationController
   before_action :set_inspection, only: %i[show edit update destroy update_status]
   before_action :load_form_data, only: %i[new create edit update]
   before_action :set_intervals, only: %i[new create edit update]
-  before_action :load_form_data, only: %i[new create edit update]
   before_action :load_technicians, only: %i[new create edit update]
-  before_action :set_intervals, only: %i[new create edit update]
   before_action :set_system_categories, only: %i[new create edit update]
 
   # GET /inspections

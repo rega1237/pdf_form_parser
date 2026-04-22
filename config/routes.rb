@@ -63,9 +63,9 @@ Rails.application.routes.draw do
 
 
   resources :deficiencies
-  resources :interval_categories
+  resources :interval_categories, except: [:index, :show]
   resources :system_categories
-  resources :roles
+  resources :roles, except: [:index, :show]
   resources :contractor_infos, only: [ :new, :create, :edit, :update, :destroy ]
   resources :license_infos, only: [ :new, :create, :edit, :update, :destroy ]
 

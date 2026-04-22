@@ -3,14 +3,16 @@ class ContractorInfosController < ApplicationController
 
   def new
     @contractor_info = ContractorInfo.new
+    authorize @contractor_info
   end
 
   def create
     @contractor_info = ContractorInfo.new(contractor_info_params)
+    authorize @contractor_info
     if @contractor_info.save
       redirect_to settings_path, notice: "Contractor info was successfully created."
     else
-      render :new
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -23,14 +25,14 @@ class ContractorInfosController < ApplicationController
     if @contractor_info.update(contractor_info_params)
       redirect_to settings_path, notice: "Contractor info was successfully updated."
     else
-      render :edit
+      render :edit, status: :unprocessable_entity
     end
   end
 
   def destroy
     authorize @contractor_info
     @contractor_info.destroy
-    redirect_to company_settings_path, notice: "Contractor info was successfully destroyed."
+    redirect_to settings_path, notice: "Contractor info was successfully destroyed."
   end
 
   private

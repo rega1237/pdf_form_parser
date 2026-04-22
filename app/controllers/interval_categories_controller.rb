@@ -1,16 +1,6 @@
 class IntervalCategoriesController < ApplicationController
-  before_action :set_interval_category, only: %i[show edit update destroy]
+  before_action :set_interval_category, only: %i[edit update destroy]
 
-  # GET /interval_categories or /interval_categories.json
-  def index
-    @interval_categories = IntervalCategory.all
-    authorize @interval_categories
-  end
-
-  # GET /interval_categories/1 or /interval_categories/1.json
-  def show
-    authorize @interval_category
-  end
 
   # GET /interval_categories/new
   def new

@@ -1,0 +1,44 @@
+require "test_helper"
+
+class RolesControllerTest < ActionDispatch::IntegrationTest
+  include Devise::Test::IntegrationHelpers
+
+  setup do
+    @role = roles(:one)
+    @user = users(:one)
+    sign_in @user
+  end
+
+  test "should get new" do
+    get new_role_url
+    assert_response :success
+  end
+
+  test "should create role" do
+    assert_difference("Role.count") do
+      post roles_url, params: { role: { level: "New Role" } }
+    end
+
+    assert_redirected_to settings_path
+  end
+
+  test "should get edit" do
+    get edit_role_url(@role)
+    assert_response :success
+  end
+
+  test "should update role" do
+    patch role_url(@role), params: { role: { level: "Updated Role" } }
+    assert_redirected_to settings_path
+    @role.reload
+    assert_equal "Updated Role", @role.level
+  end
+
+  test "should destroy role" do
+    assert_difference("Role.count", -1) do
+      delete role_url(@role)
+    end
+
+    assert_redirected_to settings_path
+  end
+end
