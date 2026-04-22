@@ -1,5 +1,6 @@
 require 'pdf-forms'
 require 'tempfile'
+require 'open3'
 require_relative 'pdf_signature_service'
 
 class PdfFormsParserService
@@ -66,13 +67,14 @@ class PdfFormsParserService
     field_values = prepare_field_values(normal_fields)
 
     # Try filling with original names first
+    PathSanitizer.ensure_safe_path!(output_path)
     intermediate_path = output_path
     @pdftk.fill_form(@file_path, intermediate_path, field_values)
 
     # Apply signatures one by one on the already-filled PDF
     signature_requests.each do |sig|
       tmp_out = Tempfile.create(['signed_', '.pdf'])
-      tmp_out_path = tmp_out.path
+      tmp_out_path = PathSanitizer.ensure_safe_path!(tmp_out.path)
       tmp_out.close
 
       field_name = sig['original_name'].presence || sig['name']
@@ -107,6 +109,7 @@ class PdfFormsParserService
         else
           Rails.logger.warn "Signature image path missing or not found for field '#{field_name}'. Skipping image stamp."
           # Si no hay imagen, simplemente copiar el PDF intermedio sin cambios
+          PathSanitizer.ensure_safe_path!(intermediate_path)
           FileUtils.cp(intermediate_path, tmp_out_path)
         end
       end
@@ -115,6 +118,8 @@ class PdfFormsParserService
     end
 
     if intermediate_path != output_path
+      PathSanitizer.ensure_safe_path!(intermediate_path)
+      PathSanitizer.ensure_safe_path!(output_path)
       FileUtils.cp(intermediate_path, output_path)
     end
 
@@ -148,12 +153,12 @@ class PdfFormsParserService
   def get_fields_via_dump_data
     # Alternative method using pdftk's dump_data_fields
     # This sometimes works better with special characters
-    dump_output = `pdftk "#{@file_path}" dump_data_fields 2>/dev/null`
+    stdout, stderr, status = Open3.capture3("pdftk", @file_path, "dump_data_fields")
 
-    if $?.success?
-      parse_dump_data_output(dump_output)
+    if status.success?
+      parse_dump_data_output(stdout)
     else
-      Rails.logger.error "pdftk dump_data_fields failed for #{@file_path}"
+      Rails.logger.error "pdftk dump_data_fields failed for #{@file_path}: #{stderr}"
       []
     end
   end
