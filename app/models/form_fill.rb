@@ -713,7 +713,7 @@ class FormFill < ApplicationRecord
     photo = get_photo_for_field(field_name)
     return nil unless photo.present?
 
-    Rails.application.routes.url_helpers.rails_blob_path(photo, only_path: true)
+    Rails.application.routes.url_helpers.rails_storage_proxy_path(photo, only_path: true)
   end
 
   # Método existente para obtener la URL del archivo PDF rellenado

@@ -93,4 +93,10 @@ class FormFillPhotoTest < ActiveSupport::TestCase
     photos = @form_fill.get_photos_for_field("test_photo_field")
     assert_equal 2, photos.count
   end
+
+  test "get_photo_url_for_field returns proxy path instead of redirect path" do
+    @form_fill.attach_photo_for_field("test_photo_field", @image_file)
+    url = @form_fill.get_photo_url_for_field("test_photo_field")
+    assert_match %r{/rails/active_storage/blobs/proxy/}, url
+  end
 end

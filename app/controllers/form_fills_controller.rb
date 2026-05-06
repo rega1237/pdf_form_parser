@@ -393,7 +393,7 @@ class FormFillsController < ApplicationController
 
     begin
       signature = @form_fill.get_signature_for_field(field_name)
-      signature_url = signature.present? ? rails_blob_path(signature, only_path: true) : nil
+      signature_url = signature.present? ? rails_storage_proxy_path(signature, only_path: true) : nil
 
       render json: {
         success: true,

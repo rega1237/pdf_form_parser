@@ -184,6 +184,11 @@ class PwaController < ApplicationController
           return;
         }
 
+        // NO interceptar recursos de Active Storage (redirect o proxy)
+        if (url.pathname.startsWith('/rails/active_storage')) {
+          return;
+        }
+
         // IMPORTANTE: No interceptar métodos no-GET (PATCH/POST/PUT/DELETE)
         // Deja que la red los maneje directamente para evitar errores y asegurar mutaciones.
         if (request.method !== 'GET') {
