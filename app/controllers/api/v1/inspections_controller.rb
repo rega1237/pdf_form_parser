@@ -61,7 +61,7 @@ class Api::V1::InspectionsController < ApplicationController
               filename: photo.filename.to_s,
               content_type: photo.content_type,
               byte_size: photo.byte_size,
-              url: url_for(photo)
+              url: rails_storage_proxy_path(photo, only_path: true)
             }
           } : []
         }
