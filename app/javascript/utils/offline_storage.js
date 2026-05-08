@@ -93,8 +93,16 @@ class OfflineStorage {
    */
   async openDB() {
     if (this.db) return this.db;
+    if (OfflineStorage.sharedDb) {
+      this.db = OfflineStorage.sharedDb;
+      return this.db;
+    }
+    if (OfflineStorage.openingPromise) {
+      this.db = await OfflineStorage.openingPromise;
+      return this.db;
+    }
 
-    return new Promise((resolve, reject) => {
+    OfflineStorage.openingPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.version);
 
       request.onerror = () => {
@@ -102,13 +110,16 @@ class OfflineStorage {
           "[OfflineStorage] Error opening database:",
           request.error,
         );
+        OfflineStorage.openingPromise = null;
         reject(request.error);
       };
 
       request.onsuccess = () => {
-        this.db = request.result;
+        const database = request.result;
+        OfflineStorage.sharedDb = database;
+        OfflineStorage.openingPromise = null;
         //console.log("[OfflineStorage] Database opened successfully");
-        resolve(this.db);
+        resolve(database);
       };
 
       request.onupgradeneeded = (event) => {
@@ -248,6 +259,9 @@ class OfflineStorage {
         }
       };
     });
+
+    this.db = await OfflineStorage.openingPromise;
+    return this.db;
   }
 
   /**
