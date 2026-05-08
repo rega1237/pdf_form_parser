@@ -1,10 +1,13 @@
 import { Controller } from "@hotwired/stimulus";
+import OfflineStorage from "utils/offline_storage";
 
 export default class extends Controller {
   static targets = ["preview", "image"];
   static values = { inputId: String, cameraInputId: String };
 
   connect() {
+    this.offlineStorage = new OfflineStorage();
+
     // Buscar el input file asociado
     this.fileInput = document.getElementById(this.inputIdValue);
     // Buscar el input de cámara si existe
@@ -586,10 +589,28 @@ export default class extends Controller {
 
       const formId = formElement.action.split("/").pop().split("?")[0];
 
+      // Compress first before uploading to server
+      const outputType = "image/jpeg";
+      const backgroundColor = "#ffffff";
+
+      let blobToSend = file;
+      if (file.type && file.type.startsWith("image/") && file.size > 200 * 1024) {
+        try {
+          blobToSend = await this.offlineStorage.createThumbnailBlob(file, {
+            maxDimension: 1024,
+            quality: 0.7,
+            outputType,
+            backgroundColor
+          });
+        } catch (compressError) {
+          console.warn("[PhotoCapture] Failed to compress image before uploading:", compressError);
+        }
+      }
+
       // Asegurar nombre de archivo único para evitar colisiones e implementar idempotencia por petición
       const extension = (file.name && file.name.split('.').pop()) || 'jpg';
       const uniqueName = `photo_${formId}_${fieldName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
-      const fileToSend = new File([file], uniqueName, { type: file.type });
+      const fileToSend = new File([blobToSend], uniqueName, { type: blobToSend.type || "image/jpeg" });
 
       // Crear FormData con la foto
       const formData = new FormData();

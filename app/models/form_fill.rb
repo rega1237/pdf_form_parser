@@ -66,11 +66,36 @@ class FormFill < ApplicationRecord
         return { success: success, attachment_id: unique_attachment_id }
       end
 
+      # Compresión en el servidor usando ImageProcessing::MiniMagick (actúa como salvaguarda)
+      if photo_file.respond_to?(:path) || (photo_file.respond_to?(:tempfile) && photo_file.tempfile.respond_to?(:path))
+        source_path = photo_file.respond_to?(:tempfile) ? photo_file.tempfile.path : photo_file.path
+        if source_path.present? && File.exist?(source_path)
+          begin
+            require "tempfile"
+            compressed_tempfile = Tempfile.new([ "compressed", ".jpg" ])
+            ImageProcessing::MiniMagick
+              .source(source_path)
+              .resize_to_limit(1024, 1024)
+              .convert("jpeg")
+              .saver(quality: 70)
+              .call(destination: compressed_tempfile.path)
+
+            photo_file = ActionDispatch::Http::UploadedFile.new(
+              tempfile: compressed_tempfile,
+              filename: expected_filename,
+              content_type: "image/jpeg"
+            )
+          rescue StandardError => e
+            Rails.logger.error "Failed to compress image on server: #{e.message}"
+          end
+        end
+      end
+
       # 4. Adjuntar la nueva foto con el nombre de archivo asegurado
       photos.attach(
         io: photo_file,
         filename: expected_filename,
-        content_type: photo_file.content_type || "image/jpeg"
+        content_type: "image/jpeg"
       )
 
       # 5. Actualizar la estructura del formulario añadiendo el ID del adjunto a la lista
