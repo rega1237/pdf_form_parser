@@ -8,10 +8,24 @@ export default class extends Controller {
 
   /**
    * Inicializa el controlador. Si el estado es 'generating', inicia el sondeo.
+   * Cuenta los reloads en sessionStorage para evitar bucles infinitos en producción.
    */
   connect() {
     if (this.statusValue === "generating") {
+      const pathKey = `pdf_reload_count_${window.location.pathname}`;
+      const count = parseInt(sessionStorage.getItem(pathKey) || "0", 10);
+
+      if (count >= 10) { // Máximo 10 intentos (aprox. 30-50 segundos)
+        console.warn("La generación del PDF está tardando más de lo esperado. Se detuvo el refresco automático para evitar un bucle.");
+        sessionStorage.removeItem(pathKey); // Permitir reintento si el usuario refresca manualmente
+        this.stopPolling();
+        return;
+      }
+
       this.startPolling();
+    } else {
+      // Limpiar el contador si el estado ya es completado o fallido
+      sessionStorage.removeItem(`pdf_reload_count_${window.location.pathname}`);
     }
   }
 
@@ -46,6 +60,10 @@ export default class extends Controller {
    */
   async checkStatus() {
     try {
+      const pathKey = `pdf_reload_count_${window.location.pathname}`;
+      const count = parseInt(sessionStorage.getItem(pathKey) || "0", 10);
+      sessionStorage.setItem(pathKey, (count + 1).toString());
+
       // Recargar la página para verificar el estado actualizado
       window.location.reload();
     } catch (error) {
@@ -62,6 +80,7 @@ export default class extends Controller {
     if (this.statusValue === "generating") {
       this.startPolling();
     } else {
+      sessionStorage.removeItem(`pdf_reload_count_${window.location.pathname}`);
       this.stopPolling();
     }
   }

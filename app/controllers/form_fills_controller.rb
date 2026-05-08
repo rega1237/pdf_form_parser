@@ -588,8 +588,8 @@ class FormFillsController < ApplicationController
 
   # Método para generar PDF individual (Additional Risers, Corrections)
   def generate_individual_pdf
-    # Verificar si ya se está generando un PDF
-    if @form_fill.generating?
+    # Verificar si ya se está generando un PDF (con un timeout de 3 minutos)
+    if @form_fill.generating? && @form_fill.updated_at > 3.minutes.ago
       redirect_to @form_fill, alert: "PDF is already being generated. Please wait."
       return
     end
@@ -605,8 +605,8 @@ class FormFillsController < ApplicationController
 
   # Método para generar PDF principal con merge (existing logic but renamed)
   def generate_main_pdf_with_merge
-    # Verificar si ya se está generando un PDF
-    if @form_fill.generating?
+    # Verificar si ya se está generando un PDF (con un timeout de 3 minutos)
+    if @form_fill.generating? && @form_fill.updated_at > 3.minutes.ago
       redirect_to @form_fill, alert: "PDF is already being generated. Please wait."
       return
     end

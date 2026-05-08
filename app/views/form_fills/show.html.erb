@@ -415,7 +415,7 @@
                  data-pdf-status-status-value="<%= @form_fill.pdf_generation_status %>"
                  data-pdf-status-refresh-interval-value="5000">
               <%# --- Botón Generate PDF con estado --- %>
-              <% if @form_fill.generating? %>
+              <% if @form_fill.generating? && @form_fill.updated_at > 3.minutes.ago %>
                 <div class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
                   <svg class="w-5 h-5 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>

@@ -63,7 +63,12 @@ class PdfMergingService
 
           pdf.bounding_box([ 0, pdf.cursor ], width: pdf.bounds.width, height: cell_height) do
             row_of_photos.each_with_index do |photo_data, col_index|
-              image_blob_data = photo_data[:photo].download
+              photo = photo_data[:photo]
+              image_blob_data = if photo.variable?
+                                  photo.variant(resize_to_limit: [ 800, 800 ]).download
+              else
+                                  photo.download
+              end
               sio = StringIO.new(image_blob_data)
               x_position = col_index * (cell_width + padding)
 
