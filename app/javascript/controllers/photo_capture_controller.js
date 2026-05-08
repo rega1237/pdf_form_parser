@@ -586,10 +586,15 @@ export default class extends Controller {
 
       const formId = formElement.action.split("/").pop().split("?")[0];
 
+      // Asegurar nombre de archivo único para evitar colisiones e implementar idempotencia por petición
+      const extension = (file.name && file.name.split('.').pop()) || 'jpg';
+      const uniqueName = `photo_${formId}_${fieldName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
+      const fileToSend = new File([file], uniqueName, { type: file.type });
+
       // Crear FormData con la foto
       const formData = new FormData();
       formData.append("field_name", fieldName);
-      formData.append("photo", file);
+      formData.append("photo", fileToSend);
 
       // Subir la foto al servidor usando el nuevo endpoint que actualiza la data column
       const response = await fetch(`/form_fills/${formId}/upload_photo`, {

@@ -731,7 +731,7 @@ export default class extends Controller {
       this.updateStatus("Uploading...", "info");
 
       // Subir original
-      const uploadResponse = await this.uploadPhotoToServer(photoData.blob);
+      const uploadResponse = await this.uploadPhotoToServer(photoData.blob, photoId);
       const attachmentId =
         uploadResponse?.photo_attachment_id || uploadResponse?.attachment_id;
       if (!attachmentId) throw new Error("Server did not return attachment id");
@@ -1152,7 +1152,7 @@ export default class extends Controller {
    * @param {Blob} blob - The photo blob to upload.
    * @returns {Object|null} The response JSON or null on failure.
    */
-  async uploadPhotoToServer(blob) {
+  async uploadPhotoToServer(blob, photoId = null) {
     const fieldName = this.fieldNameValue;
     if (!fieldName) {
       console.error(
@@ -1176,13 +1176,15 @@ export default class extends Controller {
           : null);
       if (!formId) throw new Error("Form element or formFillId not found");
 
-      // Asegurar nombre de archivo para Blob
-      const fileToSend =
-        blob instanceof File
-          ? blob
-          : new File([blob], `${fieldName}-${Date.now()}.jpg`, {
-              type: blob.type || "image/jpeg",
-            });
+      // Asegurar nombre de archivo único para Blob/File para habilitar idempotencia
+      const extension = (blob.type && blob.type.split("/")[1]) || "jpg";
+      const filename = photoId
+        ? `${photoId}.${extension}`
+        : `photo_${formId}_${fieldName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
+
+      const fileToSend = new File([blob], filename, {
+        type: blob.type || "image/jpeg",
+      });
 
       // Crear FormData con la foto
       const formData = new FormData();

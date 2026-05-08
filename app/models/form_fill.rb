@@ -47,14 +47,29 @@ class FormFill < ApplicationRecord
 
       # 2. NO eliminar fotos existentes, para permitir múltiples
 
-      # 3. Generar el ID único usando el section_name
-      unique_attachment_id = generate_unique_photo_attachment_id(field_section)
+      # 3. CAPA A: Idempotencia usando el filename original provisto por el cliente
+      original_filename = photo_file.respond_to?(:original_filename) ? photo_file.original_filename : nil
+      unique_attachment_id = original_filename.present? ? File.basename(original_filename, ".*") : generate_unique_photo_attachment_id(field_section)
+
       return { success: false, error: "No se pudo generar ID \u00FAnico" } if unique_attachment_id.blank?
 
-      # 4. Adjuntar la nueva foto con el nombre de archivo basado en el section_name
+      expected_filename = "#{unique_attachment_id}.jpg"
+
+      # CAPA B: Deduplicación Inteligente
+      # Verificar si ya existe una foto con este nombre exacto para evitar duplicados
+      if photos.any? { |p| p.filename.to_s == expected_filename }
+        Rails.logger.info "Photo deduplicated (already attached) for field: #{field_name} with ID: #{unique_attachment_id}"
+
+        # Aunque ya exista el archivo físico, garantizamos (por si acaso hubo una carrera en otro lado)
+        # que el JSON también lo tenga agregado.
+        success = add_photo_attachment_id_to_structure(field_name, unique_attachment_id)
+        return { success: success, attachment_id: unique_attachment_id }
+      end
+
+      # 4. Adjuntar la nueva foto con el nombre de archivo asegurado
       photos.attach(
         io: photo_file,
-        filename: "#{unique_attachment_id}.jpg",
+        filename: expected_filename,
         content_type: photo_file.content_type || "image/jpeg"
       )
 
@@ -354,25 +369,29 @@ class FormFill < ApplicationRecord
 
     begin
       photo_data_key = "#{field_name}_photo_attachment_id"
-      current_value = get_field_value(photo_data_key)
 
-      # Normalizar a array
-      ids = if current_value.is_a?(Array)
-              current_value
-      elsif current_value.present?
-              [ current_value ]
-      else
-              []
+      # CAPA C: Bloqueo de transacción para evitar "Race Conditions" al actualizar el JSON
+      with_lock do
+        current_value = get_field_value(photo_data_key)
+
+        # Normalizar a array
+        ids = if current_value.is_a?(Array)
+                current_value
+        elsif current_value.present?
+                [ current_value ]
+        else
+                []
+        end
+
+        # Añadir si no existe
+        unless ids.include?(attachment_id)
+          ids << attachment_id
+          puts "[DEBUG] Saving ids: #{ids.inspect}"
+          set_field_value(photo_data_key, ids)
+        end
       end
 
-      # Añadir si no existe
-      unless ids.include?(attachment_id)
-        ids << attachment_id
-        puts "[DEBUG] Saving ids: #{ids.inspect}"
-        set_field_value(photo_data_key, ids)
-      end
-
-      Rails.logger.info "Added photo attachment ID for field '#{field_name}': #{attachment_id}. Total: #{ids.count}"
+      Rails.logger.info "Added photo attachment ID for field '#{field_name}': #{attachment_id}"
       true
     rescue StandardError => e
       Rails.logger.error "Error adding photo attachment ID for field #{field_name}: #{e.message}"

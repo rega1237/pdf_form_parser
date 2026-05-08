@@ -85,7 +85,7 @@ class FormFillPhotoTest < ActiveSupport::TestCase
     @form_fill.reload
 
     # Create a fresh file object for the second attachment to avoid IntegrityError (stream consumed)
-    image_file_2 = Rack::Test::UploadedFile.new(@image_path, "image/jpeg")
+    image_file_2 = Rack::Test::UploadedFile.new(@image_path, "image/jpeg", false, original_filename: "another_unique_photo.jpg")
     result = @form_fill.attach_photo_for_field("test_photo_field", image_file_2)
     assert result[:success], "Second attach failed: #{result[:error]}"
 
@@ -98,5 +98,30 @@ class FormFillPhotoTest < ActiveSupport::TestCase
     @form_fill.attach_photo_for_field("test_photo_field", @image_file)
     url = @form_fill.get_photo_url_for_field("test_photo_field")
     assert_match %r{/rails/active_storage/blobs/proxy/}, url
+  end
+
+  test "attach_photo_for_field handles deduplication intelligently" do
+    custom_image_file = Rack::Test::UploadedFile.new(@image_path, "image/jpeg", false, original_filename: "photo_idempotent_123.jpg")
+
+    # Primera subida
+    result1 = @form_fill.attach_photo_for_field("test_photo_field", custom_image_file)
+    assert result1[:success]
+
+    @form_fill.reload
+    assert_equal 1, @form_fill.photos.count
+
+    # Segunda subida con el mismo archivo y nombre
+    image_file_2 = Rack::Test::UploadedFile.new(@image_path, "image/jpeg", false, original_filename: "photo_idempotent_123.jpg")
+
+    result2 = @form_fill.attach_photo_for_field("test_photo_field", image_file_2)
+    assert result2[:success]
+
+    @form_fill.reload
+    # La clave del test (Capa B): no debe haber duplicado físico
+    assert_equal 1, @form_fill.photos.count
+
+    # El array de datos no debe estar duplicado (Capa A y B)
+    attachment_ids = @form_fill.get_field_value("test_photo_field_photo_attachment_id")
+    assert_equal [ "photo_idempotent_123" ], attachment_ids
   end
 end
