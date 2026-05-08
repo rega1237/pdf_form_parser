@@ -65,7 +65,7 @@ class PdfMergingService
             row_of_photos.each_with_index do |photo_data, col_index|
               photo = photo_data[:photo]
               image_blob_data = if photo.variable?
-                                  photo.variant(resize_to_limit: [ 800, 800 ]).download
+                                  photo.variant(resize_to_limit: [ 800, 800 ]).processed.download
               else
                                   photo.download
               end
