@@ -56,7 +56,7 @@
       </div>
 
       <!-- Gallery of saved photos -->
-      <div class="grid grid-cols-2 gap-4 mt-4 p-3" data-photo-capture-target="gallery">
+      <div class="grid grid-cols-2 gap-4 mt-4 p-3 max-h-[500px] overflow-y-auto" data-photo-capture-target="gallery">
         <% 
            existing_photos = @form_fill.get_photos_for_field(field['name'])
         %>
