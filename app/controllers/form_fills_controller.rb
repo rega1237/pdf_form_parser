@@ -567,6 +567,41 @@ class FormFillsController < ApplicationController
     redirect_to form_fills_url, notice: "Form fill was successfully destroyed."
   end
 
+  def lock_pdf
+    @form_fill = FormFill.find(params[:id])
+
+    if !@form_fill.filled_pdf.attached?
+      redirect_to form_fill_path(@form_fill), alert: "No PDF generated to lock."
+      return
+    end
+
+    input_pdf = Tempfile.new([ "original", ".pdf" ])
+    input_pdf.binmode
+    input_pdf.write(@form_fill.filled_pdf.download)
+    input_pdf.close
+
+    output_pdf = Tempfile.new([ "locked", ".pdf" ])
+    output_pdf.close
+
+    begin
+      PdfFlattenService.call(input_pdf.path, output_pdf.path)
+
+      @form_fill.filled_pdf.attach(
+        io: File.open(output_pdf.path),
+        filename: @form_fill.filled_pdf.filename.to_s,
+        content_type: "application/pdf"
+      )
+
+      redirect_to form_fill_path(@form_fill), notice: "PDF successfully locked."
+    rescue StandardError => e
+      Rails.logger.error "Error locking PDF: #{e.message}"
+      redirect_to form_fill_path(@form_fill), alert: "Error locking PDF: #{e.message}"
+    ensure
+      input_pdf.unlink
+      output_pdf.unlink
+    end
+  end
+
   def submit_form
     @form_fill = FormFill.find(params[:id])
 
@@ -640,6 +675,19 @@ class FormFillsController < ApplicationController
   rescue StandardError => e
     Rails.logger.error "Error downloading PDF for FormFill ##{@form_fill.id}: #{e.message}"
     redirect_to @form_fill, alert: "Error accessing PDF file."
+  end
+
+  def pdf_status
+    @form_fill = FormFill.find(params[:id])
+    completed = @form_fill.filled_pdf.attached?
+    download_url = completed ? download_pdf_form_fill_path(@form_fill) : nil
+
+    render json: {
+      success: true,
+      status: @form_fill.pdf_generation_status,
+      completed: completed,
+      download_url: download_url
+    }
   end
 
   def send_email

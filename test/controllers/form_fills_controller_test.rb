@@ -60,4 +60,63 @@ class FormFillsControllerTest < ActionDispatch::IntegrationTest
     # Should show disabled state with Email Unavailable message
     assert_includes response.body, "Email Unavailable"
   end
+
+  test "should lock pdf and redirect to form fill" do
+    @form_fill.update!(pdf_generation_status: "completed")
+
+    # Attach a mock PDF
+    @form_fill.filled_pdf.attach(
+      io: StringIO.new("fake pdf content"),
+      filename: "test.pdf",
+      content_type: "application/pdf"
+    )
+
+    # Mock the PdfFlattenService
+    PdfFlattenService.expects(:call).returns(true)
+
+    post lock_pdf_form_fill_url(@form_fill)
+
+    assert_redirected_to form_fill_url(@form_fill)
+    assert_equal "PDF successfully locked.", flash[:notice]
+  end
+
+  test "should redirect with alert if pdf not attached when locking" do
+    @form_fill.filled_pdf.purge if @form_fill.filled_pdf.attached?
+
+    post lock_pdf_form_fill_url(@form_fill)
+
+    assert_redirected_to form_fill_url(@form_fill)
+    assert_equal "No PDF generated to lock.", flash[:alert]
+  end
+
+  test "should get pdf status" do
+    @form_fill.update!(pdf_generation_status: "generating")
+
+    get pdf_status_form_fill_url(@form_fill)
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert json_response["success"]
+    assert_equal "generating", json_response["status"]
+    assert_not json_response["completed"]
+    assert_nil json_response["download_url"]
+  end
+
+  test "should get pdf status as completed when pdf is attached" do
+    @form_fill.update!(pdf_generation_status: "completed")
+    @form_fill.filled_pdf.attach(
+      io: StringIO.new("fake pdf content"),
+      filename: "test.pdf",
+      content_type: "application/pdf"
+    )
+
+    get pdf_status_form_fill_url(@form_fill)
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert json_response["success"]
+    assert_equal "completed", json_response["status"]
+    assert json_response["completed"]
+    assert_not_nil json_response["download_url"]
+  end
 end

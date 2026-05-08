@@ -17,4 +17,9 @@ class PathSanitizerTest < ActiveSupport::TestCase
       PathSanitizer.ensure_safe_path!(unsafe_path)
     end
   end
+
+  test "should allow paths inside system temporary directory" do
+    temp_path = File.join(Dir.tmpdir, "test.pdf")
+    assert_equal temp_path, PathSanitizer.ensure_safe_path!(temp_path)
+  end
 end

@@ -1,53 +1,32 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
+  static targets = ["generatingState", "timeoutState"];
+
   static values = {
+    id: String,
     status: String,
-    refreshInterval: { type: Number, default: 3000 }, // 3 segundos por defecto
+    refreshInterval: { type: Number, default: 5000 }, // 5 seconds default
   };
 
-  /**
-   * Inicializa el controlador. Si el estado es 'generating', inicia el sondeo.
-   * Cuenta los reloads en sessionStorage para evitar bucles infinitos en producción.
-   */
   connect() {
+    this.pollAttempts = 0;
     if (this.statusValue === "generating") {
-      const pathKey = `pdf_reload_count_${window.location.pathname}`;
-      const count = parseInt(sessionStorage.getItem(pathKey) || "0", 10);
-
-      if (count >= 10) { // Máximo 10 intentos (aprox. 30-50 segundos)
-        console.warn("La generación del PDF está tardando más de lo esperado. Se detuvo el refresco automático para evitar un bucle.");
-        sessionStorage.removeItem(pathKey); // Permitir reintento si el usuario refresca manualmente
-        this.stopPolling();
-        return;
-      }
-
       this.startPolling();
-    } else {
-      // Limpiar el contador si el estado ya es completado o fallido
-      sessionStorage.removeItem(`pdf_reload_count_${window.location.pathname}`);
     }
   }
 
-  /**
-   * Limpia el temporizador de sondeo al desconectar.
-   */
   disconnect() {
     this.stopPolling();
   }
 
-  /**
-   * Inicia el sondeo periódico para verificar el estado.
-   */
   startPolling() {
+    this.stopPolling();
     this.pollTimer = setInterval(() => {
       this.checkStatus();
     }, this.refreshIntervalValue);
   }
 
-  /**
-   * Detiene el sondeo.
-   */
   stopPolling() {
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
@@ -55,32 +34,57 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Verifica el estado actual recargando la página.
-   */
   async checkStatus() {
-    try {
-      const pathKey = `pdf_reload_count_${window.location.pathname}`;
-      const count = parseInt(sessionStorage.getItem(pathKey) || "0", 10);
-      sessionStorage.setItem(pathKey, (count + 1).toString());
+    if (!this.idValue) return;
 
-      // Recargar la página para verificar el estado actualizado
-      window.location.reload();
+    this.pollAttempts += 1;
+
+    if (this.pollAttempts >= 20) { // Limit to 20 attempts (~100 seconds)
+      console.warn("PDF generation is taking longer than expected. Showing retry UI.");
+      this.stopPolling();
+      this.showTimeoutUI();
+      return;
+    }
+
+    try {
+      const response = await fetch(`/form_fills/${this.idValue}/pdf_status`, {
+        headers: {
+          "Accept": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (data.status === "completed" || data.status === "failed" || data.completed) {
+          this.stopPolling();
+          window.location.reload();
+        }
+      }
     } catch (error) {
       console.error("Error checking PDF status:", error);
-      // Si hay error, detener el polling
-      this.stopPolling();
     }
   }
 
-  /**
-   * Callback de Stimulus cuando cambia el valor de status.
-   */
+  showTimeoutUI() {
+    if (this.hasGeneratingStateTarget) {
+      this.generatingStateTarget.classList.add("hidden");
+    }
+    if (this.hasTimeoutStateTarget) {
+      this.timeoutStateTarget.classList.remove("hidden");
+    }
+  }
+
   statusValueChanged() {
     if (this.statusValue === "generating") {
+      this.pollAttempts = 0;
       this.startPolling();
     } else {
-      sessionStorage.removeItem(`pdf_reload_count_${window.location.pathname}`);
       this.stopPolling();
     }
   }

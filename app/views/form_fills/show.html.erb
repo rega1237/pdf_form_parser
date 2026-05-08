@@ -412,15 +412,28 @@
               </div>
               <div class="flex flex-wrap items-center gap-4"
                  data-controller="pdf-status"
+                 data-pdf-status-id-value="<%= @form_fill.id %>"
                  data-pdf-status-status-value="<%= @form_fill.pdf_generation_status %>"
                  data-pdf-status-refresh-interval-value="5000">
               <%# --- Botón Generate PDF con estado --- %>
               <% if @form_fill.generating? && @form_fill.updated_at > 3.minutes.ago %>
-                <div class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
+                <div data-pdf-status-target="generatingState" class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
                   <svg class="w-5 h-5 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                   </svg>
                   Generating PDF...
+                </div>
+                
+                <div data-pdf-status-target="timeoutState" class="hidden">
+                  <div class="inline-flex flex-wrap items-center gap-4">
+                    <div class="inline-flex items-center justify-center bg-gradient-to-r from-amber-500 to-amber-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
+                      <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      PDF Generation is taking longer than expected.
+                    </div>
+                    <%= button_tag 'Retry Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-900 font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { controller: 'online-only', online_only_offline_title_value: 'Necesitas conexión a internet para generar el PDF', action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to retry generating the PDF?" }, aria: { label: "Retry Generate PDF" } %>
+                  </div>
                 </div>
               <% elsif @form_fill.failed? %>
                 <div class="inline-flex items-center justify-center bg-gradient-to-r from-red-500 to-red-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
@@ -454,12 +467,22 @@
 
               <%# --- Botón para el PDF Principal --- %>
               <% if @form_fill.filled_pdf.attached? && @form_fill.completed? %>
-                <a href="<%= download_pdf_form_fill_path(@form_fill, disposition: 'inline') %>"
-                  target="_blank"
-                  class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg">
-                  <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                  View Main PDF
-                </a>
+                <div class="flex flex-col sm:flex-row gap-4 w-full">
+                  <a href="<%= download_pdf_form_fill_path(@form_fill, disposition: 'inline') %>"
+                    target="_blank"
+                    class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg flex-1">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    View Main PDF
+                  </a>
+
+                  <button type="submit"
+                    form="lock-pdf-form"
+                    onclick="return confirm('Are you sure you want to lock the PDF? It will no longer be editable.')"
+                    class="inline-flex items-center justify-center w-full bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg flex-1">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    Lock PDF
+                  </button>
+                </div>
               <% end %>
               <%# --- Lógica para encontrar y mostrar el PDF de Deficiencias --- %>
               <%
@@ -621,8 +644,10 @@
               <% end %>
             </div>
           </div>
-        <% end %>
       <% end %>
+    <% end %>
+    <%= form_with url: lock_pdf_form_fill_path(@form_fill), method: :post, id: "lock-pdf-form", class: "hidden", data: { turbo: false } do %>
+    <% end %>
     </div>
   </div>
   <!-- Loading overlay for Save Draft -->
