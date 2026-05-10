@@ -605,8 +605,8 @@ class FormFillsController < ApplicationController
   def submit_form
     @form_fill = FormFill.find(params[:id])
 
-    # Verificar si ya se está generando un PDF
-    if @form_fill.generating?
+    # Verificar si ya se está generando un PDF (con un timeout de 3 minutos)
+    if @form_fill.generating? && @form_fill.updated_at > 3.minutes.ago
       redirect_to @form_fill, alert: "PDF is already being generated. Please wait."
       return
     end
@@ -688,6 +688,17 @@ class FormFillsController < ApplicationController
       completed: completed,
       download_url: download_url
     }
+  end
+
+  def reset_pdf_status
+    @form_fill = FormFill.find(params[:id])
+    
+    # Forzar estado a ready y limpiar cualquier rastro en background
+    if @form_fill.update(pdf_generation_status: "ready", updated_at: Time.current)
+      redirect_to @form_fill, notice: "La generación de PDF ha sido reiniciada. Ya puedes intentarlo nuevamente."
+    else
+      redirect_to @form_fill, alert: "No se pudo reiniciar el estado del PDF."
+    end
   end
 
   def send_email

@@ -48,6 +48,7 @@ Rails.application.routes.draw do
       patch :bulk_update_data  # AJAX endpoint for multiple field updates
       get :get_merged_form_data # Endpoint for PDF generation data retrieval
       get :pdf_status           # AJAX endpoint for polling PDF generation status
+      post :reset_pdf_status    # Endpoint for manually resetting generating status
     end
   end
 

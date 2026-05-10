@@ -61,7 +61,9 @@ export default class extends Controller {
       const data = await response.json();
 
       if (data.success) {
-        if (data.status === "completed" || data.status === "failed" || data.completed) {
+        // IMPORTANTE: No usar 'data.completed' ya que si existía un PDF viejo devolverá true de inmediato provocando bucle de refresco.
+        // Solo confiar en el cambio explícito de status a 'completed' o 'failed'.
+        if (data.status === "completed" || data.status === "failed") {
           this.stopPolling();
           window.location.reload();
         }

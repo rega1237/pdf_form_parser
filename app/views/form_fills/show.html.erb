@@ -417,15 +417,24 @@
                  data-pdf-status-refresh-interval-value="5000">
               <%# --- Botón Generate PDF con estado --- %>
               <% if @form_fill.generating? && @form_fill.updated_at > 3.minutes.ago %>
-                <div data-pdf-status-target="generatingState" class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
-                  <svg class="w-5 h-5 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                  </svg>
-                  Generating PDF...
+                <div data-pdf-status-target="generatingState" class="flex flex-wrap items-center gap-4">
+                  <div class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
+                    <svg class="w-5 h-5 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Generating PDF...
+                  </div>
+                  
+                  <%= button_to reset_pdf_status_form_fill_path(@form_fill), method: :post, class: "relative z-50 inline-flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { confirm: "¿Estás seguro de que quieres detener y reiniciar la generación de este PDF?" }, form: { class: "inline-block" } do %>
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Stop Generation
+                  <% end %>
                 </div>
                 
                 <div data-pdf-status-target="timeoutState" class="hidden">
-                  <div class="inline-flex flex-wrap items-center gap-4">
+                  <div class="flex flex-wrap items-center gap-4">
                     <div class="inline-flex items-center justify-center bg-gradient-to-r from-amber-500 to-amber-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg text-lg">
                       <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -433,6 +442,10 @@
                       PDF Generation is taking longer than expected.
                     </div>
                     <%= button_tag 'Retry Generate PDF', type: 'button', style: "touch-action: manipulation; -webkit-tap-highlight-color: transparent; pointer-events: auto;", class: "relative z-50 inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-900 font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-800", data: { controller: 'online-only', online_only_offline_title_value: 'Necesitas conexión a internet para generar el PDF', action: "touchstart->form-fill#submitToPdf click->form-fill#submitToPdf", confirm: "Are you sure you want to retry generating the PDF?" }, aria: { label: "Retry Generate PDF" } %>
+                    
+                    <%= button_to reset_pdf_status_form_fill_path(@form_fill), method: :post, class: "relative z-50 inline-flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-lg", data: { confirm: "¿Estás seguro de que quieres detener y reiniciar la generación de este PDF?" }, form: { class: "inline-block" } do %>
+                      Stop / Reset Status
+                    <% end %>
                   </div>
                 </div>
               <% elsif @form_fill.failed? %>

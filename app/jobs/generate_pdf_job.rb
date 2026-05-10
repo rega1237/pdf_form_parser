@@ -108,7 +108,7 @@ class GeneratePdfJob < ApplicationJob
 
       # Clean up temporary files
       cleanup_temp_files([ main_pdf_path, deficiencies_pdf_path ])
-    rescue StandardError => e
+    rescue StandardError, NoMemoryError => e
       puts "PDF JOB ERROR: #{e.message}"
       puts e.backtrace.first(10).join("\n")
       main_form_fill.update!(pdf_generation_status: "failed")
