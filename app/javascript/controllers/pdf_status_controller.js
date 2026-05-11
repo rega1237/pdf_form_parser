@@ -39,7 +39,7 @@ export default class extends Controller {
 
     this.pollAttempts += 1;
 
-    if (this.pollAttempts >= 20) { // Limit to 20 attempts (~100 seconds)
+    if (this.pollAttempts >= 36) { // Limit to 36 attempts (36 * 5s = 180 seconds / 3 minutes)
       console.warn("PDF generation is taking longer than expected. Showing retry UI.");
       this.stopPolling();
       this.showTimeoutUI();

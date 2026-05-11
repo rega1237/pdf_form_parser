@@ -695,9 +695,9 @@ class FormFillsController < ApplicationController
     
     # Forzar estado a ready y limpiar cualquier rastro en background
     if @form_fill.update(pdf_generation_status: "ready", updated_at: Time.current)
-      redirect_to @form_fill, notice: "La generación de PDF ha sido reiniciada. Ya puedes intentarlo nuevamente."
+      redirect_to @form_fill, notice: "PDF generation status has been reset. You can now retry."
     else
-      redirect_to @form_fill, alert: "No se pudo reiniciar el estado del PDF."
+      redirect_to @form_fill, alert: "Failed to reset the PDF status."
     end
   end
 
