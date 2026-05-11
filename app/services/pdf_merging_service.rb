@@ -101,7 +101,7 @@ class PdfMergingService
     ensure
       temp_pdf.close!
     end
-    
+
     pdf_object
   end
 

@@ -692,7 +692,7 @@ class FormFillsController < ApplicationController
 
   def reset_pdf_status
     @form_fill = FormFill.find(params[:id])
-    
+
     # Forzar estado a ready y limpiar cualquier rastro en background
     if @form_fill.update(pdf_generation_status: "ready", updated_at: Time.current)
       redirect_to @form_fill, notice: "PDF generation status has been reset. You can now retry."
