@@ -119,4 +119,39 @@ class FormFillsControllerTest < ActionDispatch::IntegrationTest
     assert json_response["completed"]
     assert_not_nil json_response["download_url"]
   end
+
+  test "should style buttons with label Yes/yes/YES as green/emerald when checked" do
+    structure = [
+      { name: "btn_yes", type: "Button", label_name: "Yes", page_number: 1, section_name: "General", required: true },
+      { name: "btn_lowercase_yes", type: "Button", label_name: "yes", page_number: 1, section_name: "General", required: true },
+      { name: "btn_uppercase_yes", type: "Button", label_name: "YES", page_number: 1, section_name: "General", required: true },
+      { name: "btn_no", type: "Button", label_name: "No", page_number: 1, section_name: "General", required: true }
+    ]
+    @form_fill.update!(form_structure: structure.to_json)
+
+    get form_fill_url(@form_fill)
+    assert_response :success
+
+    # Assertions for Yes buttons containing emerald classes
+    assert_select "label[for=?]", "form_data_btn_yes_general_0" do
+      assert_select "[class*='peer-checked:from-emerald-600']"
+      assert_select "[class*='peer-checked:to-emerald-700']"
+      assert_select "[class*='peer-checked:border-emerald-900']"
+    end
+
+    assert_select "label[for=?]", "form_data_btn_lowercase_yes_general_1" do
+      assert_select "[class*='peer-checked:from-emerald-600']"
+    end
+
+    assert_select "label[for=?]", "form_data_btn_uppercase_yes_general_2" do
+      assert_select "[class*='peer-checked:from-emerald-600']"
+    end
+
+    # Assertions for other buttons containing red classes
+    assert_select "label[for=?]", "form_data_btn_no_general_3" do
+      assert_select "[class*='peer-checked:from-red-600']"
+      assert_select "[class*='peer-checked:to-red-700']"
+      assert_select "[class*='peer-checked:border-red-900']"
+    end
+  end
 end

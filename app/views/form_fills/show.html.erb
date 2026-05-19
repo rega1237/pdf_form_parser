@@ -304,7 +304,7 @@
                           <%
                             always_visible_types = ['Pass/Fail', 'Photo', 'Deficiency', 'Radio']
                             always_visible_sections = ['Signature', 'Property Information', 'License', 'Corrective Action Performed']
-                            always_visible_labels = ['PSI', 'Sec', 'Psi', 'SEC']
+                            always_visible_labels = ['PSI', 'Sec', 'Psi', 'SEC', 'psi', 'sec']
                             visible_fields = fields_in_section.select { |field| 
                               always_visible_types.include?(field['type']) || 
                               field['required'] == true || 

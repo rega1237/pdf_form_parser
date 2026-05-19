@@ -294,9 +294,18 @@
 
       # Determina si el botón debe estar marcado
       is_checked = field['value'] == button_on_value
+
+      # Caso especial para label_name igual a "yes", "Yes" o "YES"
+      is_yes_label = ['yes', 'Yes', 'YES'].include?(field['label_name'])
+
+      peer_checked_classes = if is_yes_label
+        "peer-checked:bg-gradient-to-br peer-checked:from-emerald-600 peer-checked:to-emerald-700 peer-checked:border-emerald-900 peer-checked:text-white peer-checked:shadow-xl"
+      else
+        "peer-checked:bg-gradient-to-br peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl"
+      end
     %>
     <%= check_box_tag "form_fill[#{field['name']}]", button_on_value, is_checked, { id: field_id, class: "hidden peer", required: field['required'] == true } %>
-    <label for="<%= field_id %>" class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 hover:-translate-y-0.5 hover:shadow-lg peer-checked:bg-gradient-to-br peer-checked:from-red-600 peer-checked:to-red-700 peer-checked:border-red-900 peer-checked:text-white peer-checked:shadow-xl">
+    <label for="<%= field_id %>" class="checkbox-button-label flex items-center justify-center text-center py-4 px-5 md:p-6 text-base md:text-lg font-semibold min-h-[60px] md:min-h-[70px] rounded-2xl cursor-pointer transition-all duration-300 ease-in-out shadow-md bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 hover:-translate-y-0.5 hover:shadow-lg <%= peer_checked_classes %>">
       <%= raw("#{field['label_name'].presence || field['name']} #{'<span class="text-red-400">*</span>'.html_safe if field['required'] == true}") %>
     </label>
   </div>
