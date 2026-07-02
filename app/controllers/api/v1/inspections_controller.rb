@@ -55,15 +55,34 @@ class Api::V1::InspectionsController < ApplicationController
           updated_at: form_fill.updated_at,
           # Embebemos la estructura del formulario directamente en el form_fill
           form_structure: form_fill.form_template&.form_structure,
-          photos: form_fill.photos.attached? ? form_fill.photos.map { |photo|
-            {
-              id: photo.id,
-              filename: photo.filename.to_s,
-              content_type: photo.content_type,
-              byte_size: photo.byte_size,
-              url: rails_storage_proxy_path(photo, only_path: true)
+          photos: begin
+            active_photos = []
+            if form_fill.photos.attached?
+              # 1. Active photos referenced in data column
+              form_fill.get_photos_by_field.each do |_field_name, field_photos|
+                field_photos.each do |fp|
+                  active_photos << fp[:photo] if fp[:photo].present?
+                end
+              end
+
+              # 2. Active signatures referenced in data column
+              (form_fill.data || {}).each do |key, value|
+                if key.to_s.end_with?("_signature_attachment_id") && value.present?
+                  sig_photo = form_fill.photos.find { |p| p.filename.to_s.start_with?(value.to_s) }
+                  active_photos << sig_photo if sig_photo.present?
+                end
+              end
+            end
+            active_photos.uniq.map { |photo|
+              {
+                id: photo.id,
+                filename: photo.filename.to_s,
+                content_type: photo.content_type,
+                byte_size: photo.byte_size,
+                url: rails_storage_proxy_path(photo, only_path: true)
+              }
             }
-          } : []
+          end
         }
 
         inspection_data[:form_fills] << form_fill_data

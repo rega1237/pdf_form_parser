@@ -94,11 +94,17 @@ export default class extends Controller {
 
   async updateSyncStatus() {
     try {
-      // Obtener datos reales para calcular un conteo único por FormFill
-      const [pendingFormFills, queueItems] = await Promise.all([
+      // Obtener datos reales para calcular un conteo único por FormFill y fotos sin sincronizar
+      const [pendingFormFills, queueItems, allPhotos] = await Promise.all([
         this.offlineStorage.getPendingFormFills().catch(() => []),
         this.offlineStorage.getAllSyncItems().catch(() => []),
+        this.offlineStorage.getAllPhotoBlobs().catch(() => []),
       ]);
+
+      // Filtrar fotos no sincronizadas
+      const unsyncedPhotos = (allPhotos || []).filter(
+        (p) => p.metadata && (p.metadata.synced === false || p.metadata.synced === "false"),
+      );
 
       // Conjuntos únicos de FormFill IDs
       const pendingFFIds = new Set(
@@ -120,8 +126,8 @@ export default class extends Controller {
         (item) => item?.type !== "form_fill_update",
       ).length;
 
-      // Conteo total mostrado: FormFills únicos pendientes + otros items de cola
-      const pendingCount = uniqueFFIds.size + otherQueueItemsCount;
+      // Conteo total mostrado: FormFills únicos pendientes + otros items de cola + fotos sin sincronizar
+      const pendingCount = uniqueFFIds.size + otherQueueItemsCount + unsyncedPhotos.length;
 
       if (this.hasSyncCountTarget) {
         this.syncCountTarget.textContent = pendingCount;
@@ -177,6 +183,30 @@ export default class extends Controller {
       if (this.hasSyncStatusTarget) this.showProgress(true);
       this.updateProgressText("Preparing to sync...");
       this.updateProgressBar(0);
+
+      // --- FASE 1: Subida de fotos offline sin sincronizar ---
+      this.updateProgressText("Checking for offline photos...");
+      const allPhotos = await this.offlineStorage.getAllPhotoBlobs().catch(() => []);
+      const unsyncedPhotos = (allPhotos || []).filter(
+        (p) => p.metadata && (p.metadata.synced === false || p.metadata.synced === "false")
+      );
+
+      if (unsyncedPhotos.length > 0) {
+        this.updateProgressText(`Uploading ${unsyncedPhotos.length} offline photos...`);
+        let photoIndex = 0;
+        for (const photoData of unsyncedPhotos) {
+          photoIndex++;
+          const pct = Math.round((photoIndex / unsyncedPhotos.length) * 100);
+          this.updateProgressBar(pct / 2); // Dejar la otra mitad del progreso para los formularios
+          this.updateProgressText(`Uploading photo ${photoIndex}/${unsyncedPhotos.length}...`);
+
+          try {
+            await this.uploadPhoto(photoData);
+          } catch (photoError) {
+            console.error(`Failed to upload photo ${photoData.id} during global sync:`, photoError);
+          }
+        }
+      }
 
       // Get queue items (explicit actions added while online)
       const queueItems = await this.offlineStorage.getAllSyncItems();
@@ -567,5 +597,86 @@ export default class extends Controller {
         document.body.removeChild(notification);
       }, 300);
     }, 3000);
+  }
+
+  async uploadPhoto(photoData) {
+    const formFillId = photoData?.metadata?.form_fill_id;
+    const fieldName = photoData?.metadata?.field_name;
+    if (!formFillId || !fieldName) {
+      console.error("[SyncController] Missing form_fill_id or field_name for photo upload", photoData);
+      return;
+    }
+
+    // Convert blob to File object
+    const extension = (photoData.blob.type && photoData.blob.type.split("/")[1]) || "jpg";
+    const filename = `${photoData.id}.${extension}`;
+    const fileToSend = new File([photoData.blob], filename, {
+      type: photoData.blob.type || "image/jpeg",
+    });
+
+    const formData = new FormData();
+    formData.append("form_fill_id", formFillId);
+    formData.append("field_name", fieldName);
+    formData.append("photo", fileToSend);
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const response = await fetch("/api/v1/sync/upload_photo", {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    const attachmentId = result?.photo_attachment_id || result?.attachment_id;
+    if (!attachmentId) throw new Error("Server did not return attachment id");
+
+    // 1. Update photo metadata to synced: true
+    const newMeta = {
+      ...photoData.metadata,
+      synced: true,
+      photo_attachment_id: attachmentId,
+    };
+    await this.offlineStorage.storePhotoBlob(photoData.id, photoData.blob, newMeta);
+
+    // 2. Update FormFill data array locally so the subsequent JSON sync includes this photo ID
+    const isSignature = photoData.metadata.type === "signature" || String(fieldName).toLowerCase().includes("signature");
+    const key = isSignature ? `${fieldName}_signature_attachment_id` : `${fieldName}_photo_attachment_id`;
+
+    const ff = await this.offlineStorage.getFormFillData(formFillId);
+    if (ff) {
+      ff.data = ff.data || {};
+      if (isSignature) {
+        ff.data[key] = attachmentId;
+      } else {
+        let ids = ff.data[key];
+        if (!Array.isArray(ids)) {
+          ids = ids ? [ids] : [];
+        }
+        if (!ids.includes(attachmentId)) {
+          ids.push(attachmentId);
+        }
+        ff.data[key] = ids;
+      }
+
+      // Keep reference in photos block
+      ff.photos = ff.photos || {};
+      ff.photos[fieldName] = {
+        id: photoData.id,
+        synced: true,
+        is_thumbnail: true,
+        attachment_id: attachmentId,
+      };
+
+      ff.has_pending_changes = true;
+      ff.updated_at = Date.now();
+      await this.offlineStorage.storeFormFill(ff);
+    }
   }
 }

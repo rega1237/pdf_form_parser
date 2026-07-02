@@ -154,6 +154,16 @@ export default class extends Controller {
           if (key.endsWith("_photo_attachment_id")) {
             const fieldName = key.replace("_photo_attachment_id", "");
             const attId = data[key];
+            if (Array.isArray(attId)) {
+              attId.forEach((id) => {
+                if (id) attachmentToField[String(id)] = fieldName;
+              });
+            } else if (attId) {
+              attachmentToField[String(attId)] = fieldName;
+            }
+          } else if (key.endsWith("_signature_attachment_id")) {
+            const fieldName = key.replace("_signature_attachment_id", "");
+            const attId = data[key];
             if (attId) attachmentToField[String(attId)] = fieldName;
           }
         });
@@ -178,9 +188,15 @@ export default class extends Controller {
             );
 
             // Metadatos para IndexedDB
+            const filenameWithoutExt = photo.filename ? photo.filename.split(".")[0] : "";
+            const fieldName =
+              attachmentToField[filenameWithoutExt] ||
+              attachmentToField[String(photo.id)] ||
+              null;
+
             const metadata = {
               form_fill_id: ff.id,
-              field_name: attachmentToField[String(photo.id)] || null,
+              field_name: fieldName,
               inspection_id: ff.inspection_id,
               synced: true,
               type: "thumbnail",
