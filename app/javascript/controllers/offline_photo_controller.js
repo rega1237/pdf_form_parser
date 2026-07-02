@@ -70,6 +70,11 @@ export default class extends Controller {
 
     // Descargar y cachear thumbnail del servidor si hace falta
     await this.ensureLocalThumbnailFromServerIfNeeded();
+
+    // Si ya estamos online al iniciar, intentar subir fotos de inmediato
+    if (navigator.onLine) {
+      await this.tryAutoSync();
+    }
   }
 
   /**
@@ -381,6 +386,9 @@ export default class extends Controller {
       } catch (e) {
         console.warn("[OfflinePhoto] Failed to update photos in form_fill:", e);
       }
+
+      // Notificar al botón de Sync global para que actualice su badge de conteo
+      document.dispatchEvent(new CustomEvent("sync:pending-changes"));
 
       if (this.kindValue === "signature") {
         this.photoIdValue = photoId;
@@ -850,6 +858,9 @@ export default class extends Controller {
       }
 
       this.updateStatus("Saved", "success");
+
+      // Notificar al botón de Sync global para que actualice su badge de conteo
+      document.dispatchEvent(new CustomEvent("sync:pending-changes"));
     } catch (error) {
       console.error("[OfflinePhotoController] Error syncing photo:", error);
       this.updateStatus("Error syncing photo", "error");

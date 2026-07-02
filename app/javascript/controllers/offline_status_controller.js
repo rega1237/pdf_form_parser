@@ -17,11 +17,17 @@ export default class extends Controller {
     this.boundOnlineHandler = () => this.updateStatus();
     this.boundOfflineHandler = () => this.updateStatus();
     this.boundTurboLoadHandler = () => this.updateStatus();
+    this.boundVisibilityHandler = () => {
+      if (document.visibilityState === "visible") {
+        this.updateStatus();
+      }
+    };
     // Initial UI update (do not dispatch app:online on initial load)
     this.updateStatus();
     window.addEventListener("online", this.boundOnlineHandler);
     window.addEventListener("offline", this.boundOfflineHandler);
     document.addEventListener("turbo:load", this.boundTurboLoadHandler);
+    document.addEventListener("visibilitychange", this.boundVisibilityHandler);
   }
 
   /**
@@ -31,6 +37,7 @@ export default class extends Controller {
     window.removeEventListener("online", this.boundOnlineHandler);
     window.removeEventListener("offline", this.boundOfflineHandler);
     document.removeEventListener("turbo:load", this.boundTurboLoadHandler);
+    document.removeEventListener("visibilitychange", this.boundVisibilityHandler);
   }
 
   /**

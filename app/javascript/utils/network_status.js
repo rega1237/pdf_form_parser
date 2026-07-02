@@ -28,7 +28,20 @@
     lastIsOnline = isOnline
   }
 
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      const isOnline = navigator.onLine
+      if (lastIsOnline === false && isOnline === true) {
+        dispatch('app:online')
+      } else if (lastIsOnline === true && isOnline === false) {
+        dispatch('app:offline')
+      }
+      lastIsOnline = isOnline
+    }
+  }
+
   window.addEventListener('online', handleOnline)
   window.addEventListener('offline', handleOffline)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
   // No initial dispatch; rely on transitions
 })()
