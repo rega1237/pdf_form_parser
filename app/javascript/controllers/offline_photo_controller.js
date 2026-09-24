@@ -70,6 +70,11 @@ export default class extends Controller {
 
     // Descargar y cachear thumbnail del servidor si hace falta
     await this.ensureLocalThumbnailFromServerIfNeeded();
+
+    // Si ya estamos online al iniciar, intentar subir fotos de inmediato
+    if (navigator.onLine) {
+      await this.tryAutoSync();
+    }
   }
 
   /**
@@ -337,28 +342,53 @@ export default class extends Controller {
         inspectionId = ff?.inspection_id || null;
       } catch (_) {}
 
+      // Compress first before storing in IndexedDB
+      const isSignature = (this.kindValue && String(this.kindValue).trim()) === "signature";
+      const outputType = isSignature ? "image/png" : "image/jpeg";
+      const backgroundColor = isSignature ? null : "#ffffff";
+
+      let blobToStore = file;
+      if (file.type && file.type.startsWith("image/")) {
+        try {
+          blobToStore = await this.offlineStorage.createThumbnailBlob(file, {
+            maxDimension: 1024,
+            quality: 0.7,
+            outputType,
+            backgroundColor
+          });
+        } catch (compressError) {
+          console.warn("[OfflinePhoto] Failed to compress image before storing offline:", compressError);
+        }
+      }
+
       const metadata = {
         form_fill_id: formFillId,
         field_name: fieldName,
         inspection_id: inspectionId,
         synced: false,
-        type: "original",
-        is_thumbnail: false,
+        type: isSignature ? "signature" : "thumbnail",
+        is_thumbnail: true,
+        filename: file.name,
+        originalSize: file.size,
+        lastModified: file.lastModified,
       };
 
-      await this.offlineStorage.storePhotoFromFile(photoId, file, metadata);
+      await this.offlineStorage.storePhotoBlob(photoId, blobToStore, metadata);
       // Mantener también referencia en el form_fill para depuración/consistencia
       try {
         await this.offlineStorage.updateFormFill(
           formFillId,
           {},
           {
-            [fieldName]: { id: photoId, synced: false, is_thumbnail: false },
+            [fieldName]: { id: photoId, synced: false, is_thumbnail: true },
           },
         );
       } catch (e) {
         console.warn("[OfflinePhoto] Failed to update photos in form_fill:", e);
       }
+
+      // Notificar al botón de Sync global para que actualice su badge de conteo
+      document.dispatchEvent(new CustomEvent("sync:pending-changes"));
 
       if (this.kindValue === "signature") {
         this.photoIdValue = photoId;
@@ -731,7 +761,7 @@ export default class extends Controller {
       this.updateStatus("Uploading...", "info");
 
       // Subir original
-      const uploadResponse = await this.uploadPhotoToServer(photoData.blob);
+      const uploadResponse = await this.uploadPhotoToServer(photoData.blob, photoId);
       const attachmentId =
         uploadResponse?.photo_attachment_id || uploadResponse?.attachment_id;
       if (!attachmentId) throw new Error("Server did not return attachment id");
@@ -828,6 +858,9 @@ export default class extends Controller {
       }
 
       this.updateStatus("Saved", "success");
+
+      // Notificar al botón de Sync global para que actualice su badge de conteo
+      document.dispatchEvent(new CustomEvent("sync:pending-changes"));
     } catch (error) {
       console.error("[OfflinePhotoController] Error syncing photo:", error);
       this.updateStatus("Error syncing photo", "error");
@@ -1152,7 +1185,7 @@ export default class extends Controller {
    * @param {Blob} blob - The photo blob to upload.
    * @returns {Object|null} The response JSON or null on failure.
    */
-  async uploadPhotoToServer(blob) {
+  async uploadPhotoToServer(blob, photoId = null) {
     const fieldName = this.fieldNameValue;
     if (!fieldName) {
       console.error(
@@ -1176,13 +1209,34 @@ export default class extends Controller {
           : null);
       if (!formId) throw new Error("Form element or formFillId not found");
 
-      // Asegurar nombre de archivo para Blob
-      const fileToSend =
-        blob instanceof File
-          ? blob
-          : new File([blob], `${fieldName}-${Date.now()}.jpg`, {
-              type: blob.type || "image/jpeg",
-            });
+      // Compress first before uploading to server
+      const isSignature = (this.kindValue && String(this.kindValue).trim()) === "signature";
+      const outputType = isSignature ? "image/png" : "image/jpeg";
+      const backgroundColor = isSignature ? null : "#ffffff";
+
+      let blobToSend = blob;
+      if (blob.type && blob.type.startsWith("image/") && blob.size > 200 * 1024) {
+        try {
+          blobToSend = await this.offlineStorage.createThumbnailBlob(blob, {
+            maxDimension: 1024,
+            quality: 0.7,
+            outputType,
+            backgroundColor
+          });
+        } catch (compressError) {
+          console.warn("[OfflinePhoto] Failed to compress image before uploading:", compressError);
+        }
+      }
+
+      // Asegurar nombre de archivo único para Blob/File para habilitar idempotencia
+      const extension = (blobToSend.type && blobToSend.type.split("/")[1]) || "jpg";
+      const filename = photoId
+        ? `${photoId}.${extension}`
+        : `photo_${formId}_${fieldName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
+
+      const fileToSend = new File([blobToSend], filename, {
+        type: blobToSend.type || "image/jpeg",
+      });
 
       // Crear FormData con la foto
       const formData = new FormData();

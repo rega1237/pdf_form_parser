@@ -42,10 +42,13 @@ Rails.application.routes.draw do
       delete :remove_signature # Nuevo endpoint para eliminar firma
       get :structure           # Endpoint para obtener estructura actualizada
       post :upload_photo
+      post :lock_pdf           # Endpoint to flatten the PDF
       # New data-focused endpoints
       patch :update_field_data # AJAX endpoint for single field updates
       patch :bulk_update_data  # AJAX endpoint for multiple field updates
       get :get_merged_form_data # Endpoint for PDF generation data retrieval
+      get :pdf_status           # AJAX endpoint for polling PDF generation status
+      post :reset_pdf_status    # Endpoint for manually resetting generating status
     end
   end
 

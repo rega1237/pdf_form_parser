@@ -37,7 +37,7 @@ class GenerateIndividualPdfJob < ApplicationJob
 
       # Clean up temporary file
       FileUtils.rm_f(pdf_path) if pdf_path
-    rescue StandardError => e
+    rescue StandardError, NoMemoryError => e
       form_fill.update!(pdf_generation_status: "failed")
       Rails.logger.error "Error in GenerateIndividualPdfJob for FormFill ##{form_fill.id}: #{e.message}\n#{e.backtrace.join("\n")}"
     end

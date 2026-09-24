@@ -25,11 +25,11 @@ class FormFillPhotoTest < ActiveSupport::TestCase
 
     # Prepare a sample image
     @image_path = Rails.root.join("test/fixtures/files/test_image.jpg")
-    # Ensure the file exists, or create a dummy one
-    unless File.exist?(@image_path)
-      FileUtils.mkdir_p(File.dirname(@image_path))
-      File.open(@image_path, "wb") { |f| f.write("dummy image content") }
-    end
+    # Ensure the file exists as a valid 1x1 JPEG to support MiniMagick processing
+    require "base64"
+    FileUtils.mkdir_p(File.dirname(@image_path))
+    valid_jpeg = Base64.decode64("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwMDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAABAAEDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAAAP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=")
+    File.open(@image_path, "wb") { |f| f.write(valid_jpeg) }
     @image_file = Rack::Test::UploadedFile.new(@image_path, "image/jpeg")
   end
 
@@ -85,7 +85,7 @@ class FormFillPhotoTest < ActiveSupport::TestCase
     @form_fill.reload
 
     # Create a fresh file object for the second attachment to avoid IntegrityError (stream consumed)
-    image_file_2 = Rack::Test::UploadedFile.new(@image_path, "image/jpeg")
+    image_file_2 = Rack::Test::UploadedFile.new(@image_path, "image/jpeg", false, original_filename: "another_unique_photo.jpg")
     result = @form_fill.attach_photo_for_field("test_photo_field", image_file_2)
     assert result[:success], "Second attach failed: #{result[:error]}"
 
@@ -98,5 +98,43 @@ class FormFillPhotoTest < ActiveSupport::TestCase
     @form_fill.attach_photo_for_field("test_photo_field", @image_file)
     url = @form_fill.get_photo_url_for_field("test_photo_field")
     assert_match %r{/rails/active_storage/blobs/proxy/}, url
+  end
+
+  test "attach_photo_for_field handles deduplication intelligently" do
+    custom_image_file = Rack::Test::UploadedFile.new(@image_path, "image/jpeg", false, original_filename: "photo_idempotent_123.jpg")
+
+    # Primera subida
+    result1 = @form_fill.attach_photo_for_field("test_photo_field", custom_image_file)
+    assert result1[:success]
+
+    @form_fill.reload
+    assert_equal 1, @form_fill.photos.count
+
+    # Segunda subida con el mismo archivo y nombre
+    image_file_2 = Rack::Test::UploadedFile.new(@image_path, "image/jpeg", false, original_filename: "photo_idempotent_123.jpg")
+
+    result2 = @form_fill.attach_photo_for_field("test_photo_field", image_file_2)
+    assert result2[:success]
+
+    @form_fill.reload
+    # La clave del test (Capa B): no debe haber duplicado físico
+    assert_equal 1, @form_fill.photos.count
+
+    # El array de datos no debe estar duplicado (Capa A y B)
+    attachment_ids = @form_fill.get_field_value("test_photo_field_photo_attachment_id")
+    assert_equal [ "photo_idempotent_123" ], attachment_ids
+  end
+
+  test "attach_photo_for_field compresses the image using ImageProcessing" do
+    mock_chain = mock()
+    mock_chain.expects(:resize_to_limit).with(1024, 1024).returns(mock_chain)
+    mock_chain.expects(:convert).with("jpeg").returns(mock_chain)
+    mock_chain.expects(:saver).with(quality: 70).returns(mock_chain)
+    mock_chain.expects(:call).at_least_once
+
+    ImageProcessing::MiniMagick.expects(:source).returns(mock_chain)
+
+    result = @form_fill.attach_photo_for_field("test_photo_field", @image_file)
+    assert result[:success]
   end
 end

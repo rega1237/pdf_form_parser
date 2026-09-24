@@ -159,13 +159,24 @@ class PdfMergingServiceDataColumnTest < ActiveSupport::TestCase
 
     # Mock Prawn document creation
     mock_prawn_doc = mock("prawn_document")
-    mock_prawn_doc.stubs(:render).returns("rendered pdf data")
+    bounds_mock = mock("bounds")
+    bounds_mock.stubs(:width).returns(500)
+    bounds_mock.stubs(:top).returns(700)
+    bounds_mock.stubs(:height).returns(600)
+    mock_prawn_doc.stubs(:bounds).returns(bounds_mock)
+    mock_prawn_doc.stubs(:cursor).returns(600)
+    mock_prawn_doc.stubs(:text)
+    mock_prawn_doc.stubs(:move_down)
+    mock_prawn_doc.stubs(:stroke_horizontal_rule)
+    mock_prawn_doc.stubs(:bounding_box).yields
+    mock_prawn_doc.stubs(:image)
+    mock_prawn_doc.stubs(:render_file)
 
     Prawn::Document.stubs(:new).returns(mock_prawn_doc)
 
-    # Mock CombinePDF parsing
+    # Mock CombinePDF load
     mock_parsed_pdf = mock("parsed_pdf")
-    CombinePDF.stubs(:parse).with("rendered pdf data").returns(mock_parsed_pdf)
+    CombinePDF.stubs(:load).returns(mock_parsed_pdf)
 
     # Expect the PDF object to receive the parsed PDF
     pdf_object.expects(:<<).with(mock_parsed_pdf)

@@ -347,6 +347,82 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Custom Pagination -->
+      <% if @inspections.respond_to?(:total_pages) && @inspections.total_pages > 1 %>
+        <div class="flex justify-center py-6 border-t border-white/10 bg-white/5">
+          <div class="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+            <div class="flex items-center space-x-2">
+              
+              <!-- Previous button -->
+              <% if @inspections.prev_page %>
+                <%= link_to inspections_path(request.query_parameters.merge(page: @inspections.prev_page)), 
+                    class: "inline-flex items-center px-3 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg transition-all duration-200 border border-white/10 hover:border-white/20" do %>
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                  Previous
+                <% end %>
+              <% else %>
+                <span class="inline-flex items-center px-3 py-2 bg-white/5 text-slate-500 rounded-lg border border-white/5 cursor-not-allowed">
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                  Previous
+                </span>
+              <% end %>
+              
+              <!-- Page numbers -->
+              <div class="flex items-center space-x-1">
+                <% if @inspections.current_page > 3 %>
+                  <%= link_to "1", inspections_path(request.query_parameters.merge(page: 1)), 
+                      class: "px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-200" %>
+                  <% if @inspections.current_page > 4 %>
+                    <span class="px-2 text-slate-500">...</span>
+                  <% end %>
+                <% end %>
+                
+                <% ([@inspections.current_page - 2, 1].max..[@inspections.current_page + 2, @inspections.total_pages].min).each do |page| %>
+                  <% if page == @inspections.current_page %>
+                    <span class="px-3 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg font-semibold">
+                      <%= page %>
+                    </span>
+                  <% else %>
+                    <%= link_to page, inspections_path(request.query_parameters.merge(page: page)), 
+                        class: "px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-200" %>
+                  <% end %>
+                <% end %>
+                
+                <% if @inspections.current_page < @inspections.total_pages - 2 %>
+                  <% if @inspections.current_page < @inspections.total_pages - 3 %>
+                    <span class="px-2 text-slate-500">...</span>
+                  <% end %>
+                  <%= link_to @inspections.total_pages, inspections_path(request.query_parameters.merge(page: @inspections.total_pages)), 
+                      class: "px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-200" %>
+                <% end %>
+              </div>
+              
+              <!-- Next button -->
+              <% if @inspections.next_page %>
+                <%= link_to inspections_path(request.query_parameters.merge(page: @inspections.next_page)), 
+                    class: "inline-flex items-center px-3 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg transition-all duration-200 border border-white/10 hover:border-white/20" do %>
+                  Next
+                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                <% end %>
+              <% else %>
+                <span class="inline-flex items-center px-3 py-2 bg-white/5 text-slate-500 rounded-lg border border-white/5 cursor-not-allowed">
+                  Next
+                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
     <!-- Empty State -->
     <% if @inspections.empty? %>
